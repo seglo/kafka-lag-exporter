@@ -2,19 +2,38 @@ package com.lightbend.kafkalagexporter
 
 import java.time.Instant
 
-import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import com.lightbend.kafkalagexporter.Offsets.{ConsumerGroup, Double, GroupTopicPartition, LagMetric, LastCommittedOffsets, LatestOffsets, Measurement}
-import com.lightbend.kafkalagexporter.Protocol.{Collect, Message, NewOffsets}
+import akka.actor.typed.{ActorRef, Behavior}
+import com.lightbend.kafkalagexporter.Offsets._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 object ConsumerGroupCollector {
+  sealed trait Message
+  sealed trait Collect extends Message
+  case object Collect extends Collect
+  case class NewOffsets(
+                         now: Long,
+                         latestOffsets: Map[Offsets.TopicPartition, Long],
+                         lastGroupOffsets: Map[Offsets.ConsumerGroup, Map[Offsets.TopicPartition, Long]])
+    extends Message
+
+  def init(appConfig: AppConfig,
+           clientCreator: () => KafkaClientContract,
+           reporter: ActorRef[LagReporter.Message]): Behavior[ConsumerGroupCollector.Message] = Behaviors.setup { _ =>
+    val lastCommittedOffsets = Offsets.LastCommittedOffsets()
+    val latestOffsets = Offsets.LatestOffsets()
+
+    collector(appConfig, clientCreator, latestOffsets, lastCommittedOffsets, reporter)
+  }
+
   def collector(appConfig: AppConfig,
                 clientCreator: () => KafkaClientContract,
                 latestOffsets: Offsets.LatestOffsets,
-                lastCommittedOffsets: Offsets.LastCommittedOffsets): Behavior[Message] = Behaviors.receive {
+                lastCommittedOffsets: Offsets.LastCommittedOffsets,
+                reporter: ActorRef[LagReporter.Message]): Behavior[Message] = Behaviors.receive {
+
     case (context, _: Collect) =>
       implicit val ec = context.executionContext
 
@@ -41,7 +60,8 @@ object ConsumerGroupCollector {
         case Success(newOffsets) =>
           client.close()
           context.self ! newOffsets
-        case Failure(ex)         => println(s"An error occurred while retrieving offsets: $ex")
+        case Failure(ex)         =>
+          println(s"An error occurred while retrieving offsets: $ex")
           throw ex
       }
 
@@ -69,8 +89,10 @@ object ConsumerGroupCollector {
 
       println(s"Lag metrics: ${lagMetrics}")
 
+      reporter ! LagReporter.Metric("bar")
+
       context.scheduleOnce(appConfig.pollInterval, context.self, Collect)
 
-      collector(appConfig, clientCreator, LatestOffsets(newOffsets.latestOffsets), LastCommittedOffsets(updatedLastCommittedOffsets))
+      collector(appConfig, clientCreator, LatestOffsets(newOffsets.latestOffsets), LastCommittedOffsets(updatedLastCommittedOffsets), reporter)
   }
 }

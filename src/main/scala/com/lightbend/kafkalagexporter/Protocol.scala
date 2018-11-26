@@ -3,6 +3,7 @@ package com.lightbend.kafkalagexporter
 object Protocol {
   sealed trait Message
   sealed trait Collect extends Message
+  sealed trait Report extends Message
   case object Collect extends Collect
   case class NewOffsets(
                        now: Long,

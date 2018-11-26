@@ -12,18 +12,20 @@ object Offsets {
   }
 
   case class Single(offset: Long, timestamp: Long) extends Measurement {
-    def addMeasurement(b: Single): Double = Double(this.copy(), b)
+    def addMeasurement(b: Single): Double = Double(this, b)
     def offsetLag(lastOffset: Long): Long = lastOffset - offset
   }
 
   case class Double(a: Single, b: Single) extends Measurement {
-    def addMeasurement(c: Single): Double = Double(b.copy(), c)
+    def addMeasurement(c: Single): Double = Double(b, c)
+
     def offsetLag(lastOffset: Long): Long = {
       if (lastOffset <= 0) 0
       else {
         lastOffset - b.offset
       }
     }
+
     def lag(now: Long, lastOffset: Long): Long = {
       if (lastOffset <= b.offset || b.offset - a.offset == 0) 0
       else {
@@ -48,8 +50,8 @@ object Offsets {
     override def toString(): String = s"now: $now, lagMs: $lagMs, lagOffsets: $lagOffsets, latestOffset: $latestOffset, measurement: $measurement"
   }
 
-  case class ConsumerGroupMember(clientId: String, consumerId: String, host: String, partitions: Set[TopicPartition])
   case class ConsumerGroup(id: String, isSimpleGroup: Boolean, state: String, members: List[ConsumerGroupMember])
+  case class ConsumerGroupMember(clientId: String, consumerId: String, host: String, partitions: Set[TopicPartition])
 
   case class LastCommittedOffsets(map: Map[GroupTopicPartition, Measurement]) {
     def addOrUpdate(gtp: GroupTopicPartition, measurement: Measurement) = map.updated(gtp, measurement)

@@ -2,10 +2,11 @@ package com.lightbend.kafkalagexporter
 
 import java.util.concurrent.Executors
 
+import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorSystem, Behavior}
-import com.lightbend.kafkalagexporter.Protocol.{Collect, Message}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Terminated}
 import com.typesafe.config.ConfigFactory
+import io.prometheus.client.exporter.HTTPServer
 
 import scala.concurrent.ExecutionContext
 
@@ -17,20 +18,20 @@ object MainApp extends App {
   val appConfig = AppConfig(ConfigFactory.load().getConfig("kafka-lag-exporter"))
 
   val clientCreator = () => KafkaClient(appConfig.bootstrapBrokers)(kafkaClientEc)
+  val exporterCreator = () => new HTTPServer(appConfig.port)
 
-  val main: Behavior[Message] =
+  val main: Behavior[NotUsed] =
     Behaviors.setup { context =>
-      val lastCommittedOffsets = Offsets.LastCommittedOffsets()
-      val latestOffsets = Offsets.LatestOffsets()
-      val collector = context.spawn(ConsumerGroupCollector.collector(appConfig, clientCreator, latestOffsets, lastCommittedOffsets), "collector")
+      val reporter: ActorRef[LagReporter.Message] = context.spawn(LagReporter.init(appConfig, exporterCreator), "reporter")
+      val collector: ActorRef[ConsumerGroupCollector.Message] = context.spawn(ConsumerGroupCollector.init(appConfig, clientCreator, reporter), "collector")
 
-      Behaviors.receiveMessage { _ =>
-        collector ! Collect
-        Behaviors.same
+      collector ! ConsumerGroupCollector.Collect
+
+      Behaviors.receiveSignal {
+        case (_, Terminated(_)) => Behaviors.stopped
       }
     }
 
-  val system: ActorSystem[Message] = ActorSystem(main, "kafkalagexporterapp")
+  val system: ActorSystem[NotUsed] = ActorSystem(main, "kafkalagexporterapp")
 
-  system ! Collect
 }

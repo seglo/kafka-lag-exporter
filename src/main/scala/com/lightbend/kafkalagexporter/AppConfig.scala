@@ -11,7 +11,8 @@ object AppConfig {
     val pollIntervalConfig = config.getDuration("poll-interval")
     val pollInterval = FiniteDuration(pollIntervalConfig.toMillis, TimeUnit.MILLISECONDS)
     val bootstrapBrokers = config.getString("bootstrap-brokers")
-    AppConfig(pollInterval, bootstrapBrokers)
+    val port = config.getInt("port")
+    AppConfig(pollInterval, bootstrapBrokers, port)
   }
 }
-case class AppConfig(pollInterval: FiniteDuration, bootstrapBrokers: String)
+case class AppConfig(pollInterval: FiniteDuration, bootstrapBrokers: String, port: Int)
