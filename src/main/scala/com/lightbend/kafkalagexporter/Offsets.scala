@@ -26,52 +26,39 @@ object Offsets {
       }
     }
 
-    def lag(now: Long, lastOffset: Long): Long = {
-      if (lastOffset <= b.offset || b.offset - a.offset == 0) 0
-      else {
-        // linear extrapolation, solve for the x intercept given y (lastOffset), slope (dy/dx), and two points (a, b)
-        val dx = (b.timestamp - a.timestamp).toDouble
-        val dy = (b.offset - a.offset).toDouble
-        val Px = b.timestamp
-        val Dy = (b.offset - lastOffset).toDouble
+    def lag(now: Long, lastOffset: Long): FiniteDuration = {
+      val lagMs =
+        if (lastOffset <= b.offset || b.offset - a.offset == 0) 0
+        else {
+          // linear extrapolation, solve for the x intercept given y (lastOffset), slope (dy/dx), and two points (a, b)
+          val dx = (b.timestamp - a.timestamp).toDouble
+          val dy = (b.offset - a.offset).toDouble
+          val Px = b.timestamp
+          val Dy = (b.offset - lastOffset).toDouble
 
-        val lagPx = Px - (now + (Dy*(dx/dy)))
+          val lagPx = Px - (now + (Dy*(dx/dy)))
 
-        //println(s"lagPx = $lagPx = $Px - ($now + ($Dy*($dx/$dy)))")
+          //println(s"lagPx = $lagPx = $Px - ($now + ($Dy*($dx/$dy)))")
 
-        lagPx.toLong
-      }
+          lagPx.toLong
+        }
+
+      FiniteDuration(lagMs, scala.concurrent.duration.MILLISECONDS)
     }
-  }
-
-  case class LagMetric(now: Long, latestOffset: Long, measurement: Offsets.Double) {
-    val lagOffsets: Long = measurement.offsetLag(latestOffset)
-    val lagMs: FiniteDuration = FiniteDuration(measurement.lag(now, latestOffset), scala.concurrent.duration.MILLISECONDS)
-    override def toString(): String = s"now: $now, lagMs: $lagMs, lagOffsets: $lagOffsets, latestOffset: $latestOffset, measurement: $measurement"
   }
 
   case class ConsumerGroup(id: String, isSimpleGroup: Boolean, state: String, members: List[ConsumerGroupMember])
   case class ConsumerGroupMember(clientId: String, consumerId: String, host: String, partitions: Set[TopicPartition])
 
-  case class LastCommittedOffsets(map: Map[GroupTopicPartition, Measurement]) {
-    def addOrUpdate(gtp: GroupTopicPartition, measurement: Measurement) = map.updated(gtp, measurement)
-    def get(gtp: GroupTopicPartition) = map.get(gtp)
-    def getOrElse(gtp: GroupTopicPartition, measurement: Measurement) = map.getOrElse(gtp, measurement)
-    def contains(gtp: GroupTopicPartition) = map.contains(gtp)
-  }
+  type LastCommittedOffsets = Map[GroupTopicPartition, Measurement]
 
   object LastCommittedOffsets {
-    def apply(): LastCommittedOffsets = LastCommittedOffsets(Map.empty[GroupTopicPartition, Measurement])
+    def apply(): LastCommittedOffsets = Map.empty[GroupTopicPartition, Measurement]
   }
 
-  case class LatestOffsets(map: Map[TopicPartition, Long]) {
-    def addOrUpdate(tp: TopicPartition, offset: Long) = map.updated(tp, offset)
-    def get(tp: TopicPartition) = map.get(tp)
-    def contains(tp: TopicPartition) = map.contains(tp)
-  }
+  type LatestOffsets = Map[TopicPartition, Long]
 
   object LatestOffsets {
-    def apply(): LatestOffsets = LatestOffsets(Map.empty[TopicPartition, Long])
+    def apply(): LatestOffsets = Map.empty[TopicPartition, Long]
   }
-
 }

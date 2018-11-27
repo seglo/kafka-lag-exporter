@@ -13,7 +13,8 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 object KafkaClient {
-  def apply(bootstrapBrokers: String)(implicit ec: ExecutionContext): KafkaClientContract = KafkaClientDirect(bootstrapBrokers)(ec)
+  def apply(bootstrapBrokers: String, groupId: String)(implicit ec: ExecutionContext): KafkaClientContract =
+    KafkaClientDirect(bootstrapBrokers, groupId)(ec)
 }
 
 trait KafkaClientContract {
@@ -24,7 +25,8 @@ trait KafkaClientContract {
 }
 
 object KafkaClientDirect {
-  def apply(bootstrapBrokers: String)(implicit ec: ExecutionContext): KafkaClientContract = new KafkaClientDirect(bootstrapBrokers)(ec)
+  def apply(bootstrapBrokers: String, groupId: String)(implicit ec: ExecutionContext): KafkaClientContract =
+    new KafkaClientDirect(bootstrapBrokers, groupId)(ec)
 
   private def kafkaFuture[T](kafkaFuture: KafkaFuture[T])(implicit ec: ExecutionContext): Future[T] = {
     val p = Promise[T]()
@@ -66,37 +68,28 @@ object KafkaClientDirect {
   }
 }
 
-class KafkaClientDirect private(bootstrapBrokers: String, consumerGroupId: Option[String] = None)
+class KafkaClientDirect private(bootstrapBrokers: String, groupId: String)
                                (implicit ec: ExecutionContext) extends KafkaClientContract {
   import KafkaClientDirect._
 
-  private val groupId = consumerGroupId.getOrElse("kafkalagexporter")
-
   private val adminClient = createAdminClient(bootstrapBrokers)
   private val consumer = createConsumerClient(bootstrapBrokers, groupId)
-
-  def printSystemInfo() = {
-    println("Processors: " + Runtime.getRuntime().availableProcessors())
-    println("Thread active: " + Thread.activeCount)
-    println("Current Thread: " + Thread.currentThread().getId())
-  }
 
   def getGroups(): Future[List[Offsets.ConsumerGroup]] = {
     for {
       groups <- kafkaFuture(adminClient.listConsumerGroups().all())
       groupIds = groups.asScala.map(_.groupId()).toList
       groupDescriptions <- kafkaFuture(adminClient.describeConsumerGroups(groupIds.asJava).all())
-    } yield
-      groupDescriptions.asScala.map { case (id, desc) => getGroupDescription(id, desc) }.toList
+    } yield groupDescriptions.asScala.map { case (id, desc) => createConsumerGroup(id, desc) }.toList
   }
 
-  private def getGroupDescription(groupId: String, groupDescription: ConsumerGroupDescription): Offsets.ConsumerGroup = {
+  private def createConsumerGroup(groupId: String, groupDescription: ConsumerGroupDescription): Offsets.ConsumerGroup = {
     val members = groupDescription.members().asScala.map { member =>
       val partitions = member
         .assignment()
         .topicPartitions()
         .asScala
-        .map(tp => Offsets.TopicPartition(tp.topic(), tp.partition()))
+        .map(_.asOffsets)
         .toSet
       Offsets.ConsumerGroupMember(member.clientId(), member.consumerId(), member.host(), partitions)
     }.toList
@@ -105,12 +98,7 @@ class KafkaClientDirect private(bootstrapBrokers: String, consumerGroupId: Optio
 
   def getLatestOffsets(groups: List[Offsets.ConsumerGroup]): Future[Map[Offsets.TopicPartition, Long]] = {
     val partitions = dedupeGroupPartitions(groups)
-
-    for(groupPartitionsLatestOffsets <- Future(getLogEndOffsets(partitions))) yield {
-      groupPartitionsLatestOffsets.map {
-        case (tp, offset) => tp -> offset
-      }
-    }
+    Future(getLogEndOffsets(partitions))
   }
 
   private def dedupeGroupPartitions(groups: List[Offsets.ConsumerGroup]): Set[Offsets.TopicPartition] = {
