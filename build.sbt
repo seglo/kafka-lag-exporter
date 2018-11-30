@@ -18,3 +18,4 @@ enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
 
 dockerUsername := Some("lightbend")
+daemonUser in Docker := "nobody"

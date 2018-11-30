@@ -1,32 +1,30 @@
 package com.lightbend.kafkalagexporter
 
+import java.time.Instant
 import java.util
 import java.util.Properties
 
+import com.lightbend.kafkalagexporter.Domain.Measurements
+import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.admin.{AdminClient, ConsumerGroupDescription}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndTimestamp}
 import org.apache.kafka.common.serialization.StringDeserializer
-import org.apache.kafka.common.{KafkaFuture, TopicPartition => KafkaTopicPartition }
+import org.apache.kafka.common.{KafkaFuture, TopicPartition => KafkaTopicPartition}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 object KafkaClient {
   def apply(bootstrapBrokers: String, groupId: String)(implicit ec: ExecutionContext): KafkaClientContract =
-    KafkaClientDirect(bootstrapBrokers, groupId)(ec)
-}
+    new KafkaClient(bootstrapBrokers, groupId)(ec)
 
-trait KafkaClientContract {
-  def getGroups(): Future[List[Offsets.ConsumerGroup]]
-  def getLatestOffsets(groups: List[Offsets.ConsumerGroup]): Future[Map[Offsets.TopicPartition, Long]]
-  def getGroupOffsets(groups: List[Offsets.ConsumerGroup]): Future[Map[Offsets.ConsumerGroup, Map[Offsets.TopicPartition, Long]]]
-  def close(): Unit
-}
-
-object KafkaClientDirect {
-  def apply(bootstrapBrokers: String, groupId: String)(implicit ec: ExecutionContext): KafkaClientContract =
-    new KafkaClientDirect(bootstrapBrokers, groupId)(ec)
+  trait KafkaClientContract {
+    def getGroups(): Future[List[Domain.ConsumerGroup]]
+    def getLatestOffsets(groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]]
+    def getGroupOffsets(groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]]
+    def close(): Unit
+  }
 
   private def kafkaFuture[T](kafkaFuture: KafkaFuture[T])(implicit ec: ExecutionContext): Future[T] = {
     val p = Promise[T]()
@@ -60,22 +58,22 @@ object KafkaClientDirect {
 
   // extension methods to convert between Offsets.TopicPartition and org.apache.kafka.common.TopicPartition
   private implicit class OffsetsTopicPartitionOps(ktp: KafkaTopicPartition) {
-    def asOffsets: Offsets.TopicPartition = Offsets.TopicPartition(ktp.topic(), ktp.partition())
+    def asOffsets: Domain.TopicPartition = Domain.TopicPartition(ktp.topic(), ktp.partition())
   }
 
-  private implicit class KafkaTopicPartitionOps(tp: Offsets.TopicPartition) {
+  private implicit class KafkaTopicPartitionOps(tp: Domain.TopicPartition) {
     def asKafka: KafkaTopicPartition = new KafkaTopicPartition(tp.topic, tp.partition)
   }
 }
 
-class KafkaClientDirect private(bootstrapBrokers: String, groupId: String)
-                               (implicit ec: ExecutionContext) extends KafkaClientContract {
-  import KafkaClientDirect._
+class KafkaClient private(bootstrapBrokers: String, groupId: String)
+                         (implicit ec: ExecutionContext) extends KafkaClientContract {
+  import KafkaClient._
 
   private val adminClient = createAdminClient(bootstrapBrokers)
   private val consumer = createConsumerClient(bootstrapBrokers, groupId)
 
-  def getGroups(): Future[List[Offsets.ConsumerGroup]] = {
+  def getGroups(): Future[List[Domain.ConsumerGroup]] = {
     for {
       groups <- kafkaFuture(adminClient.listConsumerGroups().all())
       groupIds = groups.asScala.map(_.groupId()).toList
@@ -83,7 +81,7 @@ class KafkaClientDirect private(bootstrapBrokers: String, groupId: String)
     } yield groupDescriptions.asScala.map { case (id, desc) => createConsumerGroup(id, desc) }.toList
   }
 
-  private def createConsumerGroup(groupId: String, groupDescription: ConsumerGroupDescription): Offsets.ConsumerGroup = {
+  private def createConsumerGroup(groupId: String, groupDescription: ConsumerGroupDescription): Domain.ConsumerGroup = {
     val members = groupDescription.members().asScala.map { member =>
       val partitions = member
         .assignment()
@@ -91,43 +89,38 @@ class KafkaClientDirect private(bootstrapBrokers: String, groupId: String)
         .asScala
         .map(_.asOffsets)
         .toSet
-      Offsets.ConsumerGroupMember(member.clientId(), member.consumerId(), member.host(), partitions)
+      Domain.ConsumerGroupMember(member.clientId(), member.consumerId(), member.host(), partitions)
     }.toList
-    Offsets.ConsumerGroup(groupId, groupDescription.isSimpleConsumerGroup, groupDescription.state.toString, members)
+    Domain.ConsumerGroup(groupId, groupDescription.isSimpleConsumerGroup, groupDescription.state.toString, members)
   }
 
-  def getLatestOffsets(groups: List[Offsets.ConsumerGroup]): Future[Map[Offsets.TopicPartition, Long]] = {
+  def getLatestOffsets(groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]] = {
     val partitions = dedupeGroupPartitions(groups)
     Future(getLogEndOffsets(partitions))
   }
 
-  private def dedupeGroupPartitions(groups: List[Offsets.ConsumerGroup]): Set[Offsets.TopicPartition] = {
+  private def dedupeGroupPartitions(groups: List[Domain.ConsumerGroup]): Set[Domain.TopicPartition] = {
     groups.flatMap(_.members.flatMap(_.partitions)).toSet
   }
 
-  private def getLogEndOffsets(topicPartitions: Set[Offsets.TopicPartition]): Map[Offsets.TopicPartition, Long] = {
+  private def getLogEndOffsets(topicPartitions: Set[Domain.TopicPartition]): Map[Domain.TopicPartition, Measurements.Single] = {
+    val now = Instant.now().toEpochMilli
     val offsets = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava)
-    topicPartitions.map(tp => tp -> offsets.get(tp.asKafka).toLong).toMap
+    topicPartitions.map(tp => tp -> Measurements.Single(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 
-  private def getOffsetsForTimes(topicPartitions: Set[Offsets.TopicPartition], timestamp: Long): Map[Offsets.TopicPartition, Long] = {
-    val timestampsToSearch = topicPartitions.map(tp => tp.asKafka -> long2Long(timestamp)).toMap
-
-    val offsets: util.Map[KafkaTopicPartition, OffsetAndTimestamp] = consumer.offsetsForTimes(timestampsToSearch.asJava)
-    topicPartitions.flatMap { tp =>
-      Option(offsets.get(tp.asKafka))
-        .map(logEndOffset => tp -> logEndOffset.offset()).toList
-    }.toMap
-  }
-
-  def getGroupOffsets(groups: List[Offsets.ConsumerGroup]): Future[Map[Offsets.ConsumerGroup, Map[Offsets.TopicPartition, Long]]] = {
+  def getGroupOffsets(groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]] = {
+    val now = Instant.now().toEpochMilli
     Future.sequence {
       groups.map { group =>
-        kafkaFuture(adminClient.listConsumerGroupOffsets(group.id).partitionsToOffsetAndMetadata()).map { offsets =>
-          group -> offsets.asScala.map { case (tp, offsets) => tp.asOffsets -> offsets.offset() }.toMap
-        }
+        kafkaFuture(adminClient.listConsumerGroupOffsets(group.id).partitionsToOffsetAndMetadata())
+          .map { offsetMap =>
+            offsetMap.asScala.map { case (tp, offsets) =>
+              Domain.GroupTopicPartition(group, tp.asOffsets) -> Measurements.Single(offsets.offset(), now)
+            }.toList
+          }
       }
-    }.map(_.toMap)
+    }.map(_.flatten.toMap)
   }
 
   def close(): Unit = {

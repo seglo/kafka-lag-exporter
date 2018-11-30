@@ -1,38 +1,33 @@
 package com.lightbend.kafkalagexporter
 
-import java.time.Instant
-
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 object ConsumerGroupCollector {
-  import com.lightbend.kafkalagexporter.Offsets._
+  import com.lightbend.kafkalagexporter.Domain._
 
   sealed trait Message
   sealed trait Collect extends Message
   case object Collect extends Collect
-  case class NewOffsets(
-                         now: Long,
-                         latestOffsets: Map[Offsets.TopicPartition, Long],
-                         lastGroupOffsets: Map[Offsets.ConsumerGroup, Map[Offsets.TopicPartition, Long]])
-    extends Message
+  case class NewOffsets(latestOffsets: LatestOffsets, lastGroupOffsets: LastCommittedOffsets) extends Message
 
   def init(appConfig: AppConfig,
            clientCreator: () => KafkaClientContract,
            reporter: ActorRef[LagReporter.Message]): Behavior[ConsumerGroupCollector.Message] = Behaviors.setup { _ =>
-    val lastCommittedOffsets = Offsets.LastCommittedOffsets()
-    val latestOffsets = Offsets.LatestOffsets()
+    val lastCommittedOffsets = Domain.LastCommittedOffsets()
+    val latestOffsets = Domain.LatestOffsets()
 
     collector(appConfig, clientCreator, latestOffsets, lastCommittedOffsets, reporter)
   }
 
   def collector(appConfig: AppConfig,
                 clientCreator: () => KafkaClientContract,
-                latestOffsets: Offsets.LatestOffsets,
-                lastCommittedOffsets: Offsets.LastCommittedOffsets,
+                latestOffsets: Domain.LatestOffsets,
+                lastGroupOffsets: Domain.LastCommittedOffsets,
                 reporter: ActorRef[LagReporter.Message]): Behavior[Message] = Behaviors.receive {
 
     case (context, _: Collect) =>
@@ -41,14 +36,13 @@ object ConsumerGroupCollector {
       val client = clientCreator()
 
       def getLatestAndGroupOffsets(groups: List[ConsumerGroup]): Future[NewOffsets] = {
-        val now = Instant.now().toEpochMilli
         val groupOffsetsF = client.getGroupOffsets(groups)
         val latestOffsetsF = client.getLatestOffsets(groups)
 
         for {
           groupOffsets <- groupOffsetsF
           latestOffsets <- latestOffsetsF
-        } yield NewOffsets(now, latestOffsets, groupOffsets)
+        } yield NewOffsets(latestOffsets, groupOffsets)
       }
 
       val f = for {
@@ -60,43 +54,41 @@ object ConsumerGroupCollector {
         case Success(newOffsets) =>
           client.close()
           context.self ! newOffsets
-        case Failure(ex)         =>
+        case Failure(ex) =>
           println(s"An error occurred while retrieving offsets: $ex")
           throw ex
       }(ec)
 
       Behaviors.same
     case (context, newOffsets: NewOffsets) =>
-      val updatedLastCommittedOffsets: Map[GroupTopicPartition, Measurement] = for {
-        (consumerGroup, offsetsMap) <- newOffsets.lastGroupOffsets
-        (topicPartition, offset) <- offsetsMap
-      } yield {
-        val gtp = GroupTopicPartition(consumerGroup, topicPartition)
-        val newMeasurement = Offsets.Single(offset, newOffsets.now)
-        gtp -> lastCommittedOffsets
-          .get(gtp)
-          .map(measurement => measurement.addMeasurement(newMeasurement))
-          .getOrElse(newMeasurement)
-      }
+      val updatedLastCommittedOffsets = mergeLastGroupOffsets(lastGroupOffsets, newOffsets)
 
-      for((tp, offset) <- newOffsets.latestOffsets)
-        reporter ! LagReporter.LatestOffsetMetric(tp, offset)
+      for((tp, measurement) <- newOffsets.latestOffsets)
+        reporter ! LagReporter.LatestOffsetMetric(tp, measurement.offset)
 
       for {
-        (gtp, measurement: Double) <- updatedLastCommittedOffsets withFilter {
-          case (_, _: Double) => true
-          case _ => false
-        }
+        (gtp, measurement: Measurements.Double) <- updatedLastCommittedOffsets
         member <- gtp.group.members.find(_.partitions.contains(gtp.topicPartition))
-        latestOffset: Long = newOffsets.latestOffsets.getOrElse(gtp.topicPartition, 0)
+        latestOffset: Measurements.Single <- newOffsets.latestOffsets.get(gtp.topicPartition)
       } {
         reporter ! LagReporter.LastGroupOffsetMetric(gtp, member, measurement.b.offset)
-        reporter ! LagReporter.OffsetLagMetric(gtp, member, measurement.offsetLag(latestOffset))
-        reporter ! LagReporter.TimeLagMetric(gtp, member, measurement.lag(newOffsets.now, latestOffset))
+        reporter ! LagReporter.OffsetLagMetric(gtp, member, measurement.offsetLag(latestOffset.offset))
+        reporter ! LagReporter.TimeLagMetric(gtp, member, measurement.lag(latestOffset.offset))
       }
 
       context.scheduleOnce(appConfig.pollInterval, context.self, Collect)
 
       collector(appConfig, clientCreator, newOffsets.latestOffsets, updatedLastCommittedOffsets, reporter)
+  }
+
+  private def mergeLastGroupOffsets(lastGroupOffsets: LastCommittedOffsets, newOffsets: NewOffsets): Map[GroupTopicPartition, Measurements.Measurement] = {
+    for {
+      (groupTopicPartition, newMeasurement: Measurements.Single) <- newOffsets.lastGroupOffsets
+    } yield {
+      groupTopicPartition -> lastGroupOffsets
+        .get(groupTopicPartition)
+        .map(measurement => measurement.addMeasurement(newMeasurement))
+        .getOrElse(newMeasurement)
+    }
   }
 }
