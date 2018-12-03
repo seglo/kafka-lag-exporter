@@ -1,14 +1,13 @@
 package com.lightbend.kafkalagexporter
 
 import java.time.Instant
-import java.util
 import java.util.Properties
 
 import com.lightbend.kafkalagexporter.Domain.Measurements
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.admin.{AdminClient, ConsumerGroupDescription}
-import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndTimestamp}
+import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.{KafkaFuture, TopicPartition => KafkaTopicPartition}
 
@@ -58,7 +57,7 @@ object KafkaClient {
 
   // extension methods to convert between Offsets.TopicPartition and org.apache.kafka.common.TopicPartition
   private implicit class OffsetsTopicPartitionOps(ktp: KafkaTopicPartition) {
-    def asOffsets: Domain.TopicPartition = Domain.TopicPartition(ktp.topic(), ktp.partition())
+    def asDomain: Domain.TopicPartition = Domain.TopicPartition(ktp.topic(), ktp.partition())
   }
 
   private implicit class KafkaTopicPartitionOps(tp: Domain.TopicPartition) {
@@ -87,7 +86,7 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String)
         .assignment()
         .topicPartitions()
         .asScala
-        .map(_.asOffsets)
+        .map(_.asDomain)
         .toSet
       Domain.ConsumerGroupMember(member.clientId(), member.consumerId(), member.host(), partitions)
     }.toList
@@ -116,7 +115,7 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String)
         kafkaFuture(adminClient.listConsumerGroupOffsets(group.id).partitionsToOffsetAndMetadata())
           .map { offsetMap =>
             offsetMap.asScala.map { case (tp, offsets) =>
-              Domain.GroupTopicPartition(group, tp.asOffsets) -> Measurements.Single(offsets.offset(), now)
+              Domain.GroupTopicPartition(group, tp.asDomain) -> Measurements.Single(offsets.offset(), now)
             }.toList
           }
       }

@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
@@ -19,7 +19,6 @@ spec:
         app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      serviceAccountName: {{ include "kafka-lag-exporter.name" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -33,6 +32,8 @@ spec:
               value: "{{ .Values.pollIntervalSeconds }}"
             - name: KAFKA_LAG_EXPORTER_CLIENT_GROUP_ID
               value: "{{ .Values.clientGroupId }}"
+            - name: KAFKA_LAG_EXPORTER_LOG_LEVEL
+              value: "{{ .Values.logLevel }}"
           ports:
             - name: http
               containerPort: {{ .Values.port }}

@@ -20,6 +20,8 @@ object MainApp extends App {
 
   val main: Behavior[NotUsed] =
     Behaviors.setup { context =>
+      context.log.info("Starting Kafka Lag Exporter with configuration: \n{}", appConfig)
+
       val reporter: ActorRef[LagReporter.Message] = context.spawn(LagReporter.init(appConfig, endpointCreator), "lag-reporter")
       val collector: ActorRef[ConsumerGroupCollector.Message] = context.spawn(ConsumerGroupCollector.init(appConfig, clientCreator, reporter), "consumer-group-collector")
 

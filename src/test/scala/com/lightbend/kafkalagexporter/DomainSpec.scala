@@ -15,7 +15,7 @@ class DomainSpec extends FlatSpec with Matchers {
 
     val latestOffset = 300L
 
-    val lag = measurement.lag(latestOffset)
+    val lag = measurement.timeLag(latestOffset)
 
     lag.toMillis shouldBe 1000 // 1s
   }

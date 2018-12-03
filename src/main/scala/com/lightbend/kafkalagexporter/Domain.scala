@@ -27,7 +27,7 @@ object Domain {
         }
       }
 
-      def lag(lastOffset: Long): FiniteDuration = {
+      def timeLag(lastOffset: Long): FiniteDuration = {
         val lagMs =
           if (lastOffset <= b.offset || b.offset - a.offset == 0) 0
           else {
