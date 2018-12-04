@@ -4,7 +4,7 @@ port: 8000
 pollIntervalSeconds: 5
 clientGroupId: "kafkalagexporter"
 logLevel: INFO
-
+kafkaLogLevel: INFO
 image:
   repository: lightbend/kafka-lag-exporter
   tag: 0.1.0

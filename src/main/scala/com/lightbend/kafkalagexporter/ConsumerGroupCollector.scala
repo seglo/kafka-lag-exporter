@@ -76,7 +76,7 @@ object ConsumerGroupCollector {
       Behaviors.stopped
   }
 
-  case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Long, timeLag: FiniteDuration)
+  private case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Long, timeLag: FiniteDuration)
 
   private def reportConsumerGroupMetrics(reporter: ActorRef[LagReporter.Message], newOffsets: NewOffsets, updatedLastCommittedOffsets: Map[GroupTopicPartition, Measurements.Measurement]) = {
     val groupLag = for {
@@ -97,10 +97,11 @@ object ConsumerGroupCollector {
     for {
       (group, values) <- groupLag.groupBy(_.gtp.group)
     } {
-      val maxLag = values.maxBy(_.offsetLag)
+      val maxOffsetLag = values.maxBy(_.offsetLag)
+      val maxTimeLag = values.maxBy(_.timeLag)
 
-      reporter ! LagReporter.MaxGroupOffsetLagMetric(group, maxLag.offsetLag)
-      reporter ! LagReporter.MaxGroupTimeLagMetric(group, maxLag.timeLag)
+      reporter ! LagReporter.MaxGroupOffsetLagMetric(group, maxOffsetLag.offsetLag)
+      reporter ! LagReporter.MaxGroupTimeLagMetric(group, maxTimeLag.timeLag)
     }
   }
 

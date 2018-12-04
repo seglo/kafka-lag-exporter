@@ -5,7 +5,7 @@ version := "0.1.0"
 scalaVersion := "2.12.7"
 
 val akkaVersion = "2.5.18"
-val prometheusJavaClientVersion = "0.5.0"
+val prometheusClientVersion = "0.5.0"
 
 libraryDependencies ++= Seq(
   "com.typesafe"      % "config"                    % "1.3.2",
@@ -13,10 +13,11 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed"         % akkaVersion,
   "com.typesafe.akka" %% "akka-slf4j"               % akkaVersion,
   "ch.qos.logback"    % "logback-classic"           % "1.2.3",
-  "io.prometheus"     % "simpleclient"              % prometheusJavaClientVersion,
-  "io.prometheus"     % "simpleclient_hotspot"      % prometheusJavaClientVersion,
-  "io.prometheus"     % "simpleclient_httpserver"   % prometheusJavaClientVersion,
-  "org.scalatest"     %% "scalatest"                % "3.0.5" % "test"
+  "io.prometheus"     % "simpleclient"              % prometheusClientVersion,
+  "io.prometheus"     % "simpleclient_hotspot"      % prometheusClientVersion,
+  "io.prometheus"     % "simpleclient_httpserver"   % prometheusClientVersion,
+  "org.scalatest"     %% "scalatest"                % "3.0.5"     % Test,
+  "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test
 )
 
 enablePlugins(JavaAppPackaging)
@@ -27,7 +28,7 @@ dockerUsername := Some("lightbend")
 // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
 dockerCommands := Seq(
   Cmd("FROM",           "centos:7"),
-  Cmd("RUN",            "yum -y install java-1.8.0-openjdk-headless gettext nmap-ncat openssl && yum clean all -y"),
+  Cmd("RUN",            "yum -y install java-1.8.0-openjdk-headless && yum clean all -y"),
   Cmd("RUN",            "useradd -r -m -u 1001 -g 0 kafkalagexporter"),
   Cmd("ADD",            "opt /opt"),
   Cmd("RUN",            "chgrp -R 0 /opt && chmod -R g=u /opt"),

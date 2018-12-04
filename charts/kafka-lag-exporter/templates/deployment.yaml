@@ -34,6 +34,8 @@ spec:
               value: "{{ .Values.clientGroupId }}"
             - name: KAFKA_LAG_EXPORTER_LOG_LEVEL
               value: "{{ .Values.logLevel }}"
+            - name: KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL
+              value: "{{ .Values.kafkaLogLevel }}"
           ports:
             - name: http
               containerPort: {{ .Values.port }}
