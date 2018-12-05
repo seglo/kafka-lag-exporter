@@ -1,5 +1,23 @@
 # Kafka Lag Exporter
 
+## Install with Helm
+
+Download or install the Helm Chart from a Chart Repository.  To see a full list of configuration options consult the 
+chart's `./charts/kafka-lag-exporter/values.yaml` file.
+
+An example deployment.
+
+```
+helm install ./charts/kafka-lag-exporter \
+  --name kafka-lag-exporter \
+  --namespace myproject \
+  --set image.pullPolicy=Always \
+  --set logLevel=DEBUG \
+  --set clusters\[0\].name=foobar \
+  --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap:9092 \
+  --debug
+```
+
 ## Release Process
 
 1. Upgrade version in `./build.sbt` and run `compile` and `test` targets.  A pre-compile task will automatically update
@@ -16,17 +34,14 @@ update `./build.sbt` file with the correct repository, or publish locally instea
 sbt docker:publish
 ```
 
-3. Test deploy the Helm Chart.  See `./charts/kafka-lag-exporter/values.yaml` for configuration options.  Ex)
+3. Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is 
+executed from.
 
 ```
-helm install ./kafka-lag-exporter \
-  --name kafka-lag-exporter \
-  --namespace lightbend \
-  --set bootstrapBrokers=my-cluster-kafka-bootstrap:9092 \
-  --set image.pullPolicy=Always \
-  --set logLevel=DEBUG \
-  --debug
+helm package ./charts/kafka-lag-exporter
 ```
+
+4. Upload the tarball to a Helm Chart Repository.
 
 ## Testing with local `docker-compose.yaml`
 

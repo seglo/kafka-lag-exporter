@@ -12,12 +12,12 @@ object Domain {
       def offsetLag(lastOffset: Long): Long
     }
 
-    case class Single(offset: Long, timestamp: Long) extends Measurement {
+    final case class Single(offset: Long, timestamp: Long) extends Measurement {
       def addMeasurement(b: Single): Double = Double(this, b)
       def offsetLag(lastOffset: Long): Long = lastOffset - offset
     }
 
-    case class Double(a: Single, b: Single) extends Measurement {
+    final case class Double(a: Single, b: Single) extends Measurement {
       def addMeasurement(c: Single): Double = Double(b, c)
 
       def offsetLag(lastOffset: Long): Long = {
@@ -51,11 +51,11 @@ object Domain {
 
   }
 
-  case class TopicPartition(topic: String, partition: Int)
-  case class GroupTopicPartition(group: ConsumerGroup, topicPartition: TopicPartition)
+  final case class TopicPartition(topic: String, partition: Int)
+  final case class GroupTopicPartition(group: ConsumerGroup, topicPartition: TopicPartition)
 
-  case class ConsumerGroup(id: String, isSimpleGroup: Boolean, state: String, members: List[ConsumerGroupMember])
-  case class ConsumerGroupMember(clientId: String, consumerId: String, host: String, partitions: Set[TopicPartition])
+  final case class ConsumerGroup(id: String, isSimpleGroup: Boolean, state: String, members: List[ConsumerGroupMember])
+  final case class ConsumerGroupMember(clientId: String, consumerId: String, host: String, partitions: Set[TopicPartition])
 
   type LastCommittedOffsets = Map[GroupTopicPartition, Measurement]
 

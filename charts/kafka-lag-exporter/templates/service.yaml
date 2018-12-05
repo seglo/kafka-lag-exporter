@@ -7,6 +7,10 @@ metadata:
     helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: "{{ .Values.service.port }}"
+    prometheus.io/scrape: "true"
 spec:
   type: {{ .Values.service.type }}
   ports:

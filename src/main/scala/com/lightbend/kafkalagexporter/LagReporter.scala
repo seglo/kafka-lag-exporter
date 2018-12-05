@@ -9,26 +9,27 @@ import scala.concurrent.duration.FiniteDuration
 object LagReporter {
   sealed trait Message
   sealed trait Stop extends Message
-  case object Stop extends Stop
+  final case object Stop extends Stop
 
-  case class LatestOffsetMetric(topicPartition: Domain.TopicPartition, offset: Long) extends Message
+  final case class LatestOffsetMetric(clusterName: String, topicPartition: Domain.TopicPartition, offset: Long) extends Message
 
   sealed trait GroupMessage extends Message {
+    def clusterName: String
     def group: Domain.ConsumerGroup
   }
 
-  case class MaxGroupOffsetLagMetric(group: Domain.ConsumerGroup, lag: Long) extends GroupMessage
-  case class MaxGroupTimeLagMetric(group: Domain.ConsumerGroup, lag: FiniteDuration) extends GroupMessage
-
+  final case class MaxGroupOffsetLagMetric(clusterName: String, group: Domain.ConsumerGroup, lag: Long) extends GroupMessage
+  final case class MaxGroupTimeLagMetric(clusterName: String, group: Domain.ConsumerGroup, lag: FiniteDuration) extends GroupMessage
 
   sealed trait GroupPartitionMessage extends Message {
+    def clusterName: String
     def gtp: Domain.GroupTopicPartition
     def member: Domain.ConsumerGroupMember
   }
 
-  case class LastGroupOffsetMetric(gtp: Domain.GroupTopicPartition, member: Domain.ConsumerGroupMember, offset: Long) extends GroupPartitionMessage
-  case class OffsetLagMetric(gtp: Domain.GroupTopicPartition, member: Domain.ConsumerGroupMember, lag: Long) extends GroupPartitionMessage
-  case class TimeLagMetric(gtp: Domain.GroupTopicPartition, member: Domain.ConsumerGroupMember, lag: FiniteDuration) extends GroupPartitionMessage
+  final case class LastGroupOffsetMetric(clusterName: String, gtp: Domain.GroupTopicPartition, member: Domain.ConsumerGroupMember, offset: Long) extends GroupPartitionMessage
+  final case class OffsetLagMetric(clusterName: String, gtp: Domain.GroupTopicPartition, member: Domain.ConsumerGroupMember, lag: Long) extends GroupPartitionMessage
+  final case class TimeLagMetric(clusterName: String, gtp: Domain.GroupTopicPartition, member: Domain.ConsumerGroupMember, lag: FiniteDuration) extends GroupPartitionMessage
 
   def init(appConfig: AppConfig, endpointCreator: () => PrometheusMetricsEndpointContract): Behavior[Message] = Behaviors.setup { _ =>
     reporter(appConfig, endpointCreator())
@@ -38,6 +39,7 @@ object LagReporter {
     case (_, m: LagReporter.LatestOffsetMetric) =>
       endpoint.latestOffset
         .labels(
+          m.clusterName,
           m.topicPartition.topic,
           m.topicPartition.partition.toString)
         .set(m.offset)
@@ -74,7 +76,7 @@ object LagReporter {
         Behaviors.receiveSignal {
           case (_, PostStop) =>
             endpoint.stop()
-            context.log.info("Gracefully stopped Prometheus metrics endpoint http server")
+            context.log.info("Gracefully stopped Prometheus metrics endpoint HTTP server")
             Behaviors.same
         }
       }
@@ -82,6 +84,7 @@ object LagReporter {
 
   private def groupLabels(m: GroupMessage): List[String] = {
     List(
+      m.clusterName,
       m.group.id,
       m.group.state,
       m.group.isSimpleGroup.toString
@@ -90,6 +93,7 @@ object LagReporter {
 
   private def groupPartitionLabels(m: GroupPartitionMessage): List[String] = {
     List(
+      m.clusterName,
       m.gtp.group.id,
       m.gtp.topicPartition.topic,
       m.gtp.topicPartition.partition.toString,

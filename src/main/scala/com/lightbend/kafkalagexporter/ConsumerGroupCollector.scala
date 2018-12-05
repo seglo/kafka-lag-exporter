@@ -14,26 +14,30 @@ object ConsumerGroupCollector {
 
   sealed trait Message
   sealed trait Collect extends Message
-  case object Collect extends Collect
+  final case object Collect extends Collect
   sealed trait Stop extends Message
-  case object Stop extends Stop
-  case class NewOffsets(latestOffsets: LatestOffsets, lastGroupOffsets: LastCommittedOffsets) extends Message
+  final case object Stop extends Stop
+  final case class NewOffsets(latestOffsets: LatestOffsets, lastGroupOffsets: LastCommittedOffsets) extends Message
 
-  def init(appConfig: AppConfig,
-           clientCreator: () => KafkaClientContract,
+  final case class CollectorConfig(pollInterval: FiniteDuration, clusterName: String, clusterBootstrapBrokers: String)
+
+  final case class CollectorState(
+                                   latestOffsets: Domain.LatestOffsets = Domain.LatestOffsets(),
+                                   lastGroupOffsets: Domain.LastCommittedOffsets = Domain.LastCommittedOffsets(),
+                                   scheduledCollect: Cancellable = Cancellable.alreadyCancelled
+                                 )
+
+  def init(config: CollectorConfig,
+           clientCreator: String => KafkaClientContract,
            reporter: ActorRef[LagReporter.Message]): Behavior[ConsumerGroupCollector.Message] = Behaviors.setup { _ =>
-    val lastCommittedOffsets = Domain.LastCommittedOffsets()
-    val latestOffsets = Domain.LatestOffsets()
-
-    collector(appConfig, clientCreator(), latestOffsets, lastCommittedOffsets, reporter, Cancellable.alreadyCancelled)
+    val collectorState = CollectorState()
+    collector(config, clientCreator(config.clusterBootstrapBrokers), reporter, collectorState)
   }
 
-  def collector(appConfig: AppConfig,
+  def collector(config: CollectorConfig,
                 client: KafkaClientContract,
-                latestOffsets: Domain.LatestOffsets,
-                lastGroupOffsets: Domain.LastCommittedOffsets,
                 reporter: ActorRef[LagReporter.Message],
-                scheduledCollect: Cancellable): Behavior[Message] = Behaviors.receive {
+                state: CollectorState): Behavior[Message] = Behaviors.receive {
 
     case (context, _: Collect) =>
       implicit val ec: ExecutionContextExecutor = context.executionContext
@@ -63,31 +67,41 @@ object ConsumerGroupCollector {
 
       Behaviors.same
     case (context, newOffsets: NewOffsets) =>
-      val updatedLastCommittedOffsets = mergeLastGroupOffsets(lastGroupOffsets, newOffsets)
+      val updatedLastCommittedOffsets = mergeLastGroupOffsets(state.lastGroupOffsets, newOffsets)
 
-      reportLatestOffsetMetrics(reporter, newOffsets)
+      reportLatestOffsetMetrics(config, reporter, newOffsets)
+      reportConsumerGroupMetrics(config, reporter, newOffsets, updatedLastCommittedOffsets)
 
-      reportConsumerGroupMetrics(reporter, newOffsets, updatedLastCommittedOffsets)
+      context.log.debug("Polling in {}", config.pollInterval)
+      val scheduledCollect = context.scheduleOnce(config.pollInterval, context.self, Collect)
 
-      context.log.debug("Polling in {}", appConfig.pollInterval)
-      val scheduledCollect = context.scheduleOnce(appConfig.pollInterval, context.self, Collect)
+      val newState = state.copy(
+        latestOffsets = newOffsets.latestOffsets,
+        lastGroupOffsets = updatedLastCommittedOffsets,
+        scheduledCollect = scheduledCollect
+      )
 
-      collector(appConfig, client, newOffsets.latestOffsets, updatedLastCommittedOffsets, reporter, scheduledCollect)
+      collector(config, client, reporter, newState)
     case (context, _: Stop) =>
       Behaviors.stopped {
         Behaviors.receiveSignal {
           case (_, PostStop) =>
             client.close()
-            scheduledCollect.cancel()
-            context.log.info("Gracefully stopped polling and Kafka client")
+            state.scheduledCollect.cancel()
+            context.log.info("Gracefully stopped polling and Kafka client for cluster: {}", config.clusterName)
             Behaviors.same
         }
       }
   }
 
-  private case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Long, timeLag: FiniteDuration)
+  private final case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Long, timeLag: FiniteDuration)
 
-  private def reportConsumerGroupMetrics(reporter: ActorRef[LagReporter.Message], newOffsets: NewOffsets, updatedLastCommittedOffsets: Map[GroupTopicPartition, Measurements.Measurement]) = {
+  private def reportConsumerGroupMetrics(
+                                          config: CollectorConfig,
+                                          reporter: ActorRef[LagReporter.Message],
+                                          newOffsets: NewOffsets,
+                                          updatedLastCommittedOffsets: Map[GroupTopicPartition, Measurements.Measurement]
+                                        ): Unit = {
     val groupLag = for {
       (gtp, measurement: Measurements.Double) <- updatedLastCommittedOffsets
       member <- gtp.group.members.find(_.partitions.contains(gtp.topicPartition))
@@ -96,9 +110,9 @@ object ConsumerGroupCollector {
       val offsetLag = measurement.offsetLag(latestOffset.offset)
       val timeLag = measurement.timeLag(latestOffset.offset)
 
-      reporter ! LagReporter.LastGroupOffsetMetric(gtp, member, measurement.b.offset)
-      reporter ! LagReporter.OffsetLagMetric(gtp, member, measurement.offsetLag(latestOffset.offset))
-      reporter ! LagReporter.TimeLagMetric(gtp, member, measurement.timeLag(latestOffset.offset))
+      reporter ! LagReporter.LastGroupOffsetMetric(config.clusterName, gtp, member, measurement.b.offset)
+      reporter ! LagReporter.OffsetLagMetric(config.clusterName, gtp, member, measurement.offsetLag(latestOffset.offset))
+      reporter ! LagReporter.TimeLagMetric(config.clusterName, gtp, member, measurement.timeLag(latestOffset.offset))
 
       GroupPartitionLag(gtp, offsetLag, timeLag)
     }
@@ -109,17 +123,23 @@ object ConsumerGroupCollector {
       val maxOffsetLag = values.maxBy(_.offsetLag)
       val maxTimeLag = values.maxBy(_.timeLag)
 
-      reporter ! LagReporter.MaxGroupOffsetLagMetric(group, maxOffsetLag.offsetLag)
-      reporter ! LagReporter.MaxGroupTimeLagMetric(group, maxTimeLag.timeLag)
+      reporter ! LagReporter.MaxGroupOffsetLagMetric(config.clusterName, group, maxOffsetLag.offsetLag)
+      reporter ! LagReporter.MaxGroupTimeLagMetric(config.clusterName, group, maxTimeLag.timeLag)
     }
   }
 
-  private def reportLatestOffsetMetrics(reporter: ActorRef[LagReporter.Message], newOffsets: NewOffsets) = {
+  private def reportLatestOffsetMetrics(
+                                         config: CollectorConfig,
+                                         reporter: ActorRef[LagReporter.Message],
+                                         newOffsets: NewOffsets
+                                       ): Unit = {
     for ((tp, measurement) <- newOffsets.latestOffsets)
-      reporter ! LagReporter.LatestOffsetMetric(tp, measurement.offset)
+      reporter ! LagReporter.LatestOffsetMetric(config.clusterName, tp, measurement.offset)
   }
 
-  private def mergeLastGroupOffsets(lastGroupOffsets: LastCommittedOffsets, newOffsets: NewOffsets): Map[GroupTopicPartition, Measurements.Measurement] = {
+  private def mergeLastGroupOffsets(
+                                     lastGroupOffsets: LastCommittedOffsets,
+                                     newOffsets: NewOffsets): Map[GroupTopicPartition, Measurements.Measurement] = {
     for {
       (groupTopicPartition, newMeasurement: Measurements.Single) <- newOffsets.lastGroupOffsets
     } yield {

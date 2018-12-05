@@ -26,8 +26,6 @@ spec:
           env:
             - name: KAFKA_LAG_EXPORTER_PORT
               value: "{{ .Values.port }}"
-            - name: KAFKA_LAG_EXPORTER_BOOTSTRAP_BROKERS
-              value: "{{ .Values.bootstrapBrokers }}"
             - name: KAFKA_LAG_EXPORTER_POLL_INTERVAL_SECONDS
               value: "{{ .Values.pollIntervalSeconds }}"
             - name: KAFKA_LAG_EXPORTER_CLIENT_GROUP_ID
@@ -36,6 +34,12 @@ spec:
               value: "{{ .Values.logLevel }}"
             - name: KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL
               value: "{{ .Values.kafkaLogLevel }}"
+            {{- range $index, $cluster := .Values.clusters }}
+            - name: "KAFKA_LAG_EXPORTER_CLUSTERS.{{ $index }}.name"
+              value: "{{ $cluster.name }}"
+            - name: "KAFKA_LAG_EXPORTER_CLUSTERS.{{ $index }}.bootstrap-brokers"
+              value: "{{ $cluster.bootstrapBrokers }}"
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.port }}

@@ -1,4 +1,6 @@
-bootstrapBrokers: "my-cluster-kafka-bootstrap:9092"
+clusters:
+  - name: "default"
+    bootstrapBrokers: "my-cluster-kafka-bootstrap:9092"
 # Container port
 port: 8000
 pollIntervalSeconds: 5
