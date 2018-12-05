@@ -15,6 +15,7 @@ object PrometheusMetricsEndpoint {
     def lastGroupOffset: Gauge
     def offsetLag: Gauge
     def timeLag: Gauge
+    def stop(): Unit
   }
 }
 
@@ -52,4 +53,6 @@ class PrometheusMetricsEndpoint private(httpPort: Int) extends PrometheusMetrics
     .help("Group time lag of a partition")
     .labelNames("group", "topic", "partition", "state", "isSimpleConsumer", "memberHost", "consumerId", "clientId")
     .register()
+
+  def stop(): Unit = server.stop()
 }

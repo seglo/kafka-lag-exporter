@@ -8,7 +8,7 @@ kafkaLogLevel: INFO
 image:
   repository: lightbend/kafka-lag-exporter
   tag: 0.1.0
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 service:
   type: ClusterIP
   port: 80

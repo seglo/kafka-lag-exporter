@@ -1,5 +1,6 @@
 package com.lightbend.kafkalagexporter
 
+import akka.actor.Cancellable
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
 import com.lightbend.kafkalagexporter.Domain._
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
@@ -31,7 +32,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers {
     val latestOffsets = Domain.LatestOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100))
     val lastCommittedOffsets = Domain.LastCommittedOffsets() + (gtpSingleMember -> Measurements.Single(offset = 90, timestamp = 100))
 
-    val behavior = ConsumerGroupCollector.collector(appConfig, client, latestOffsets, lastCommittedOffsets, reporter.ref)
+    val behavior = ConsumerGroupCollector.collector(appConfig, client, latestOffsets, lastCommittedOffsets, reporter.ref, Cancellable.alreadyCancelled)
     val testKit = BehaviorTestKit(behavior)
 
     val newLatestOffsets = Domain.LatestOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200))
@@ -80,7 +81,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers {
       gtp2 -> Measurements.Single(offset = 90, timestamp = 100),
     )
 
-    val behavior = ConsumerGroupCollector.collector(appConfig, client, latestOffsets, lastCommittedOffsets, reporter.ref)
+    val behavior = ConsumerGroupCollector.collector(appConfig, client, latestOffsets, lastCommittedOffsets, reporter.ref, Cancellable.alreadyCancelled)
     val testKit = BehaviorTestKit(behavior)
 
     val newLatestOffsets = Domain.LatestOffsets() ++ List(

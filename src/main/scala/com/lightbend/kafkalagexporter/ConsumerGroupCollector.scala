@@ -1,7 +1,8 @@
 package com.lightbend.kafkalagexporter
 
+import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 
 import scala.concurrent.duration.FiniteDuration
@@ -24,14 +25,15 @@ object ConsumerGroupCollector {
     val lastCommittedOffsets = Domain.LastCommittedOffsets()
     val latestOffsets = Domain.LatestOffsets()
 
-    collector(appConfig, clientCreator(), latestOffsets, lastCommittedOffsets, reporter)
+    collector(appConfig, clientCreator(), latestOffsets, lastCommittedOffsets, reporter, Cancellable.alreadyCancelled)
   }
 
   def collector(appConfig: AppConfig,
                 client: KafkaClientContract,
                 latestOffsets: Domain.LatestOffsets,
                 lastGroupOffsets: Domain.LastCommittedOffsets,
-                reporter: ActorRef[LagReporter.Message]): Behavior[Message] = Behaviors.receive {
+                reporter: ActorRef[LagReporter.Message],
+                scheduledCollect: Cancellable): Behavior[Message] = Behaviors.receive {
 
     case (context, _: Collect) =>
       implicit val ec: ExecutionContextExecutor = context.executionContext
@@ -56,7 +58,7 @@ object ConsumerGroupCollector {
           context.self ! newOffsets
         case Failure(ex) =>
           context.log.error(ex, "An error occurred while retrieving offsets")
-          context.scheduleOnce(appConfig.pollInterval, context.self, Collect)
+          context.self ! Stop
       }(ec)
 
       Behaviors.same
@@ -68,12 +70,19 @@ object ConsumerGroupCollector {
       reportConsumerGroupMetrics(reporter, newOffsets, updatedLastCommittedOffsets)
 
       context.log.debug("Polling in {}", appConfig.pollInterval)
-      context.scheduleOnce(appConfig.pollInterval, context.self, Collect)
+      val scheduledCollect = context.scheduleOnce(appConfig.pollInterval, context.self, Collect)
 
-      collector(appConfig, client, newOffsets.latestOffsets, updatedLastCommittedOffsets, reporter)
-    case (_, _: Stop) =>
-      client.close()
-      Behaviors.stopped
+      collector(appConfig, client, newOffsets.latestOffsets, updatedLastCommittedOffsets, reporter, scheduledCollect)
+    case (context, _: Stop) =>
+      Behaviors.stopped {
+        Behaviors.receiveSignal {
+          case (_, PostStop) =>
+            client.close()
+            scheduledCollect.cancel()
+            context.log.info("Gracefully stopped polling and Kafka client")
+            Behaviors.same
+        }
+      }
   }
 
   private case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Long, timeLag: FiniteDuration)
