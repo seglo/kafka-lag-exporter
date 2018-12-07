@@ -6,16 +6,19 @@ scalaVersion := "2.12.7"
 
 val akkaVersion = "2.5.18"
 val prometheusClientVersion = "0.5.0"
+val fabric8Version = "4.1.0"
 
 libraryDependencies ++= Seq(
-  "com.typesafe"      % "config"                    % "1.3.2",
+  "com.typesafe"      %  "config"                   % "1.3.2",
   "org.apache.kafka"  %% "kafka"                    % "2.1.0",
   "com.typesafe.akka" %% "akka-actor-typed"         % akkaVersion,
   "com.typesafe.akka" %% "akka-slf4j"               % akkaVersion,
-  "ch.qos.logback"    % "logback-classic"           % "1.2.3",
-  "io.prometheus"     % "simpleclient"              % prometheusClientVersion,
-  "io.prometheus"     % "simpleclient_hotspot"      % prometheusClientVersion,
-  "io.prometheus"     % "simpleclient_httpserver"   % prometheusClientVersion,
+  "ch.qos.logback"    %  "logback-classic"          % "1.2.3",
+  "io.prometheus"     %  "simpleclient"             % prometheusClientVersion,
+  "io.prometheus"     %  "simpleclient_hotspot"     % prometheusClientVersion,
+  "io.prometheus"     %  "simpleclient_httpserver"  % prometheusClientVersion,
+  "io.fabric8"        %  "kubernetes-model"         % fabric8Version,
+  "io.fabric8"        %  "kubernetes-client"        % fabric8Version,
   "org.scalatest"     %% "scalatest"                % "3.0.5"     % Test,
   "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test
 )
