@@ -1,12 +1,27 @@
-clusters:
-  - name: "default"
-    bootstrapBrokers: "my-cluster-kafka-bootstrap:9092"
+## Statically define 1 or more cluster
+clusters: {}
+## Ex)
+# clusters:
+#  - name: "default"
+#    bootstrapBrokers: "my-cluster-kafka-bootstrap:9092"
 # Container port
+## The port for the Prometheus HTTP health endpoint to listen on
 port: 8000
+## The interval between refreshing metrics
 pollIntervalSeconds: 5
+## The Consumer Group `group.id` to use when connecting to Kafka
 clientGroupId: "kafkalagexporter"
+## The log level of the ROOT logger
 logLevel: INFO
+## The log level of `org.apache.kafka` logger
 kafkaLogLevel: INFO
+## Watchers will automatically discover and forget Kafka clusters
+watchers:
+  ## The Strimzi Cluster Watcher automatically watches for `kafka.strimzi.io` group, `Kafka` kind resources and will
+  ## configure the Kafka Lag Exporter appropriately.
+  strimzi: false
+
+## You probably won't need to change anything below this line.
 image:
   repository: lightbend/kafka-lag-exporter
   tag: 0.1.0

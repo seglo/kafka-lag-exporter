@@ -83,11 +83,11 @@ object ConsumerGroupCollector {
 
       collector(config, client, reporter, newState)
     case (context, _: Stop) =>
+      state.scheduledCollect.cancel()
       Behaviors.stopped {
         Behaviors.receiveSignal {
           case (_, PostStop) =>
             client.close()
-            state.scheduledCollect.cancel()
             context.log.info("Gracefully stopped polling and Kafka client for cluster: {}", config.clusterName)
             Behaviors.same
         }

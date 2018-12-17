@@ -19,24 +19,32 @@ object AppConfig {
         clusterConfig.getString("bootstrap-brokers")
       )
     }
-    AppConfig(pollInterval, port, clientGroupId, clusters)
+    val strimziWatcher = config.getString("watchers.strimzi").toBoolean
+    AppConfig(pollInterval, port, clientGroupId, clusters, strimziWatcher)
   }
 }
 final case class Cluster(name: String, bootstrapBrokers: String)
-final case class AppConfig(pollInterval: FiniteDuration, port: Int, clientGroupId: String, clusters: List[Cluster]) {
+final case class AppConfig(pollInterval: FiniteDuration, port: Int, clientGroupId: String, clusters: List[Cluster],
+                           strimziWatcher: Boolean) {
   override def toString(): String = {
-    val clusterString = clusters.map { cluster =>
-      s"""
-         |  Cluster name: ${cluster.name}
-         |  Cluster Kafka bootstrap brokers: ${cluster.bootstrapBrokers}
-       """.stripMargin
-    }.mkString("\n")
+    val clusterString =
+      if (clusters.isEmpty)
+        "  (none)"
+      else
+        clusters.map { cluster =>
+          s"""
+             |  Cluster name: ${cluster.name}
+             |  Cluster Kafka bootstrap brokers: ${cluster.bootstrapBrokers}
+           """.stripMargin
+        }.mkString("\n")
     s"""
        |Poll interval: $pollInterval
        |Prometheus metrics endpoint port: $port
        |Admin client consumer group id: $clientGroupId
-       |Clusters:
+       |Statically defined Clusters:
        |$clusterString
+       |Watchers:
+       |  Strimzi: $strimziWatcher
      """.stripMargin
   }
 }
