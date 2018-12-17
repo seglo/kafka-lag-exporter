@@ -10,10 +10,10 @@ We can calculate a reasonable approximation of consumer lag in seconds by applyi
 predict the time that a consumer will reach the latest partition offset available based on previously measured 
 consumer group consumed offsets for the same partition.  
 
-Each poll interval we associate all the latest consumed offsets with current system time (wall clock).  After at least 
-two measurements of we can extrapolate at what time an arbitrary offset in the future will be consumed.  As a refresher, 
-linear interpolation and extrapolation is just estimating a point on a slope and estimating its coordinates. [Read this
-post for more details.](https://math.tutorvista.com/calculus/extrapolation.html)
+For each poll interval we associate all the latest consumed offsets with current system time (wall clock).  After at 
+least two measurements are made we can extrapolate at what time an arbitrary offset in the future will be consumed.  As 
+a refresher, linear interpolation and extrapolation is just estimating a point on a slope and estimating its 
+coordinates. [Read this post for more details.](https://math.tutorvista.com/calculus/extrapolation.html)
 
 ## Metrics
 
@@ -82,14 +82,15 @@ kubectl logs {POD_ID} --namespace myproject -f
 
 ## Release Process
 
-1. Update the project version in `./build.sbt`
-2. Run `./scripts/release.sh` which will do the following:
+1. Run `./scripts/release.sh` which will do the following:
   * Run `compile` and `test` targets.  A pre-compile task will automatically update the version in the Helm Chart.
   * Publish docker image to DockerHub at `lightbend/kafka-lag-exporter`.  If not publishing to `lightbend` repository, 
      update `./build.sbt` file with the correct repository, or publish locally instead (`sbt docker:publishLocal`).
   * Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is 
      executed from.
-3. Upload the tarball to a Helm Chart Repository.
+2. Upload the tarball to a Helm Chart Repository.
+3. Tag the release, Ex) `git tag -a 0.1.0 -m "0.1.0" && git push origin --tags`.
+4. Update the project version in `./build.sbt`.
 
 ## Testing with local `docker-compose.yaml`
 

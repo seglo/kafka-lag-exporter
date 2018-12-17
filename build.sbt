@@ -1,7 +1,7 @@
 import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 
 name := "kafka-lag-exporter"
-version := "0.1.0"
+version := "0.2.0"
 scalaVersion := "2.12.7"
 
 val akkaVersion = "2.5.18"
