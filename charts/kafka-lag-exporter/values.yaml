@@ -4,9 +4,6 @@ clusters: {}
 # clusters:
 #  - name: "default"
 #    bootstrapBrokers: "my-cluster-kafka-bootstrap:9092"
-# Container port
-## The port for the Prometheus HTTP health endpoint to listen on
-port: 8000
 ## The interval between refreshing metrics
 pollIntervalSeconds: 5
 ## The Consumer Group `group.id` to use when connecting to Kafka
@@ -28,7 +25,7 @@ image:
   pullPolicy: IfNotPresent
 service:
   type: ClusterIP
-  port: 80
+  port: 8000
 resources: {}
   # limits:
   #  cpu: 100m
