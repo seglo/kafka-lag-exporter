@@ -37,6 +37,16 @@ Install the chart from the local file system with `helm install ./charts/kafka-l
 
 ### Examples
 
+Install with the [Strimzi](https://strimzi.io/) Kafka discovery feature. 
+See [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher) for more details.
+
+```
+helm install ./charts/kafka-lag-exporter \
+  --name kafka-lag-exporter \
+  --namespace myproject \
+  --set watchers.strimzi=true
+```
+
 Install with statically defined cluster at the CLI.
 
 ```
@@ -45,18 +55,6 @@ helm install ./charts/kafka-lag-exporter \
   --namespace myproject \
   --set clusters\[0\].name=my-cluster \
   --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap:9092
-```
-
-Enable the Strimzi Kafka discovery feature.
-
-```
-helm install ./charts/kafka-lag-exporter \
-  --name kafka-lag-exporter \
-  --namespace myproject \
-  --set image.pullPolicy=Always \
-  --set logLevel=DEBUG \
-  --set watchers.strimzi=true \
-  --debug
 ```
 
 Run a debug install (`DEBUG` logging, debug helm chart install, force docker pull policy to `Always`).
@@ -125,4 +123,12 @@ docker-compose up
 
 ## Strimzi Kafka Cluster Watcher
 
-Not ready, don't use yet.
+When you install the chart with `--set watchers.strimzi=true` then the exporter will create a new `ClusterRole` and
+`ClusterRoleBinding` to allow for the automatic discovery of [Strimzi](https://strimzi.io/) Kafka clusters.  The exporter will watch for 
+`Kafka` resources to be created or destroyed.  If the cluster already exists, or was created while the exporter was 
+online then it will automatically begin to collect consumer group metadata and export it.  If a `Kafka` resource is 
+destroyed then it will stop collecting consumer group metadata for that cluster.
+
+The exporter will name the cluster the same as `Kafka` resources `metadata.name` field. 
+
+
