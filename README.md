@@ -47,6 +47,18 @@ helm install ./charts/kafka-lag-exporter \
   --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap:9092
 ```
 
+Enable the Strimzi Kafka discovery feature.
+
+```
+helm install ./charts/kafka-lag-exporter \
+  --name kafka-lag-exporter \
+  --namespace myproject \
+  --set image.pullPolicy=Always \
+  --set logLevel=DEBUG \
+  --set watchers.strimzi=true \
+  --debug
+```
+
 Run a debug install (`DEBUG` logging, debug helm chart install, force docker pull policy to `Always`).
 
 ```
@@ -56,7 +68,7 @@ helm install ./charts/kafka-lag-exporter \
   --set image.pullPolicy=Always \
   --set logLevel=DEBUG \
   --set clusters\[0\].name=my-cluster \
-  --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap:9092 \
+  --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap.myproject:9092 \
   --debug
 ```
 

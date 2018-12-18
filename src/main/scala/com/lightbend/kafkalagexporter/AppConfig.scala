@@ -2,6 +2,7 @@ package com.lightbend.kafkalagexporter
 
 import java.util.concurrent.TimeUnit
 
+import com.lightbend.kafkalagexporter.AppConfig.Cluster
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.FiniteDuration
@@ -10,7 +11,7 @@ import scala.collection.JavaConverters._
 object AppConfig {
   def apply(config: Config): AppConfig = {
     val pollIntervalConfig = config.getDuration("poll-interval")
-    val pollInterval = FiniteDuration(pollIntervalConfig.toMillis, TimeUnit.MILLISECONDS)
+    val pollInterval = FiniteDuration(pollIntervalConfig.toMillis, TimeUnit.SECONDS)
     val port = config.getInt("port")
     val clientGroupId = config.getString("client-group-id")
     val clusters = config.getConfigList("clusters").asScala.toList.map { clusterConfig =>
@@ -22,8 +23,10 @@ object AppConfig {
     val strimziWatcher = config.getString("watchers.strimzi").toBoolean
     AppConfig(pollInterval, port, clientGroupId, clusters, strimziWatcher)
   }
+
+  final case class Cluster(name: String, bootstrapBrokers: String)
 }
-final case class Cluster(name: String, bootstrapBrokers: String)
+
 final case class AppConfig(pollInterval: FiniteDuration, port: Int, clientGroupId: String, clusters: List[Cluster],
                            strimziWatcher: Boolean) {
   override def toString(): String = {

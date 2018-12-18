@@ -1,7 +1,7 @@
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: {{ include "kafka-lag-exporter.fullname" . }}
+  name: {{ include "kafka-lag-exporter.fullname" . }}-deployment
   labels:
     app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
     helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
@@ -19,7 +19,7 @@ spec:
         app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      serviceAccountName: {{ include "kafka-lag-exporter.fullname" . }}
+      serviceAccountName: {{ include "kafka-lag-exporter.fullname" . }}-serviceaccount
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -28,7 +28,7 @@ spec:
             - name: KAFKA_LAG_EXPORTER_PORT
               value: "{{ .Values.port }}"
             - name: KAFKA_LAG_EXPORTER_POLL_INTERVAL_SECONDS
-              value: "{{ .Values.pollIntervalSeconds }}"
+              value: "{{ .Values.pollIntervalSeconds }} seconds"
             - name: KAFKA_LAG_EXPORTER_CLIENT_GROUP_ID
               value: "{{ .Values.clientGroupId }}"
             - name: KAFKA_LAG_EXPORTER_LOG_LEVEL

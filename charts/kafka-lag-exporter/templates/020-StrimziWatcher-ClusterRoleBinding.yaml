@@ -1,0 +1,21 @@
+{{- if .Values.watchers.strimzi -}}
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kafka-lag-exporter.fullname" . }}-strimziwatcher-clusterrolebinding
+  labels:
+    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
+    helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "kafka-lag-exporter.fullname" . }}-serviceaccount
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "kafka-lag-exporter.fullname" . }}-strimziwatcher-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+
+{{- end }}

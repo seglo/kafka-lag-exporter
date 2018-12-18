@@ -4,6 +4,7 @@ import java.util.concurrent.Executors
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
+import com.lightbend.kafkalagexporter.AppConfig.Cluster
 import com.lightbend.kafkalagexporter.watchers.Watcher
 import com.typesafe.config.ConfigFactory
 

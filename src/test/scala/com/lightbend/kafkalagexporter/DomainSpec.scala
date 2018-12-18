@@ -5,7 +5,7 @@ import org.scalatest._
 
 class DomainSpec extends FlatSpec with Matchers {
 
-  it should "calculate lag using by extrapolating offset" in {
+  it should "calculate lag in seconds by extrapolating to latest offset" in {
     val now = 1000000001000L
 
     val a = Measurements.Single(100L, now - 1000)

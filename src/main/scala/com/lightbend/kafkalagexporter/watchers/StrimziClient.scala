@@ -3,7 +3,7 @@ package com.lightbend.kafkalagexporter.watchers
 import java.lang
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.lightbend.kafkalagexporter.Cluster
+import com.lightbend.kafkalagexporter.AppConfig.Cluster
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.client.{Watcher => FWatcher, _}
 import io.fabric8.kubernetes.client.dsl.FilterWatchListMultiDeletable
@@ -54,7 +54,7 @@ class StrimziClient(clusterWatcher: Watcher.Events) extends Watcher.Client {
   private def resourceToCluster(resource: KafkaResource): Cluster = {
     val name = resource.getMetadata.getName
     val namespace = resource.getMetadata.getNamespace
-    val bootstrapBrokerHost: String = s"$name-kafka-bootstrap.$namespace:9094"
+    val bootstrapBrokerHost: String = s"$name-kafka-bootstrap.$namespace:9092"
     Cluster(resource.getMetadata.getName, bootstrapBrokerHost)
   }
 

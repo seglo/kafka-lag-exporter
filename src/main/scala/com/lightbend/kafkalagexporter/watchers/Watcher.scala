@@ -2,7 +2,8 @@ package com.lightbend.kafkalagexporter.watchers
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import com.lightbend.kafkalagexporter.{AppConfig, Cluster}
+import com.lightbend.kafkalagexporter.AppConfig.Cluster
+import com.lightbend.kafkalagexporter.AppConfig
 
 object Watcher {
 
@@ -25,9 +26,9 @@ object Watcher {
     // Add additional watchers here..
     val configMap = Seq(StrimziClusterWatcher.name -> appConfig.strimziWatcher)
     configMap.flatMap {
-      case (name, enabled) if name == StrimziClusterWatcher.name && enabled =>
-        context.log.info(s"Adding watcher: $name")
-        Seq(context.spawn(StrimziClusterWatcher.init(context.self), s"strimzi-cluster-watcher-$name"))
+      case (StrimziClusterWatcher.name, true) =>
+        context.log.info(s"Adding watcher: ${StrimziClusterWatcher.name}")
+        Seq(context.spawn(StrimziClusterWatcher.init(context.self), s"strimzi-cluster-watcher-${StrimziClusterWatcher.name}"))
       case _ => Seq()
     }
   }
