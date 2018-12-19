@@ -77,7 +77,7 @@ To view the Prometheus health endpoint from outside your Kubernetes cluster, use
 Ex)
 
 ```
-kubectl port-forward service/kafka-lag-exporter 8080:80 --namespace myproject
+kubectl port-forward service/kafka-lag-exporter-service 8080:8000 --namespace myproject
 ```
 
 ### Exporter logs
@@ -99,7 +99,7 @@ kubectl logs {POD_ID} --namespace myproject -f
   * Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is 
      executed from.
 2. Upload the tarball to a Helm Chart Repository.
-3. Tag the release, Ex) `git tag -a 0.1.0 -m "0.1.0" && git push origin --tags`.
+3. Tag the release, Ex) `git tag -a 0.X.0 -m "0.X.0" && git push origin --tags`.
 4. Update the project version in `./build.sbt`.
 
 ## Testing with local `docker-compose.yaml`
