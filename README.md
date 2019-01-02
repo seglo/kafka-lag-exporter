@@ -24,7 +24,7 @@ The following metrics are exposed:
 * `kafka_consumergroup_group_lag` - Lag in offsets for each partition (latest offset - last consumed offset).
 * `kafka_consumergroup_group_max_lag` - Max offset lag for each consumer group.
 * `kafka_consumergroup_group_offset` - Last consumed offset for each consumer group partition.
-* `kafka_consumergroup_latest_offset` - Latest offset available for each partition.
+* `kafka_partition_latest_offset` - Latest offset available for each partition.
 
 ## Configuration
 
@@ -92,15 +92,16 @@ kubectl logs {POD_ID} --namespace myproject -f
 
 ## Release Process
 
-1. Run `./scripts/release.sh` which will do the following:
+1. Update Change Log
+2. Run `./scripts/release.sh` which will do the following:
   * Run `compile` and `test` targets.  A pre-compile task will automatically update the version in the Helm Chart.
   * Publish docker image to DockerHub at `lightbend/kafka-lag-exporter`.  If not publishing to `lightbend` repository, 
      update `./build.sbt` file with the correct repository, or publish locally instead (`sbt docker:publishLocal`).
   * Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is 
      executed from.
-2. Upload the tarball to a Helm Chart Repository.
-3. Tag the release, Ex) `git tag -a 0.X.0 -m "0.X.0" && git push origin --tags`.
-4. Update the project version in `./build.sbt`.
+3. Upload the tarball to a Helm Chart Repository.
+4. Tag the release, Ex) `git tag -a 0.X.0 -m "0.X.0" && git push origin --tags`.
+5. Update the project version in `./build.sbt`.
 
 ## Testing with local `docker-compose.yaml`
 
@@ -130,5 +131,22 @@ online then it will automatically begin to collect consumer group metadata and e
 destroyed then it will stop collecting consumer group metadata for that cluster.
 
 The exporter will name the cluster the same as `Kafka` resources `metadata.name` field. 
+
+# Change log
+
+0.3.0
+
+* Bugfix: Parse `poll-interval` in seconds
+* Rename metric from `kafka_consumergroup_latest_offset` to `kafka_partition_latest_offset`
+* Use JVM 8 experimental cgroup memory awareness flags when running exporter in container
+* Use snakecase for metric label names
+
+0.2.0
+
+* Strimzi cluster auto discovery
+
+0.1.0
+
+* Initial release
 
 

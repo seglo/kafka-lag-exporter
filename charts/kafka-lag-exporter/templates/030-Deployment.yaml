@@ -1,7 +1,7 @@
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: {{ include "kafka-lag-exporter.fullname" . }}-deployment
+  name: {{ include "kafka-lag-exporter.fullname" . }}
   labels:
     app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
     helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}

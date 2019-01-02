@@ -11,7 +11,7 @@ import scala.collection.JavaConverters._
 object AppConfig {
   def apply(config: Config): AppConfig = {
     val pollIntervalConfig = config.getDuration("poll-interval")
-    val pollInterval = FiniteDuration(pollIntervalConfig.toMillis, TimeUnit.SECONDS)
+    val pollInterval = FiniteDuration(pollIntervalConfig.getSeconds, TimeUnit.SECONDS)
     val port = config.getInt("port")
     val clientGroupId = config.getString("client-group-id")
     val clusters = config.getConfigList("clusters").asScala.toList.map { clusterConfig =>

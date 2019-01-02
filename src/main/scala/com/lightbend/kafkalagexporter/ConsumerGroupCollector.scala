@@ -52,6 +52,8 @@ object ConsumerGroupCollector {
         } yield NewOffsets(latestOffsets, groupOffsets)
       }
 
+      context.log.debug("Collecting offsets")
+
       val f = for {
         groups <- client.getGroups()
         newOffsets <- getLatestAndGroupOffsets(groups)
@@ -68,6 +70,8 @@ object ConsumerGroupCollector {
       Behaviors.same
     case (context, newOffsets: NewOffsets) =>
       val updatedLastCommittedOffsets = mergeLastGroupOffsets(state.lastGroupOffsets, newOffsets)
+
+      context.log.debug("Reporting offsets")
 
       reportLatestOffsetMetrics(config, reporter, newOffsets)
       reportConsumerGroupMetrics(config, reporter, newOffsets, updatedLastCommittedOffsets)

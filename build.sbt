@@ -37,7 +37,7 @@ dockerCommands := Seq(
   Cmd("RUN",            "chgrp -R 0 /opt && chmod -R g=u /opt"),
   Cmd("WORKDIR",        "/opt/docker"),
   Cmd("USER",           "1001"),
-  ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter"),
+  ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap"),
 )
 
 lazy val updateHelmChartVersions = taskKey[Unit]("Update Helm Chart versions")
