@@ -132,6 +132,33 @@ destroyed then it will stop collecting consumer group metadata for that cluster.
 
 The exporter will name the cluster the same as `Kafka` resources `metadata.name` field. 
 
+## Grafana Dashboard
+
+A sample Grafana dashboard is provided in `./grafana/`.  It can be imported into a Grafana server that is configured
+with a Prometheus datasource that is reading the Kafka Lag Exporter's Prometheus health endpoint.
+
+The dashboard contains several high level user-configurable variables.
+
+* **Namespace** - The namespace of the Kafka cluster.  Only 1 namespace can be selected at a time.
+* **Cluster Name** - The name of the Kafka cluster.  Only 1 cluster name can be selected at a time.
+* **Consumer Group** - The name of the Consumer Group.  This is a multi-select list which allows you to view the dashboard
+for 1 to All consumer groups.
+
+This dashboard has several rows that are described below.
+
+* **All Consumer Group Lag** - A high level set of 4 panels.
+  * Max lag in seconds per group
+  * Lag in seconds per group partition
+  * Max lag in offsets per group
+  * Lag in offsets per group partition
+* **Consumer Group Lag Per Group** - One panel for each consumer group that shows a sum of lag for all partitions on the 
+left Y axis.  The right Y axis has the sum of latest and last consumed offsets for all group partitions.
+* **Kafka Lag Exporter JVM Metrics** - Critical JVM metrics for the Kafka Lag Exporter itself.
+
+Example snapshot of dashboard showing all Consumer Groups (2)
+
+![Kafka Lag Exporter Dashboard](./grafana/example_dashboard_snapshot.png)
+
 # Change log
 
 0.3.0
@@ -140,6 +167,7 @@ The exporter will name the cluster the same as `Kafka` resources `metadata.name`
 * Rename metric from `kafka_consumergroup_latest_offset` to `kafka_partition_latest_offset`
 * Use JVM 8 experimental cgroup memory awareness flags when running exporter in container
 * Use snakecase for metric label names
+* Sample Grafana Dashboard
 
 0.2.0
 
