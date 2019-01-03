@@ -33,7 +33,17 @@ file of the accompanying Helm Chart.
 
 ## Install with Helm
 
-Install the chart from the local file system with `helm install ./charts/kafka-lag-exporter`.
+You can install the chart from the local filesystem.
+
+```
+helm install ./charts/kafka-lag-exporter
+```
+Or from the lightbend Helm Chart repository.
+
+```
+helm repo add lightbend https://repo.lightbend.com/helm-charts
+helm install lightbend/kafka-lag-exporter
+```
 
 ### Examples
 
