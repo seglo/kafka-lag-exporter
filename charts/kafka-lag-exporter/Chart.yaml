@@ -1,7 +1,7 @@
 apiVersion: v1
-appVersion: "0.3.0"
+appVersion: "0.3.1"
 description: Kafka Consumer Lag Time Exporter
 name: kafka-lag-exporter
-version: 0.3.0
+version: 0.3.1
 maintainers:
 - name: Sean Glover
