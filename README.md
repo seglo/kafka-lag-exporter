@@ -171,6 +171,12 @@ Example snapshot of dashboard showing all Consumer Groups (2)
 
 # Change log
 
+0.3.1
+
+* Default partition to 0 (instead of omitting it from being reported) when a consumer group returns no offset for a 
+group partition
+* Use `akkaSource` for actor path in logging
+
 0.3.0
 
 * Bugfix: Parse `poll-interval` in seconds
