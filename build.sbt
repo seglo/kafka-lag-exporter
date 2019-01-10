@@ -20,7 +20,8 @@ libraryDependencies ++= Seq(
   "io.fabric8"        %  "kubernetes-model"         % fabric8Version,
   "io.fabric8"        %  "kubernetes-client"        % fabric8Version,
   "org.scalatest"     %% "scalatest"                % "3.0.5"     % Test,
-  "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test
+  "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
+  "org.mockito"       %% "mockito-scala"            % "1.0.8"     % Test
 )
 
 enablePlugins(JavaAppPackaging)

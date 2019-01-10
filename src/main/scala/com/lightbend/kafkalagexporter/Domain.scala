@@ -59,7 +59,7 @@ object Domain {
 
   type LastCommittedOffsets = Map[GroupTopicPartition, Measurement]
 
-  object LastCommittedOffsets {
+  object LastGroupOffsets {
     def apply(): LastCommittedOffsets = Map.empty[GroupTopicPartition, Measurement]
   }
 

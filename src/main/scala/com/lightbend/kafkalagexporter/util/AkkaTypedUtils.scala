@@ -4,7 +4,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.scaladsl.Behaviors.Receive
 
-package object AkkaTypedUtils {
+object AkkaTypedUtils {
   /**
     * Log typed message to DEBUG and passthrough to receive handler.
     */

@@ -1,13 +1,12 @@
 package com.lightbend.kafkalagexporter
 
-import java.time.Instant
 import java.util.Properties
 
 import com.lightbend.kafkalagexporter.Domain.Measurements
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.admin.{AdminClient, ConsumerGroupDescription}
-import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
+import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndMetadata}
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.{KafkaFuture, TopicPartition => KafkaTopicPartition}
 
@@ -20,8 +19,8 @@ object KafkaClient {
 
   trait KafkaClientContract {
     def getGroups(): Future[List[Domain.ConsumerGroup]]
-    def getLatestOffsets(groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]]
-    def getGroupOffsets(groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]]
+    def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]]
+    def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]]
     def close(): Unit
   }
 
@@ -93,31 +92,38 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String)
     Domain.ConsumerGroup(groupId, groupDescription.isSimpleConsumerGroup, groupDescription.state.toString, members)
   }
 
-  def getLatestOffsets(groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]] = {
+  def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]] = {
     val partitions = dedupeGroupPartitions(groups)
-    Future(getLogEndOffsets(partitions))
+    Future(getLogEndOffsets(now, partitions))
   }
 
   private def dedupeGroupPartitions(groups: List[Domain.ConsumerGroup]): Set[Domain.TopicPartition] = {
     groups.flatMap(_.members.flatMap(_.partitions)).toSet
   }
 
-  private def getLogEndOffsets(topicPartitions: Set[Domain.TopicPartition]): Map[Domain.TopicPartition, Measurements.Single] = {
-    val now = Instant.now().toEpochMilli
+  private def getLogEndOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Map[Domain.TopicPartition, Measurements.Single] = {
     val offsets = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava)
     topicPartitions.map(tp => tp -> Measurements.Single(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 
-  def getGroupOffsets(groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]] = {
-    val now = Instant.now().toEpochMilli
+  /**
+    * Get last committed Consumer Group offsets for all group topic partitions.  When a topic partition has no matched
+    * Consumer Group offset then a default offset of 0 is provided.
+    * @param groups A list of Consumer Groups to request offsets for.
+    * @return A series of Future's for Consumer Group offsets requests to Kafka.
+    */
+  def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]] = {
+    def actualGroupOffsets(group: Domain.ConsumerGroup, offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata]): List[(Domain.GroupTopicPartition, Measurements.Single)] = {
+      offsetMap.map { case (tp, offsets) =>
+        Domain.GroupTopicPartition(group, tp.asDomain) -> Measurements.Single(offsets.offset(), now)
+      }.toList
+
+    }
+
     Future.sequence {
       groups.map { group =>
         kafkaFuture(adminClient.listConsumerGroupOffsets(group.id).partitionsToOffsetAndMetadata())
-          .map { offsetMap =>
-            offsetMap.asScala.map { case (tp, offsets) =>
-              Domain.GroupTopicPartition(group, tp.asDomain) -> Measurements.Single(offsets.offset(), now)
-            }.toList
-          }
+          .map(offsetMap => actualGroupOffsets(group, offsetMap.asScala.toMap))
       }
     }.map(_.flatten.toMap)
   }

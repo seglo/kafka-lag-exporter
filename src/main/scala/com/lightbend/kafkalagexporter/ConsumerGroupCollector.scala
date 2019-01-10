@@ -1,8 +1,11 @@
 package com.lightbend.kafkalagexporter
 
+import java.time.{Clock, Instant}
+
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import com.lightbend.kafkalagexporter.Domain.LastGroupOffsets
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 
 import scala.concurrent.duration.FiniteDuration
@@ -17,13 +20,23 @@ object ConsumerGroupCollector {
   final case object Collect extends Collect
   sealed trait Stop extends Message
   final case object Stop extends Stop
-  final case class NewOffsets(latestOffsets: LatestOffsets, lastGroupOffsets: LastCommittedOffsets) extends Message
+  final case class NewOffsets(
+                               timestamp: Long,
+                               groups: List[ConsumerGroup],
+                               latestOffsets: LatestOffsets,
+                               lastGroupOffsets: LastCommittedOffsets
+                             ) extends Message
 
-  final case class CollectorConfig(pollInterval: FiniteDuration, clusterName: String, clusterBootstrapBrokers: String)
+  final case class CollectorConfig(
+                                    pollInterval: FiniteDuration,
+                                    clusterName: String,
+                                    clusterBootstrapBrokers: String,
+                                    clock: Clock = Clock.systemUTC()
+                                  )
 
   final case class CollectorState(
                                    latestOffsets: Domain.LatestOffsets = Domain.LatestOffsets(),
-                                   lastGroupOffsets: Domain.LastCommittedOffsets = Domain.LastCommittedOffsets(),
+                                   lastGroupOffsets: Domain.LastCommittedOffsets = Domain.LastGroupOffsets(),
                                    scheduledCollect: Cancellable = Cancellable.alreadyCancelled
                                  )
 
@@ -41,15 +54,16 @@ object ConsumerGroupCollector {
 
     case (context, _: Collect) =>
       implicit val ec: ExecutionContextExecutor = context.executionContext
+      val now = config.clock.instant().toEpochMilli
 
       def getLatestAndGroupOffsets(groups: List[ConsumerGroup]): Future[NewOffsets] = {
-        val groupOffsetsF = client.getGroupOffsets(groups)
-        val latestOffsetsF = client.getLatestOffsets(groups)
+        val groupOffsetsF = client.getGroupOffsets(now, groups)
+        val latestOffsetsF = client.getLatestOffsets(now, groups)
 
         for {
           groupOffsets <- groupOffsetsF
           latestOffsets <- latestOffsetsF
-        } yield NewOffsets(latestOffsets, groupOffsets)
+        } yield NewOffsets(now, groups, latestOffsets, groupOffsets)
       }
 
       context.log.debug("Collecting offsets")
@@ -69,19 +83,20 @@ object ConsumerGroupCollector {
 
       Behaviors.same
     case (context, newOffsets: NewOffsets) =>
-      val updatedLastCommittedOffsets = mergeLastGroupOffsets(state.lastGroupOffsets, newOffsets)
+      val newOffsetsWithDefaults = defaultMissingPartitions(newOffsets)
+      val mergedLastGroupOffsets = mergeLastGroupOffsets(state.lastGroupOffsets, newOffsetsWithDefaults)
 
       context.log.debug("Reporting offsets")
 
-      reportLatestOffsetMetrics(config, reporter, newOffsets)
-      reportConsumerGroupMetrics(config, reporter, newOffsets, updatedLastCommittedOffsets)
+      reportLatestOffsetMetrics(config, reporter, newOffsetsWithDefaults)
+      reportConsumerGroupMetrics(config, reporter, newOffsetsWithDefaults, mergedLastGroupOffsets)
 
       context.log.debug("Polling in {}", config.pollInterval)
       val scheduledCollect = context.scheduleOnce(config.pollInterval, context.self, Collect)
 
       val newState = state.copy(
-        latestOffsets = newOffsets.latestOffsets,
-        lastGroupOffsets = updatedLastCommittedOffsets,
+        latestOffsets = newOffsetsWithDefaults.latestOffsets,
+        lastGroupOffsets = mergedLastGroupOffsets,
         scheduledCollect = scheduledCollect
       )
 
@@ -141,9 +156,22 @@ object ConsumerGroupCollector {
       reporter ! LagReporter.LatestOffsetMetric(config.clusterName, tp, measurement.offset)
   }
 
+  private def defaultMissingPartitions(newOffsets: NewOffsets): NewOffsets = {
+    val lastGroupOffsetsWithDefaults = newOffsets.groups.flatMap { group =>
+      group.members.flatMap(_.partitions).map { tp =>
+        val gtp = Domain.GroupTopicPartition(group, tp)
+        // get the offset for this partition if provided or return 0
+        val measurement = newOffsets.lastGroupOffsets.getOrElse(gtp, Measurements.Single(0, newOffsets.timestamp))
+        gtp -> measurement
+      }
+    }.toMap
+
+    newOffsets.copy(lastGroupOffsets = lastGroupOffsetsWithDefaults)
+  }
+
   private def mergeLastGroupOffsets(
                                      lastGroupOffsets: LastCommittedOffsets,
-                                     newOffsets: NewOffsets): Map[GroupTopicPartition, Measurements.Measurement] = {
+                                     newOffsets: NewOffsets): LastCommittedOffsets = {
     for {
       (groupTopicPartition, newMeasurement: Measurements.Single) <- newOffsets.lastGroupOffsets
     } yield {
