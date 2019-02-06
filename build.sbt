@@ -43,7 +43,10 @@ lazy val sparkEventsExporter =
       libraryDependencies ++= Vector(
         Spark,
         SparkSql,
-        SparkSqlKafka
+        SparkSqlKafka,
+        ScalaTest,
+        AkkaTypedTestKit,
+        MockitoScala
       )
     )
 
