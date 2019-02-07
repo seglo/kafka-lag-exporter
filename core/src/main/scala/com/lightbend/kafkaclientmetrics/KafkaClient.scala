@@ -1,5 +1,6 @@
 package com.lightbend.kafkaclientmetrics
 
+import java.{lang, util}
 import java.util.Properties
 
 import com.lightbend.kafkaclientmetrics.Domain.Measurements
@@ -20,6 +21,7 @@ object KafkaClient {
   trait KafkaClientContract {
     def getGroups(): Future[List[Domain.ConsumerGroup]]
     def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]]
+    def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Future[Map[Domain.TopicPartition, Measurements.Single]]
     def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]]
     def close(): Unit
   }
@@ -68,8 +70,8 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String)
                          (implicit ec: ExecutionContext) extends KafkaClientContract {
   import KafkaClient._
 
-  private val adminClient = createAdminClient(bootstrapBrokers)
-  private val consumer = createConsumerClient(bootstrapBrokers, groupId)
+  private lazy val adminClient = createAdminClient(bootstrapBrokers)
+  private lazy val consumer = createConsumerClient(bootstrapBrokers, groupId)
 
   def getGroups(): Future[List[Domain.ConsumerGroup]] = {
     for {
@@ -94,15 +96,18 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String)
 
   def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]] = {
     val partitions = dedupeGroupPartitions(groups)
-    Future(getLogEndOffsets(now, partitions))
+    getLatestOffsets(now, partitions)
   }
 
   private def dedupeGroupPartitions(groups: List[Domain.ConsumerGroup]): Set[Domain.TopicPartition] = {
     groups.flatMap(_.members.flatMap(_.partitions)).toSet
   }
 
-  private def getLogEndOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Map[Domain.TopicPartition, Measurements.Single] = {
-    val offsets = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava)
+  /**
+    * Get latest offsets for a set of topic partitions.
+    */
+  def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Future[Map[Domain.TopicPartition, Measurements.Single]] = Future {
+    val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava)
     topicPartitions.map(tp => tp -> Measurements.Single(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 

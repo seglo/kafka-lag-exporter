@@ -1,10 +1,12 @@
 package com.lightbend.kafkaclientmetrics
-import com.lightbend.kafkaclientmetrics.Domain.Measurements.{Measurement, Single}
+
+import com.lightbend.kafkaclientmetrics.Domain.Measurements.Measurement
 
 object Domain {
   object Measurements {
 
     sealed trait Measurement {
+      def offset: Long
       def addMeasurement(single: Single): Double
       def offsetLag(lastOffset: Long): Long
     }
@@ -15,8 +17,8 @@ object Domain {
     }
 
     final case class Double(a: Single, b: Single) extends Measurement {
+      val offset: Long = b.offset
       def addMeasurement(c: Single): Double = Double(b, c)
-
       def offsetLag(lastOffset: Long): Long = {
         if (lastOffset <= 0 || b.offset > lastOffset) 0
         else {
@@ -54,15 +56,15 @@ object Domain {
   final case class ConsumerGroup(id: String, isSimpleGroup: Boolean, state: String, members: List[ConsumerGroupMember])
   final case class ConsumerGroupMember(clientId: String, consumerId: String, host: String, partitions: Set[TopicPartition])
 
-  type LastCommittedOffsets = Map[GroupTopicPartition, Measurement]
+  type GroupOffsets = Map[GroupTopicPartition, Measurement]
 
-  object LastGroupOffsets {
-    def apply(): LastCommittedOffsets = Map.empty[GroupTopicPartition, Measurement]
+  object GroupOffsets {
+    def apply(): GroupOffsets = Map.empty[GroupTopicPartition, Measurement]
   }
 
-  type LatestOffsets = Map[TopicPartition, Single]
+  type PartitionOffsets = Map[TopicPartition, Measurement]
 
-  object LatestOffsets {
-    def apply(): LatestOffsets = Map.empty[TopicPartition, Single]
+  object PartitionOffsets {
+    def apply(): PartitionOffsets = Map.empty[TopicPartition, Measurement]
   }
 }

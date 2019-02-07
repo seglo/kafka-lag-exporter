@@ -20,19 +20,21 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkaclient
     val reporter = TestInbox[PrometheusEndpoint.Message]()
 
     val state = ConsumerGroupCollector.CollectorState(
-      latestOffsets = Domain.LatestOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
-      lastGroupOffsets = Domain.LastGroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 90, timestamp = 100))
+      latestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
+      lastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 90, timestamp = 100))
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.LatestOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200))
-    val newLastGroupOffsets = Domain.LastGroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 180, timestamp = 200))
+    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200))
+    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 180, timestamp = 200))
 
     testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = 0, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
+
+    "report 6 metrics" in { metrics.length shouldBe 6 }
 
     "latest offset metric" in {
       metrics should contain(
@@ -65,12 +67,12 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkaclient
     val reporter = TestInbox[PrometheusEndpoint.Message]()
 
     val state = ConsumerGroupCollector.CollectorState(
-      latestOffsets = Domain.LatestOffsets() ++ List(
+      latestOffsets = Domain.PartitionOffsets() ++ List(
         topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100),
         topicPartition1 -> Measurements.Single(offset = 100, timestamp = 100),
         topicPartition2 -> Measurements.Single(offset = 100, timestamp = 100)
       ),
-      lastGroupOffsets = Domain.LastGroupOffsets() ++ List(
+      lastGroupOffsets = Domain.GroupOffsets() ++ List(
         gtp0 -> Measurements.Single(offset = 90, timestamp = 100),
         gtp1 -> Measurements.Single(offset = 90, timestamp = 100),
         gtp2 -> Measurements.Single(offset = 90, timestamp = 100),
@@ -80,12 +82,12 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkaclient
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.LatestOffsets() ++ List(
+    val newLatestOffsets = Domain.PartitionOffsets() ++ List(
       topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200),
       topicPartition1 -> Measurements.Single(offset = 200, timestamp = 200),
       topicPartition2 -> Measurements.Single(offset = 200, timestamp = 200)
     )
-    val newLastGroupOffsets = Domain.LastGroupOffsets() ++ List(
+    val newLastGroupOffsets = Domain.GroupOffsets() ++ List(
       gtp0 -> Measurements.Single(offset = 180, timestamp = 200),
       gtp1 -> Measurements.Single(offset = 100, timestamp = 200),
       gtp2 -> Measurements.Single(offset = 180, timestamp = 200),
@@ -108,15 +110,15 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkaclient
     val reporter = TestInbox[PrometheusEndpoint.Message]()
 
     val state = ConsumerGroupCollector.CollectorState(
-      latestOffsets = Domain.LatestOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
-      lastGroupOffsets = Domain.LastGroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 0, timestamp = 100))
+      latestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
+      lastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 0, timestamp = 100))
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.LatestOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200))
-    val newLastGroupOffsets = Domain.LastGroupOffsets() // <-- no new group offsets
+    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200))
+    val newLastGroupOffsets = Domain.GroupOffsets() // <-- no new group offsets
 
     testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = 0, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
 

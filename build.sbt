@@ -38,7 +38,7 @@ lazy val core =
 
 lazy val sparkEventsExporter =
   module("spark-events-exporter")
-    .dependsOn(core)
+    .dependsOn(core % "compile->compile;test->test")
     .settings(
       libraryDependencies ++= Vector(
         Spark,

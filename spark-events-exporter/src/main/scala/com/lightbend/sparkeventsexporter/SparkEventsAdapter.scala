@@ -7,21 +7,22 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
 import scala.util.Try
-
 import Domain._
+import com.lightbend.kafkaclientmetrics.Domain.{Measurements, TopicPartition}
 
-object QueryProgress {
+object SparkEventsAdapter {
   /**
     * Parse a `org.apache.spark.sql.streaming.StreamingQueryProgress` for relevant metric labels and values.
     */
   def parseProgress(qp: StreamingQueryProgress): Query = {
+    val sparkQueryId: String = qp.id.toString
+    val timestamp: Long = Instant.parse(qp.timestamp).toEpochMilli
+
     val sourceMetrics = qp.sources.toList.map { sp: SourceProgress =>
-      val endOffsets = parseEndOffsets(sp.endOffset)
+      val endOffsets = parseEndOffsets(sp.endOffset, timestamp)
       SourceMetrics(sp.inputRowsPerSecond, sp.processedRowsPerSecond, endOffsets)
     }
 
-    val sparkQueryId: String = qp.id.toString
-    val timestamp: Long = Instant.parse(qp.timestamp).toEpochMilli
 
     Query(sparkQueryId, timestamp, sourceMetrics)
   }
@@ -41,17 +42,18 @@ object QueryProgress {
     * }
     * ```
     */
-  def parseEndOffsets(endOffsetsJson: String): List[TopicPartitionOffset] = {
+  def parseEndOffsets(endOffsetsJson: String, timestamp: Long): Map[TopicPartition, Measurements.Single] = {
     val endOffsets = parseOpt(endOffsetsJson)
-    for {
+
+    val lastOffsets = for {
       JObject(topicJson) <- endOffsets.toList
       (topic, JObject(offsetsJson)) <- topicJson
       (partitionString, JInt(offsetBigInt)) <- offsetsJson
       offset = offsetBigInt.toLong
       partition <- Try(partitionString.toInt).toOption
-
-    } yield {
-      TopicPartitionOffset(topic, partition, offset)
     }
+      yield TopicPartition(topic, partition) -> Measurements.Single(offset, timestamp)
+
+    lastOffsets.toMap
   }
 }

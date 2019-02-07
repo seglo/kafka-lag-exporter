@@ -23,8 +23,8 @@ object ConsumerGroupCollector {
   final case class NewOffsets(
                                timestamp: Long,
                                groups: List[ConsumerGroup],
-                               latestOffsets: LatestOffsets,
-                               lastGroupOffsets: LastCommittedOffsets
+                               latestOffsets: PartitionOffsets,
+                               lastGroupOffsets: GroupOffsets
                              ) extends Message
 
   final case class CollectorConfig(
@@ -35,8 +35,8 @@ object ConsumerGroupCollector {
                                   )
 
   final case class CollectorState(
-                                   latestOffsets: Domain.LatestOffsets = Domain.LatestOffsets(),
-                                   lastGroupOffsets: Domain.LastCommittedOffsets = Domain.LastGroupOffsets(),
+                                   latestOffsets: Domain.PartitionOffsets = Domain.PartitionOffsets(),
+                                   lastGroupOffsets: Domain.GroupOffsets = Domain.GroupOffsets(),
                                    scheduledCollect: Cancellable = Cancellable.alreadyCancelled
                                  )
 
@@ -54,9 +54,9 @@ object ConsumerGroupCollector {
 
     case (context, _: Collect) =>
       implicit val ec: ExecutionContextExecutor = context.executionContext
-      val now = config.clock.instant().toEpochMilli
 
       def getLatestAndGroupOffsets(groups: List[ConsumerGroup]): Future[NewOffsets] = {
+        val now = config.clock.instant().toEpochMilli
         val groupOffsetsF = client.getGroupOffsets(now, groups)
         val latestOffsetsF = client.getLatestOffsets(now, groups)
 
@@ -124,14 +124,14 @@ object ConsumerGroupCollector {
     val groupLag = for {
       (gtp, measurement: Measurements.Double) <- updatedLastCommittedOffsets
       member <- gtp.group.members.find(_.partitions.contains(gtp.topicPartition))
-      latestOffset: Measurements.Single <- newOffsets.latestOffsets.get(gtp.topicPartition)
+      latestOffset <- newOffsets.latestOffsets.get(gtp.topicPartition)
     } yield {
       val offsetLag = measurement.offsetLag(latestOffset.offset)
       val timeLag = measurement.timeLag(latestOffset.offset)
 
       reporter ! Metrics.LastGroupOffsetMetric(config.clusterName, gtp, member, measurement.b.offset)
-      reporter ! Metrics.OffsetLagMetric(config.clusterName, gtp, member, measurement.offsetLag(latestOffset.offset))
-      reporter ! Metrics.TimeLagMetric(config.clusterName, gtp, member, measurement.timeLag(latestOffset.offset))
+      reporter ! Metrics.OffsetLagMetric(config.clusterName, gtp, member, offsetLag)
+      reporter ! Metrics.TimeLagMetric(config.clusterName, gtp, member, timeLag)
 
       GroupPartitionLag(gtp, offsetLag, timeLag)
     }
@@ -152,7 +152,7 @@ object ConsumerGroupCollector {
                                          reporter: ActorRef[PrometheusEndpoint.Message],
                                          newOffsets: NewOffsets
                                        ): Unit = {
-    for ((tp, measurement) <- newOffsets.latestOffsets)
+    for ((tp, measurement: Measurements.Single) <- newOffsets.latestOffsets)
       reporter ! Metrics.LatestOffsetMetric(config.clusterName, tp, measurement.offset)
   }
 
@@ -170,8 +170,8 @@ object ConsumerGroupCollector {
   }
 
   private def mergeLastGroupOffsets(
-                                     lastGroupOffsets: LastCommittedOffsets,
-                                     newOffsets: NewOffsets): LastCommittedOffsets = {
+                                     lastGroupOffsets: GroupOffsets,
+                                     newOffsets: NewOffsets): GroupOffsets = {
     for {
       (groupTopicPartition, newMeasurement: Measurements.Single) <- newOffsets.lastGroupOffsets
     } yield {
