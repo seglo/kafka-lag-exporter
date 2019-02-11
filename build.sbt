@@ -13,7 +13,7 @@ lazy val root =
     .aggregate(
       core,
       kafkaLagExporter,
-      sparkEventsExporter
+      sparkEventExporter
     )
 
 lazy val core =
@@ -36,8 +36,8 @@ lazy val core =
       )
     )
 
-lazy val sparkEventsExporter =
-  module("spark-events-exporter")
+lazy val sparkEventExporter =
+  module("spark-event-exporter")
     .dependsOn(core % "compile->compile;test->test")
     .settings(
       libraryDependencies ++= Vector(
@@ -89,7 +89,7 @@ lazy val kafkaLagExporter =
     )
 
 lazy val commonSettings = Seq(
-  version := "0.3.2",
+  organization := "com.lightbend.kafka",
   scalaVersion := Version.Scala,
   scalacOptions ++= Seq(
     "-encoding", "UTF-8",
