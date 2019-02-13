@@ -1,14 +1,13 @@
-package com.lightbend.kafka.sparkeventexporter
-
+package com.lightbend.kafka.sparkeventexporter.internal
 import java.time.Instant
 
+import com.lightbend.kafka.core.Domain.{Measurements, TopicPartition}
+import com.lightbend.kafka.sparkeventexporter.internal.Domain.{Query, SourceMetrics}
 import org.apache.spark.sql.streaming.{SourceProgress, StreamingQueryProgress}
-import org.json4s._
-import org.json4s.jackson.JsonMethods._
+import org.json4s.JsonAST.{JInt, JObject}
+import org.json4s.jackson.JsonMethods.parseOpt
 
 import scala.util.Try
-import Domain._
-import com.lightbend.kafka.core.Domain.{Measurements, TopicPartition}
 
 object SparkEventAdapter {
   /**

@@ -35,7 +35,7 @@ class PrometheusEndpoint private(httpPort: Int, metricsDefinitions: MetricDefini
 
   DefaultExports.initialize()
 
-  private val metrics: scala.collection.immutable.Map[Class[_], Gauge] = metricsDefinitions.map { case (key, defn) =>
+  private val metrics: Map[Class[_], Gauge] = metricsDefinitions.map { case (key, defn) =>
     println("evaluating map again")
     key -> Gauge.build()
       .name(defn.name)

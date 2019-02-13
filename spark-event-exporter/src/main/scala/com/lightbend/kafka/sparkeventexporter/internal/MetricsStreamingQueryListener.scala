@@ -1,4 +1,4 @@
-package com.lightbend.kafka.sparkeventexporter
+package com.lightbend.kafka.sparkeventexporter.internal
 
 import akka.actor.typed.ActorRef
 import org.apache.spark.sql.streaming.StreamingQueryListener
@@ -9,7 +9,7 @@ object MetricsStreamingQueryListener {
     new MetricsStreamingQueryListener(collector)
 }
 
-class MetricsStreamingQueryListener(collector: ActorRef[OffsetCollector.Message]) extends StreamingQueryListener() {
+final class MetricsStreamingQueryListener private[internal](collector: ActorRef[OffsetCollector.Message]) extends StreamingQueryListener() {
   override def onQueryStarted(event: QueryStartedEvent): Unit = ()
   override def onQueryTerminated(event: QueryTerminatedEvent): Unit = ()
   override def onQueryProgress(event: QueryProgressEvent): Unit = {

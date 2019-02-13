@@ -1,12 +1,11 @@
-package com.lightbend.kafka.sparkeventexporter
-
-import akka.actor.typed.{ActorRef, Behavior}
+package com.lightbend.kafka.sparkeventexporter.internal
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 import com.lightbend.kafka.core.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.core.{KafkaCluster, MetricsReporter, PrometheusEndpoint}
 import com.lightbend.kafka.core.PrometheusEndpoint.PrometheusMetricsEndpointContract
-import OffsetCollector.CollectorState
-import org.apache.spark.sql.SparkSession
+import com.lightbend.kafka.core.{KafkaCluster, MetricsReporter, PrometheusEndpoint}
+import com.lightbend.kafka.sparkeventexporter.Config
+import com.lightbend.kafka.sparkeventexporter.internal.OffsetCollector.CollectorState
 import org.apache.spark.sql.streaming.StreamingQueryListener
 
 object ExporterManager {
@@ -15,20 +14,19 @@ object ExporterManager {
   final case object Stop extends Stop
 
   def init(
-            appConfig: AppConfig,
+            config: Config,
             cluster: KafkaCluster,
             endpointCreator: () => PrometheusMetricsEndpointContract,
-            clientCreator: () => KafkaClientContract,
-            session: SparkSession): Behavior[Message] =
+            clientCreator: () => KafkaClientContract): Behavior[Message] =
     Behaviors.setup { context =>
-      context.log.info("Starting Spark Events Exporter with configuration: \n{}", appConfig)
+      context.log.info("Starting Spark Events Exporter with configuration: \n{}", config)
 
       val reporter: ActorRef[PrometheusEndpoint.Message] = context.spawn(MetricsReporter.init(endpointCreator), "lag-reporter")
-      val collectorState = CollectorState(appConfig.providedName, cluster)
+      val collectorState = CollectorState(config.providedName, cluster)
       val collector: ActorRef[OffsetCollector.Message] = context.spawn(OffsetCollector.init(collectorState, clientCreator, reporter), "offset-collector")
 
       val listener: StreamingQueryListener = MetricsStreamingQueryListener(collector)
-      session.streams.addListener(listener)
+      config.sparkSession.streams.addListener(listener)
 
       main(reporter, collector)
     }

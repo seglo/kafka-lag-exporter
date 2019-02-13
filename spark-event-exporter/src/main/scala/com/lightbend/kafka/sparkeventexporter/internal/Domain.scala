@@ -1,5 +1,4 @@
-package com.lightbend.kafka.sparkeventexporter
-
+package com.lightbend.kafka.sparkeventexporter.internal
 import com.lightbend.kafka.core.Domain.{Measurements, TopicPartition}
 
 object Domain {

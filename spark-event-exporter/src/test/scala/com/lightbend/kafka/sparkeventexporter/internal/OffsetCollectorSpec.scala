@@ -1,11 +1,11 @@
-package com.lightbend.kafka.sparkeventexporter
+package com.lightbend.kafka.sparkeventexporter.internal
 
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
 import com.lightbend.kafka.core
 import com.lightbend.kafka.core.Domain._
 import com.lightbend.kafka.core.KafkaClient.KafkaClientContract
 import com.lightbend.kafka.core.{KafkaCluster, PrometheusEndpoint}
-import Domain.SourceMetrics
+import com.lightbend.kafka.sparkeventexporter.internal.Domain.SourceMetrics
 import org.mockito.MockitoSugar
 import org.scalatest.{Matchers, _}
 
