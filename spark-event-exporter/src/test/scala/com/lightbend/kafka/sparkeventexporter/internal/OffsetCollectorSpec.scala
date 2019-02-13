@@ -1,15 +1,15 @@
 package com.lightbend.kafka.sparkeventexporter.internal
 
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
-import com.lightbend.kafka.core
-import com.lightbend.kafka.core.Domain._
-import com.lightbend.kafka.core.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.core.{KafkaCluster, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools
+import com.lightbend.kafka.kafkametricstools.Domain._
+import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
+import com.lightbend.kafka.kafkametricstools.{KafkaCluster, PrometheusEndpoint}
 import com.lightbend.kafka.sparkeventexporter.internal.Domain.SourceMetrics
 import org.mockito.MockitoSugar
 import org.scalatest.{Matchers, _}
 
-class OffsetCollectorSpec extends FreeSpec with Matchers with core.TestData with MockitoSugar {
+class OffsetCollectorSpec extends FreeSpec with Matchers with kafkametricstools.TestData with MockitoSugar {
   val client: KafkaClientContract = mock[KafkaClientContract]
   val sparkAppId = "my-spark-id-uuid"
 

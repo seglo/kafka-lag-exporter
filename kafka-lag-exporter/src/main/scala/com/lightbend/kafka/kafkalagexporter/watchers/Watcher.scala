@@ -2,7 +2,7 @@ package com.lightbend.kafka.kafkalagexporter.watchers
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import com.lightbend.kafka.core.KafkaCluster
+import com.lightbend.kafka.kafkametricstools.KafkaCluster
 import com.lightbend.kafka.kafkalagexporter.{AppConfig, KafkaClusterManager}
 
 object Watcher {

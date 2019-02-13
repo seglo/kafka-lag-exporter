@@ -1,8 +1,8 @@
-package com.lightbend.kafka.core
+package com.lightbend.kafka.kafkametricstools
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{Behavior, PostStop}
-import com.lightbend.kafka.core.PrometheusEndpoint.{Message, Metric, PrometheusMetricsEndpointContract, Stop}
+import com.lightbend.kafka.kafkametricstools.PrometheusEndpoint.{Message, Metric, PrometheusMetricsEndpointContract, Stop}
 
 object MetricsReporter {
   def init(endpointCreator: () => PrometheusMetricsEndpointContract): Behavior[Message] = Behaviors.setup { _ =>

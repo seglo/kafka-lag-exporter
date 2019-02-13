@@ -1,7 +1,7 @@
 package com.lightbend.kafka.kafkalagexporter
 
-import com.lightbend.kafka.core.Domain
-import com.lightbend.kafka.core.PrometheusEndpoint.{GaugeDefinition, Message, Metric, MetricDefinitions}
+import com.lightbend.kafka.kafkametricstools.Domain
+import com.lightbend.kafka.kafkametricstools.PrometheusEndpoint.{GaugeDefinition, Message, Metric, MetricDefinitions}
 
 object Metrics {
   final case class LatestOffsetMetric(clusterName: String, topicPartition: Domain.TopicPartition, value: Double)

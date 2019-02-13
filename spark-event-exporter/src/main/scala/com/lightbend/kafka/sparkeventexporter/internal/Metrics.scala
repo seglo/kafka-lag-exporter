@@ -1,6 +1,6 @@
 package com.lightbend.kafka.sparkeventexporter.internal
-import com.lightbend.kafka.core.Domain.TopicPartition
-import com.lightbend.kafka.core.PrometheusEndpoint.{GaugeDefinition, Message, Metric, MetricDefinitions}
+import com.lightbend.kafka.kafkametricstools.Domain.TopicPartition
+import com.lightbend.kafka.kafkametricstools.PrometheusEndpoint.{GaugeDefinition, Message, Metric, MetricDefinitions}
 
 object Metrics {
   sealed trait SparkOffsetMetric extends Message with Metric {

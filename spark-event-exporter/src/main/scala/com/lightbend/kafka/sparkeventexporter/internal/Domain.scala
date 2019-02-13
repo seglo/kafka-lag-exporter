@@ -1,5 +1,5 @@
 package com.lightbend.kafka.sparkeventexporter.internal
-import com.lightbend.kafka.core.Domain.{Measurements, TopicPartition}
+import com.lightbend.kafka.kafkametricstools.Domain.{Measurements, TopicPartition}
 
 object Domain {
   final case class SourceMetrics(

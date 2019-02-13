@@ -1,6 +1,6 @@
-package com.lightbend.kafka.core
+package com.lightbend.kafka.kafkametricstools
 
-import com.lightbend.kafka.core.Domain.{ConsumerGroup, ConsumerGroupMember, GroupTopicPartition, TopicPartition}
+import com.lightbend.kafka.kafkametricstools.Domain.{ConsumerGroup, ConsumerGroupMember, GroupTopicPartition, TopicPartition}
 
 trait TestData {
   val topicPartition0 = TopicPartition("test-topic", 0)

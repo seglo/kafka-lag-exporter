@@ -1,9 +1,9 @@
 package com.lightbend.kafka.sparkeventexporter.internal
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import com.lightbend.kafka.core.Domain.{Measurements, PartitionOffsets, TopicPartition}
-import com.lightbend.kafka.core.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.core.{KafkaCluster, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools.Domain.{Measurements, PartitionOffsets, TopicPartition}
+import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
+import com.lightbend.kafka.kafkametricstools.{KafkaCluster, PrometheusEndpoint}
 import com.lightbend.kafka.sparkeventexporter.internal.Domain.{Query, SourceMetrics}
 
 import scala.concurrent.ExecutionContextExecutor

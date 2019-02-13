@@ -5,15 +5,15 @@ import java.time.Clock
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import com.lightbend.kafka.core.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.core.{Domain, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
+import com.lightbend.kafka.kafkametricstools.{Domain, PrometheusEndpoint}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 object ConsumerGroupCollector {
-  import com.lightbend.kafka.core.Domain._
+  import com.lightbend.kafka.kafkametricstools.Domain._
 
   sealed trait Message
   sealed trait Collect extends Message

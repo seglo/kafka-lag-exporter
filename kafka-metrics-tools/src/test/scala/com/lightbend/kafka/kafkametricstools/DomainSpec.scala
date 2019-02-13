@@ -1,6 +1,6 @@
-package com.lightbend.kafka.core
+package com.lightbend.kafka.kafkametricstools
 
-import com.lightbend.kafka.core.Domain.Measurements
+import com.lightbend.kafka.kafkametricstools.Domain.Measurements
 import org.scalatest.{FlatSpec, Matchers}
 
 class DomainSpec extends FlatSpec with Matchers {

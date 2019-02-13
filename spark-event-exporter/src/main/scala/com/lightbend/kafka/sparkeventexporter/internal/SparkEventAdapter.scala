@@ -1,7 +1,7 @@
 package com.lightbend.kafka.sparkeventexporter.internal
 import java.time.Instant
 
-import com.lightbend.kafka.core.Domain.{Measurements, TopicPartition}
+import com.lightbend.kafka.kafkametricstools.Domain.{Measurements, TopicPartition}
 import com.lightbend.kafka.sparkeventexporter.internal.Domain.{Query, SourceMetrics}
 import org.apache.spark.sql.streaming.{SourceProgress, StreamingQueryProgress}
 import org.json4s.JsonAST.{JInt, JObject}

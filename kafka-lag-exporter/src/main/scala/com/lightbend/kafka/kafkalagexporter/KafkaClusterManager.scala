@@ -3,9 +3,9 @@ package com.lightbend.kafka.kafkalagexporter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import com.lightbend.kafka.kafkalagexporter.watchers.Watcher
-import com.lightbend.kafka.core.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.core.PrometheusEndpoint.PrometheusMetricsEndpointContract
-import com.lightbend.kafka.core.{KafkaCluster, MetricsReporter, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
+import com.lightbend.kafka.kafkametricstools.PrometheusEndpoint.PrometheusMetricsEndpointContract
+import com.lightbend.kafka.kafkametricstools.{KafkaCluster, MetricsReporter, PrometheusEndpoint}
 import com.lightbend.kafka.kafkalagexporter.watchers.Watcher
 
 object KafkaClusterManager {

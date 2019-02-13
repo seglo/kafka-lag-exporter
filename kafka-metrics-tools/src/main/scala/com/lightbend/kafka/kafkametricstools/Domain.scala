@@ -1,6 +1,6 @@
-package com.lightbend.kafka.core
+package com.lightbend.kafka.kafkametricstools
 
-import com.lightbend.kafka.core.Domain.Measurements.Measurement
+import com.lightbend.kafka.kafkametricstools.Domain.Measurements.Measurement
 
 object Domain {
   object Measurements {

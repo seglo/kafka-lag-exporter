@@ -3,7 +3,7 @@ package com.lightbend.kafka.kafkalagexporter.watchers
 import java.lang
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.lightbend.kafka.core.KafkaCluster
+import com.lightbend.kafka.kafkametricstools.KafkaCluster
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.client.{Watcher => FWatcher, _}
 import io.fabric8.kubernetes.client.dsl.FilterWatchListMultiDeletable

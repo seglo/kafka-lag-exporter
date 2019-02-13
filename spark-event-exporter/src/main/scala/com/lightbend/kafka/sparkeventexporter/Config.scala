@@ -5,7 +5,7 @@ import com.lightbend.kafka.sparkeventexporter.Config.KafkaCluster
 import org.apache.spark.sql.SparkSession
 
 object Config {
-  type KafkaCluster = com.lightbend.kafka.core.KafkaCluster
+  type KafkaCluster = com.lightbend.kafka.kafkametricstools.KafkaCluster
 }
 
 final case class Config(

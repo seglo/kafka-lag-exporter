@@ -3,7 +3,7 @@ package com.lightbend.kafka.kafkalagexporter
 import java.util.concurrent.Executors
 
 import akka.actor.typed.ActorSystem
-import com.lightbend.kafka.core.{KafkaClient, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools.{KafkaClient, PrometheusEndpoint}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._

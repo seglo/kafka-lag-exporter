@@ -3,16 +3,16 @@ package com.lightbend.kafka.kafkalagexporter
 import java.time.{Clock, Instant, ZoneId}
 
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
-import com.lightbend.kafka.core
-import com.lightbend.kafka.core.{Domain, PrometheusEndpoint}
-import com.lightbend.kafka.core.Domain._
-import com.lightbend.kafka.core.KafkaClient.KafkaClientContract
+import com.lightbend.kafka.kafkametricstools
+import com.lightbend.kafka.kafkametricstools.{Domain, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools.Domain._
+import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
 import org.mockito.MockitoSugar
 import org.scalatest.{Matchers, _}
 
 import scala.concurrent.duration._
 
-class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with core.TestData with MockitoSugar {
+class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametricstools.TestData with MockitoSugar {
   val client: KafkaClientContract = mock[KafkaClientContract]
   val config = ConsumerGroupCollector.CollectorConfig(0 seconds, "default", "", Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
 

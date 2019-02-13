@@ -2,7 +2,7 @@ package com.lightbend.kafka.kafkalagexporter
 
 import java.util.concurrent.TimeUnit
 
-import com.lightbend.kafka.core.{KafkaCluster, SimpleConfig}
+import com.lightbend.kafka.kafkametricstools.{KafkaCluster, SimpleConfig}
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration

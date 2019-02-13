@@ -3,7 +3,7 @@ package com.lightbend.kafka.kafkalagexporter.watchers
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.lightbend.kafka.kafkalagexporter.KafkaClusterManager
-import com.lightbend.kafka.core.KafkaCluster
+import com.lightbend.kafka.kafkametricstools.KafkaCluster
 object StrimziClusterWatcher {
   val name: String = "strimzi"
 

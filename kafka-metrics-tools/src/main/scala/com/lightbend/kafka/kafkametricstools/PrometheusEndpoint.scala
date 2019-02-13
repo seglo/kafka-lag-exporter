@@ -1,6 +1,6 @@
-package com.lightbend.kafka.core
+package com.lightbend.kafka.kafkametricstools
 
-import com.lightbend.kafka.core.PrometheusEndpoint.{Metric, MetricDefinitions, PrometheusMetricsEndpointContract}
+import com.lightbend.kafka.kafkametricstools.PrometheusEndpoint.{Metric, MetricDefinitions, PrometheusMetricsEndpointContract}
 import io.prometheus.client.Gauge
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports

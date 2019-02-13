@@ -1,10 +1,10 @@
-package com.lightbend.kafka.core
+package com.lightbend.kafka.kafkametricstools
 
 import java.util.Properties
 import java.{lang, util}
 
-import com.lightbend.kafka.core.Domain.Measurements
-import com.lightbend.kafka.core.KafkaClient.KafkaClientContract
+import com.lightbend.kafka.kafkametricstools.Domain.Measurements
+import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.admin.{AdminClient, ConsumerGroupDescription}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndMetadata}

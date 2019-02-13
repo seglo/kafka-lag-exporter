@@ -1,4 +1,4 @@
-package com.lightbend.kafka.core
+package com.lightbend.kafka.kafkametricstools
 
 import scala.concurrent.duration.FiniteDuration
 

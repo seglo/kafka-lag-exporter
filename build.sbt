@@ -11,15 +11,15 @@ lazy val root =
     .withId("root")
     .settings(commonSettings)
     .aggregate(
-      core,
+      kafkaMetricsTools,
       kafkaLagExporter,
       sparkEventExporter
     )
 
-lazy val core =
-  module("core")
+lazy val kafkaMetricsTools =
+  module("kafka-metrics-tools")
     .settings(
-      name := "core",
+      description := "Tools to help get and report Kafka client metrics",
       libraryDependencies ++= Vector(
         Kafka,
         AkkaTyped,
@@ -38,8 +38,9 @@ lazy val core =
 
 lazy val sparkEventExporter =
   module("spark-event-exporter")
-    .dependsOn(core % "compile->compile;test->test")
+    .dependsOn(kafkaMetricsTools % "compile->compile;test->test")
     .settings(
+      description := "Spark event exporter exposes offset and throughput related metrics for Spark Streaming apps",
       libraryDependencies ++= Vector(
         Spark,
         SparkSql,
@@ -54,10 +55,11 @@ lazy val updateHelmChartVersions = taskKey[Unit]("Update Helm Chart versions")
 
 lazy val kafkaLagExporter =
   module("kafka-lag-exporter")
-    .dependsOn(core % "compile->compile;test->test")
+    .dependsOn(kafkaMetricsTools % "compile->compile;test->test")
     .enablePlugins(JavaAppPackaging)
     .enablePlugins(DockerPlugin)
     .settings(
+      description := "Kafka lag exporter finds and reports Kafka consumer group lag metrics",
       libraryDependencies ++= Vector(
         LightbendConfig,
         Kafka,
@@ -85,11 +87,18 @@ lazy val kafkaLagExporter =
         import scala.sys.process._
         s"./scripts/update_chart.sh ${version.value}" !
       },
-      compile in Compile := (compile in Compile).dependsOn(updateHelmChartVersions).value
+      compile in Compile := (compile in Compile).dependsOn(updateHelmChartVersions).value,
+      publishArtifact in (Compile, packageDoc) := false,
+      publishArtifact in (Compile, packageSrc) := false,
+      skip in publish := true
     )
 
 lazy val commonSettings = Seq(
   organization := "com.lightbend.kafka",
+  bintrayOrganization := Some("lightbend"),
+  bintrayRepository := "pipelines-internal",
+  publishMavenStyle := false,
+  bintrayOmitLicense := true,
   scalaVersion := Version.Scala,
   scalacOptions ++= Seq(
     "-encoding", "UTF-8",
