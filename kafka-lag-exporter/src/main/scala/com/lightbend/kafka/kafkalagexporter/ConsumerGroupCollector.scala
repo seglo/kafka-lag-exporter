@@ -6,7 +6,7 @@ import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.kafkametricstools.{Domain, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools.{Domain, MetricsSink, PrometheusEndpointSink}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -42,14 +42,14 @@ object ConsumerGroupCollector {
 
   def init(config: CollectorConfig,
            clientCreator: String => KafkaClientContract,
-           reporter: ActorRef[PrometheusEndpoint.Message]): Behavior[ConsumerGroupCollector.Message] = Behaviors.setup { _ =>
+           reporter: ActorRef[MetricsSink.Message]): Behavior[ConsumerGroupCollector.Message] = Behaviors.setup { _ =>
     val collectorState = CollectorState()
     collector(config, clientCreator(config.clusterBootstrapBrokers), reporter, collectorState)
   }
 
   def collector(config: CollectorConfig,
                 client: KafkaClientContract,
-                reporter: ActorRef[PrometheusEndpoint.Message],
+                reporter: ActorRef[MetricsSink.Message],
                 state: CollectorState): Behavior[Message] = Behaviors.receive {
 
     case (context, _: Collect) =>
@@ -117,7 +117,7 @@ object ConsumerGroupCollector {
 
   private def reportConsumerGroupMetrics(
                                           config: CollectorConfig,
-                                          reporter: ActorRef[PrometheusEndpoint.Message],
+                                          reporter: ActorRef[MetricsSink.Message],
                                           newOffsets: NewOffsets,
                                           updatedLastCommittedOffsets: Map[GroupTopicPartition, Measurements.Measurement]
                                         ): Unit = {
@@ -149,7 +149,7 @@ object ConsumerGroupCollector {
 
   private def reportLatestOffsetMetrics(
                                          config: CollectorConfig,
-                                         reporter: ActorRef[PrometheusEndpoint.Message],
+                                         reporter: ActorRef[MetricsSink.Message],
                                          newOffsets: NewOffsets
                                        ): Unit = {
     for ((tp, measurement: Measurements.Single) <- newOffsets.latestOffsets)

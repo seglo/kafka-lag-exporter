@@ -1,18 +1,29 @@
 package com.lightbend.kafka.sparkeventexporter
 import java.util.UUID
 
-import com.lightbend.kafka.sparkeventexporter.Config.KafkaCluster
+import com.lightbend.kafka.kafkametricstools.KafkaCluster
+import org.apache.spark.SparkEnv
 import org.apache.spark.sql.SparkSession
 
-object Config {
-  type KafkaCluster = com.lightbend.kafka.kafkametricstools.KafkaCluster
-}
+sealed trait MetricsSinkConfig
+
+/**
+ * Exposes an internal prometheus HTTP metrics endpoint
+ */
+final case class PrometheusEndpointSinkConfig(port: Int = 8080) extends MetricsSinkConfig
+
+/**
+ * Uses Spark's existing metrics system.  This will result in a lack of fidelity in terms of the number of labels/tags
+ * that can be expressed per metric.
+ */
+final case object SparkMetricsSinkConfig extends MetricsSinkConfig
 
 final case class Config(
                          cluster: KafkaCluster,
                          providedName: String,
                          sparkSession: SparkSession,
-                         port: Int = 8080,
+                         sparkEnv: SparkEnv,
+                         metricsSink: MetricsSinkConfig,
                          clientGroupId: String = s"spark-event-exporter-${UUID.randomUUID()}"
                        ) {
   require(cluster.bootstrapBrokers != null && cluster.bootstrapBrokers != "",
@@ -25,7 +36,7 @@ final case class Config(
        |  Name: ${cluster.name}
        |  Bootstrap Brokers: ${cluster.bootstrapBrokers}
        |Provided name: $providedName
-       |Prometheus metrics endpoint port: $port
+       |Metrics Sink: $metricsSink
        |Client consumer group id: $clientGroupId
      """.stripMargin
   }

@@ -28,8 +28,7 @@ lazy val kafkaMetricsTools =
         Prometheus,
         PrometheusHotSpot,
         PrometheusHttpServer,
-        Fabric8Model,
-        Fabric8Client,
+        DropwizardMetrics,
         ScalaTest,
         AkkaTypedTestKit,
         MockitoScala
@@ -65,6 +64,8 @@ lazy val kafkaLagExporter =
         Kafka,
         AkkaTyped,
         AkkaSlf4j,
+        Fabric8Model,
+        Fabric8Client,
         Logback,
         ScalaTest,
         AkkaTypedTestKit,

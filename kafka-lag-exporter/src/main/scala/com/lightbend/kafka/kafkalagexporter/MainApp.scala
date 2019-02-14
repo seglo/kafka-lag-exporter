@@ -3,7 +3,7 @@ package com.lightbend.kafka.kafkalagexporter
 import java.util.concurrent.Executors
 
 import akka.actor.typed.ActorSystem
-import com.lightbend.kafka.kafkametricstools.{KafkaClient, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools.{KafkaClient, PrometheusEndpointSink}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -16,7 +16,7 @@ object MainApp extends App {
   val appConfig = AppConfig(ConfigFactory.load().getConfig("kafka-lag-exporter"))
 
   val clientCreator = (bootstrapBrokers: String) => KafkaClient(bootstrapBrokers, appConfig.clientGroupId)(kafkaClientEc)
-  val endpointCreator = () => PrometheusEndpoint(appConfig.port, Metrics.metricDefinitions)
+  val endpointCreator = () => PrometheusEndpointSink(appConfig.port, Metrics.metricDefinitions)
 
   val system = ActorSystem(
     KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafkalagexporterapp")

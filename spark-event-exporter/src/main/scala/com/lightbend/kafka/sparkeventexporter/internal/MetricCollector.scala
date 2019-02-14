@@ -3,13 +3,13 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.lightbend.kafka.kafkametricstools.Domain.{Measurements, PartitionOffsets, TopicPartition}
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.kafkametricstools.{KafkaCluster, PrometheusEndpoint}
+import com.lightbend.kafka.kafkametricstools.{KafkaCluster, MetricsSink, PrometheusEndpointSink}
 import com.lightbend.kafka.sparkeventexporter.internal.Domain.{Query, SourceMetrics}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
-object OffsetCollector {
+object MetricCollector {
   sealed trait Message
   sealed trait Stop extends Message
   final case object Stop extends Stop
@@ -33,13 +33,13 @@ object OffsetCollector {
 
   def init(state: CollectorState,
            clientCreator: () => KafkaClientContract,
-           reporter: ActorRef[PrometheusEndpoint.Message]): Behavior[Message] = Behaviors.setup { _ =>
+           reporter: ActorRef[MetricsSink.Message]): Behavior[Message] = Behaviors.setup { _ =>
     collector(clientCreator(), reporter, state)
   }
 
   def collector(
                  client: KafkaClientContract,
-                 reporter: ActorRef[PrometheusEndpoint.Message],
+                 reporter: ActorRef[MetricsSink.Message],
                  state: CollectorState
                ): Behavior[Message] = Behaviors.receive {
     case (context, queryResults: QueryResults) =>
@@ -74,7 +74,7 @@ object OffsetCollector {
       val mergedState = mergeState(state, newOffsets)
 
       reportThroughputMetrics(newOffsets.sparkAppId, newOffsets.sourceMetrics, state, reporter)
-      reportLatestOffsetMetrics(newOffsets.sparkAppId, mergedState, reporter)
+      //reportLatestOffsetMetrics(newOffsets.sparkAppId, mergedState, reporter)
       reportConsumerMetrics(newOffsets.sparkAppId, mergedState, reporter)
 
       collector(client, reporter, mergedState)
@@ -93,7 +93,7 @@ object OffsetCollector {
                                        sparkAppId: String,
                                        sourceMetrics: List[SourceMetrics],
                                        state: CollectorState,
-                                       reporter: ActorRef[PrometheusEndpoint.Message]): Unit = {
+                                       reporter: ActorRef[MetricsSink.Message]): Unit = {
     for(sourceMetric <- sourceMetrics) {
       /**
         * A Spark Query subscription could contain more than 1 topic, but throughput is only available per Source
@@ -107,7 +107,7 @@ object OffsetCollector {
   private def reportConsumerMetrics(
                                       sparkAppId: String,
                                       state: CollectorState,
-                                      reporter: ActorRef[PrometheusEndpoint.Message]
+                                      reporter: ActorRef[MetricsSink.Message]
                                    ): Unit = {
     for {
       (tp, measurement: Measurements.Double) <- state.lastOffsets
@@ -125,7 +125,7 @@ object OffsetCollector {
   private def reportLatestOffsetMetrics(
                                          sparkAppId: String,
                                          state: CollectorState,
-                                         reporter: ActorRef[PrometheusEndpoint.Message]
+                                         reporter: ActorRef[MetricsSink.Message]
                                        ): Unit = {
     for ((tp, measurement: Measurements.Single) <- state.latestOffsets)
       reporter ! Metrics.LatestOffsetMetric(state.cluster.name, sparkAppId, state.name, tp, measurement.offset)

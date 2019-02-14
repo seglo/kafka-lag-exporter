@@ -4,9 +4,9 @@ import java.time.{Clock, Instant, ZoneId}
 
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
 import com.lightbend.kafka.kafkametricstools
-import com.lightbend.kafka.kafkametricstools.{Domain, PrometheusEndpoint}
 import com.lightbend.kafka.kafkametricstools.Domain._
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
+import com.lightbend.kafka.kafkametricstools.{Domain, MetricsSink}
 import org.mockito.MockitoSugar
 import org.scalatest.{Matchers, _}
 
@@ -17,7 +17,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
   val config = ConsumerGroupCollector.CollectorConfig(0 seconds, "default", "", Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
 
   "ConsumerGroupCollector should send" - {
-    val reporter = TestInbox[PrometheusEndpoint.Message]()
+    val reporter = TestInbox[MetricsSink.Message]()
 
     val state = ConsumerGroupCollector.CollectorState(
       latestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
@@ -64,7 +64,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
   }
 
   "ConsumerGroupCollector should calculate max group metrics and send" - {
-    val reporter = TestInbox[PrometheusEndpoint.Message]()
+    val reporter = TestInbox[MetricsSink.Message]()
 
     val state = ConsumerGroupCollector.CollectorState(
       latestOffsets = Domain.PartitionOffsets() ++ List(
@@ -107,7 +107,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
   }
 
   "ConsumerGroupCollector when consumer group partitions have no offset should send" - {
-    val reporter = TestInbox[PrometheusEndpoint.Message]()
+    val reporter = TestInbox[MetricsSink.Message]()
 
     val state = ConsumerGroupCollector.CollectorState(
       latestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
