@@ -67,9 +67,9 @@ class MetricCollectorSpec extends FreeSpec with Matchers with kafkametricstools.
         Metrics.InputRecordsPerSecondMetric(clusterName, sparkAppId, providedName, topicPartition0.topic, 1000))
     }
 
-    "output throughput metric" in {
+    "processed throughput metric" in {
       metrics should contain(
-        Metrics.OutputRecordsPerSecondMetric(clusterName, sparkAppId, providedName, topicPartition0.topic, 500))
+        Metrics.ProcessedRecordsPerSecondMetric(clusterName, sparkAppId, providedName, topicPartition0.topic, 500))
     }
   }
 }

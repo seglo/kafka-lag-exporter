@@ -17,13 +17,9 @@ object CodahaleMetricsSink {
 
 class CodahaleMetricsSink private(registry: MetricRegistry, definitions: MetricDefinitions, newMetricRegistered: () => Unit)
   extends MetricsSink {
-//  val testGauge = new SparkGauge
-//  registry.register("testthree", testGauge)
-//  testGauge.setValue(3.0D)
 
   private def upsertGauge(metricType: Class[_], labels: List[String]): SparkGauge = {
     def newGauge(name: String): SparkGauge = {
-      println(s"creating new gauge with name: $name")
       val gauge = new SparkGauge
       registry.register(name, gauge)
       newMetricRegistered()
@@ -33,16 +29,13 @@ class CodahaleMetricsSink private(registry: MetricRegistry, definitions: MetricD
     val defn = definitions.getOrElse(metricType, throw new IllegalArgumentException(s"No metric with type $metricType defined"))
     val metricName = MetricRegistry.name(defn.name, labels: _*)
 
-    if (registry.getGauges.containsKey(metricName)) {
-      println(s"metric found: $metricName")
+    if (registry.getGauges.containsKey(metricName))
       registry.getGauges().get(metricName).asInstanceOf[SparkGauge]
-    }
     else
       newGauge(metricName)
   }
 
   override def report(m: Metric): Unit = {
-    println(s"reporting metric with labels: ${m.labels}, value: ${m.value}")
     upsertGauge(m.getClass, m.labels).setValue(m.value)
   }
 }

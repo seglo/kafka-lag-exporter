@@ -38,7 +38,7 @@ object Metrics {
   }
 
   final case class InputRecordsPerSecondMetric(clusterName: String, sparkAppId: String, name: String, sourceTopics: String, value: Double) extends SparkThroughputMetric
-  final case class OutputRecordsPerSecondMetric(clusterName: String, sparkAppId: String, name: String, sourceTopics: String, value: Double) extends SparkThroughputMetric
+  final case class ProcessedRecordsPerSecondMetric(clusterName: String, sparkAppId: String, name: String, sourceTopics: String, value: Double) extends SparkThroughputMetric
 
   val metricDefinitions: MetricDefinitions = Map(
     classOf[LatestOffsetMetric] -> GaugeDefinition(
@@ -66,9 +66,9 @@ object Metrics {
       "Input records per second for a source",
       "cluster_name", "provided_name", "source_topics"
     ),
-    classOf[OutputRecordsPerSecondMetric] -> GaugeDefinition(
-      "spark_kafka_output_records_per_second",
-      "Output/processed records per second for a source",
+    classOf[ProcessedRecordsPerSecondMetric] -> GaugeDefinition(
+      "spark_kafka_processed_records_per_second",
+      "Processed records per second for a source",
       "cluster_name", "provided_name", "source_topics"
     )
   )

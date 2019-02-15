@@ -3,7 +3,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.lightbend.kafka.kafkametricstools.Domain.{Measurements, PartitionOffsets, TopicPartition}
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.kafkametricstools.{KafkaCluster, MetricsSink, PrometheusEndpointSink}
+import com.lightbend.kafka.kafkametricstools.{KafkaCluster, MetricsSink}
 import com.lightbend.kafka.sparkeventexporter.internal.Domain.{Query, SourceMetrics}
 
 import scala.concurrent.ExecutionContextExecutor
@@ -45,6 +45,8 @@ object MetricCollector {
     case (context, queryResults: QueryResults) =>
       implicit val ec: ExecutionContextExecutor = context.executionContext
 
+      context.log.debug(s"Processing Spark Event Metrics:\n$queryResults")
+
       val sourceMetrics = queryResults.query.sourceMetrics
       val sparkAppId = queryResults.query.sparkAppId
 
@@ -70,9 +72,10 @@ object MetricCollector {
       }(ec)
 
       Behaviors.same
-    case (_, newOffsets: NewOffsets) =>
+    case (context, newOffsets: NewOffsets) =>
       val mergedState = mergeState(state, newOffsets)
 
+      context.log.debug("Reporting Metrics")
       reportThroughputMetrics(newOffsets.sparkAppId, newOffsets.sourceMetrics, state, reporter)
       //reportLatestOffsetMetrics(newOffsets.sparkAppId, mergedState, reporter)
       reportConsumerMetrics(newOffsets.sparkAppId, mergedState, reporter)
@@ -95,12 +98,12 @@ object MetricCollector {
                                        state: CollectorState,
                                        reporter: ActorRef[MetricsSink.Message]): Unit = {
     for(sourceMetric <- sourceMetrics) {
-      /**
-        * A Spark Query subscription could contain more than 1 topic, but throughput is only available per Source
-        */
+      /*
+       * A Spark Query subscription could contain more than 1 topic, but throughput is only available per Source
+       */
       val sourceTopics = sourceMetric.endOffsets.keys.map(_.topic).toSet.mkString(",")
       reporter ! Metrics.InputRecordsPerSecondMetric(state.cluster.name, sparkAppId, state.name, sourceTopics, sourceMetric.inputRecordsPerSecond)
-      reporter ! Metrics.OutputRecordsPerSecondMetric(state.cluster.name, sparkAppId, state.name, sourceTopics, sourceMetric.outputRecordsPerSecond)
+      reporter ! Metrics.ProcessedRecordsPerSecondMetric(state.cluster.name, sparkAppId, state.name, sourceTopics, sourceMetric.outputRecordsPerSecond)
     }
   }
 
@@ -122,14 +125,14 @@ object MetricCollector {
     }
   }
 
-  private def reportLatestOffsetMetrics(
-                                         sparkAppId: String,
-                                         state: CollectorState,
-                                         reporter: ActorRef[MetricsSink.Message]
-                                       ): Unit = {
-    for ((tp, measurement: Measurements.Single) <- state.latestOffsets)
-      reporter ! Metrics.LatestOffsetMetric(state.cluster.name, sparkAppId, state.name, tp, measurement.offset)
-  }
+//  private def reportLatestOffsetMetrics(
+//                                         sparkAppId: String,
+//                                         state: CollectorState,
+//                                         reporter: ActorRef[MetricsSink.Message]
+//                                       ): Unit = {
+//    for ((tp, measurement: Measurements.Single) <- state.latestOffsets)
+//      reporter ! Metrics.LatestOffsetMetric(state.cluster.name, sparkAppId, state.name, tp, measurement.offset)
+//  }
 
   private def mergeState(state: CollectorState, newOffsets: NewOffsets): CollectorState = {
     val mergedOffsets: PartitionOffsets = for {
