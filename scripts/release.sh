@@ -16,7 +16,11 @@ sbt clean compile test
 echo Publish docker image
 sbt exporter/docker:publish
 
-# 3. Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is
-#    executed from.
+# 3. Bundle Kafka Lag Exporter Helm Chart into a tarball artifact.  The `helm package` command will output the artifact
+#    in the CWD it is executed from.
 echo Bundle helm chart
 helm package ./charts/kafka-lag-exporter
+
+# 4. Release Spark Event Exporter binaries to bintray, and upgrade version.
+echo Release Spark Event Exporter and upgrade version
+sbt release

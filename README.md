@@ -4,31 +4,27 @@
 
 ## [Kafka Lag Exporter](./kafka-lag-exporter/README.md)
 
-> A Kafka consumer group lag exporter for Kubernetes
-
 The Kafka Lag Exporter is a Prometheus Exporter which will calculate the consumer lag for all consumer groups running
 in a Kafka cluster.  It exports several consumer group related metrics, including an extrapolation of consumer group
 lag in seconds. 
 
-## Spark Event Exporter
-
-> Exports metrics from data in Spark's `StreamingQueryListener` events 
+## [Spark Event Exporter](./spark-event-exporter/README.md)
 
 Spark Event Exporter is a library you can include in your Spark driver application which can output several performance
 metrics including Kafka client lag, lag in seconds, last read offset, as well as input and processed records per 
 second per streaming source.
 
-## Release Process
+# Release Process
 
-1. Update Change Log
+1. Update Change log
 2. Run `./scripts/release.sh` which will do the following:
   * Run `compile` and `test` targets.  A pre-compile task will automatically update the version in the Helm Chart.
   * Publish docker image to DockerHub at `lightbend/kafka-lag-exporter`.  If not publishing to `lightbend` repository, 
      update `./build.sbt` file with the correct repository, or publish locally instead (`sbt docker:publishLocal`).
   * Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is 
      executed from.
+  * Run `sbt-release` to upgrade to the next version and publish Ivy artifacts to bintray.
 3. Upload the tarball to a Helm Chart Repository.
-4. Run `sbt-release` to upgrade to the next version and publish Ivy artifacts to bintray.
 
 # Change log
 

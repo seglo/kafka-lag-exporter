@@ -52,8 +52,6 @@ final class SparkEventExporter(config: Config) {
       sparkEnv.metricsSystem.registerSource(sparkEventSource)
     }
 
-    // TODO: omit or call newMetricRegistered
-    //sparkEnv.metricsSystem.registerSource(sparkEventSource)
     CodahaleMetricsSink(
       sparkEventSource.metricRegistry,
       Metrics.metricDefinitions,
