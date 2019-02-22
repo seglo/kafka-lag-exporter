@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import com.lightbend.kafka.kafkalagexporter.watchers.Watcher
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.kafkametricstools.{KafkaCluster, MetricsReporter, MetricsSink, PrometheusEndpointSink}
+import com.lightbend.kafka.kafkametricstools.{KafkaCluster, MetricsReporter, MetricsSink}
 
 object KafkaClusterManager {
   sealed trait Message

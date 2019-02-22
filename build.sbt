@@ -29,6 +29,7 @@ lazy val kafkaMetricsTools =
         PrometheusHotSpot,
         PrometheusHttpServer,
         DropwizardMetrics,
+        ScalaJava8Compat,
         ScalaTest,
         AkkaTypedTestKit,
         MockitoScala

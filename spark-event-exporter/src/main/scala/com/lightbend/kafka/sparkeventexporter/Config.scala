@@ -4,6 +4,7 @@ import java.util.UUID
 import com.lightbend.kafka.kafkametricstools.KafkaCluster
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.SparkSession
+import scala.concurrent.duration._
 
 sealed trait MetricsSinkConfig
 
@@ -16,7 +17,7 @@ final case class PrometheusEndpointSinkConfig(port: Int = 8080) extends MetricsS
  * Uses Spark's existing metrics system.  This will result in a lack of fidelity in terms of the number of labels/tags
  * that can be expressed per metric.
  */
-final case object SparkMetricsSinkConfig extends MetricsSinkConfig
+case object SparkMetricsSinkConfig extends MetricsSinkConfig
 
 final case class Config(
                          cluster: KafkaCluster,
@@ -24,6 +25,7 @@ final case class Config(
                          sparkSession: SparkSession,
                          sparkEnv: SparkEnv,
                          metricsSink: MetricsSinkConfig,
+                         consumerTimeout: FiniteDuration = 10 seconds,
                          clientGroupId: String = s"spark-event-exporter-${UUID.randomUUID()}"
                        ) {
   require(cluster.bootstrapBrokers != null && cluster.bootstrapBrokers != "",
@@ -32,11 +34,12 @@ final case class Config(
 
   override def toString: String = {
     s"""
-       |Kafka Cluster:
+       |Kafka cluster:
        |  Name: ${cluster.name}
-       |  Bootstrap Brokers: ${cluster.bootstrapBrokers}
+       |  Bootstrap brokers: ${cluster.bootstrapBrokers}
        |Provided name: $providedName
-       |Metrics Sink: $metricsSink
+       |Metrics sink: $metricsSink
+       |Consumer timeout ms: ${consumerTimeout.toMillis}
        |Client consumer group id: $clientGroupId
      """.stripMargin
   }

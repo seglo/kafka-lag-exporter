@@ -1,5 +1,6 @@
 package com.lightbend.kafka.kafkametricstools
 
+import java.time.Duration
 import java.util.Properties
 import java.{lang, util}
 
@@ -12,17 +13,20 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.{KafkaFuture, TopicPartition => KafkaTopicPartition}
 
 import scala.collection.JavaConverters._
+import scala.compat.java8.DurationConverters._
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 
 object KafkaClient {
-  def apply(bootstrapBrokers: String, groupId: String)(implicit ec: ExecutionContext): KafkaClientContract =
-    new KafkaClient(bootstrapBrokers, groupId)(ec)
+  def apply(bootstrapBrokers: String, groupId: String, consumerTimeout: FiniteDuration)(implicit ec: ExecutionContext): KafkaClientContract =
+    new KafkaClient(bootstrapBrokers, groupId, consumerTimeout)(ec)
 
   trait KafkaClientContract {
     def getGroups(): Future[List[Domain.ConsumerGroup]]
-    def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]]
-    def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Future[Map[Domain.TopicPartition, Measurements.Single]]
     def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]]
+    def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Try[Map[Domain.TopicPartition, Measurements.Single]]
+    def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, Measurements.Single]]
     def close(): Unit
   }
 
@@ -66,10 +70,11 @@ object KafkaClient {
   }
 }
 
-class KafkaClient private(bootstrapBrokers: String, groupId: String)
+class KafkaClient private(bootstrapBrokers: String, groupId: String, consumerTimeout: FiniteDuration)
                          (implicit ec: ExecutionContext) extends KafkaClientContract {
   import KafkaClient._
 
+  private val _consumerTimeout: Duration = consumerTimeout.toJava
   private lazy val adminClient = createAdminClient(bootstrapBrokers)
   private lazy val consumer = createConsumerClient(bootstrapBrokers, groupId)
 
@@ -94,7 +99,7 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String)
     Domain.ConsumerGroup(groupId, groupDescription.isSimpleConsumerGroup, groupDescription.state.toString, members)
   }
 
-  def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.TopicPartition, Measurements.Single]] = {
+  def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Try[Map[Domain.TopicPartition, Measurements.Single]] = {
     val partitions = dedupeGroupPartitions(groups)
     getLatestOffsets(now, partitions)
   }
@@ -106,8 +111,8 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String)
   /**
     * Get latest offsets for a set of topic partitions.
     */
-  def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Future[Map[Domain.TopicPartition, Measurements.Single]] = Future {
-    val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava)
+  def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, Measurements.Single]] = Try {
+    val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava, _consumerTimeout)
     topicPartitions.map(tp => tp -> Measurements.Single(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 

@@ -15,7 +15,8 @@ object MainApp extends App {
 
   val appConfig = AppConfig(ConfigFactory.load().getConfig("kafka-lag-exporter"))
 
-  val clientCreator = (bootstrapBrokers: String) => KafkaClient(bootstrapBrokers, appConfig.clientGroupId)(kafkaClientEc)
+  val clientCreator = (bootstrapBrokers: String) =>
+    KafkaClient(bootstrapBrokers, appConfig.clientGroupId, appConfig.consumerTimeout)(kafkaClientEc)
   val endpointCreator = () => PrometheusEndpointSink(appConfig.port, Metrics.metricDefinitions)
 
   val system = ActorSystem(

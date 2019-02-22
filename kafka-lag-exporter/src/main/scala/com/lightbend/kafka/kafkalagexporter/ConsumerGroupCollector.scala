@@ -6,7 +6,7 @@ import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.kafkametricstools.{Domain, MetricsSink, PrometheusEndpointSink}
+import com.lightbend.kafka.kafkametricstools.{Domain, MetricsSink}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -57,12 +57,12 @@ object ConsumerGroupCollector {
 
       def getLatestAndGroupOffsets(groups: List[ConsumerGroup]): Future[NewOffsets] = {
         val now = config.clock.instant().toEpochMilli
-        val groupOffsetsF = client.getGroupOffsets(now, groups)
-        val latestOffsetsF = client.getLatestOffsets(now, groups)
+        val groupOffsetsFuture = client.getGroupOffsets(now, groups)
+        val latestOffsetsTry = client.getLatestOffsets(now, groups)
 
         for {
-          groupOffsets <- groupOffsetsF
-          latestOffsets <- latestOffsetsF
+          groupOffsets <- groupOffsetsFuture
+          Success(latestOffsets) <- Future.successful(latestOffsetsTry)
         } yield NewOffsets(now, groups, latestOffsets, groupOffsets)
       }
 

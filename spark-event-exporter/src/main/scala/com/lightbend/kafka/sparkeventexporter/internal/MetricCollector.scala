@@ -59,17 +59,14 @@ object MetricCollector {
         acc ++ source.endOffsets
       }
 
-      val f = for {
-        latestOffsets <- client.getLatestOffsets(queryResults.query.timestamp, topicPartitions)
-      } yield NewOffsets(sparkAppId, sourceMetrics, latestOffsets, lastOffsets)
-
-      f.onComplete {
-        case Success(newState) =>
-          context.self ! newState
-        case Failure(ex) =>
-          context.log.error(ex, "An error occurred while retrieving offsets")
+      client.getLatestOffsets(queryResults.query.timestamp, topicPartitions) match {
+        case Success(latestOffsets) =>
+          val newOffsets = NewOffsets(sparkAppId, sourceMetrics, latestOffsets, lastOffsets)
+          context.self ! newOffsets
+        case Failure(e) =>
+          context.log.error(e, "An error occurred while retrieving latest offsets")
           context.self ! Stop
-      }(ec)
+      }
 
       Behaviors.same
     case (context, newOffsets: NewOffsets) =>
