@@ -6,7 +6,6 @@ import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
 import com.lightbend.kafka.kafkametricstools.{KafkaCluster, MetricsSink}
 import com.lightbend.kafka.sparkeventexporter.internal.Domain.{Query, SourceMetrics}
 
-import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
 object MetricCollector {
@@ -43,8 +42,6 @@ object MetricCollector {
                  state: CollectorState
                ): Behavior[Message] = Behaviors.receive {
     case (context, queryResults: QueryResults) =>
-      implicit val ec: ExecutionContextExecutor = context.executionContext
-
       context.log.debug(s"Processing Spark Event Metrics:\n$queryResults")
 
       val sourceMetrics = queryResults.query.sourceMetrics
