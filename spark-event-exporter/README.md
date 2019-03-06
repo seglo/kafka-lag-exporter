@@ -23,3 +23,18 @@ The following metrics are exported.
 - Configuration
 - Metrics sink configuration
 - Metric labels
+
+# Release Process
+
+1. Run `sbt-release` to upgrade to the next version and publish Ivy artifacts to bintray.
+
+# Change log
+
+0.3.5
+
+* Encode labels into Codahale metric names using key=value convention to make them easier to parse.
+
+0.3.2
+
+* Initial release
+
