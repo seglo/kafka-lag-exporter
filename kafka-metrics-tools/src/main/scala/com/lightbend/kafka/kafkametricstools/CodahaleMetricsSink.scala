@@ -27,7 +27,7 @@ class CodahaleMetricsSink private(registry: MetricRegistry, definitions: MetricD
     }
 
     val defn = definitions.getOrElse(metricType, throw new IllegalArgumentException(s"No metric with type $metricType defined"))
-    val metricName = MetricRegistry.name(defn.name, labels: _*)
+    val metricName = encodeNameWithLabels(labels, defn)
 
     if (registry.getGauges.containsKey(metricName))
       registry.getGauges().get(metricName).asInstanceOf[SparkGauge]
@@ -35,6 +35,19 @@ class CodahaleMetricsSink private(registry: MetricRegistry, definitions: MetricD
       newGauge(metricName)
   }
 
+  /**
+    * Encodes label names and values into the metric name to make parsing easier downstream.
+    * i.e. label_one=some-value,label_two=some-other.value,label_three=yet-another-value
+    */
+  private def encodeNameWithLabels(
+    labels: List[String],
+    defn: MetricsSink.GaugeDefinition
+  ) = {
+    defn.name + "," + defn.label
+      .zip(labels)
+      .map { case (name, value) => s"$name=$value" }
+      .mkString(",")
+  }
   override def report(m: Metric): Unit = {
     upsertGauge(m.getClass, m.labels).setValue(m.value)
   }

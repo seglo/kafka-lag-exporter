@@ -156,4 +156,38 @@ Example snapshot of dashboard showing all Consumer Groups (2)
 
 ![Kafka Lag Exporter Dashboard](../grafana/example_dashboard_snapshot.png)
 
+# Release Process
+
+1. Update Change log
+2. Run `./scripts/release.sh` which will do the following:
+  * Run `compile` and `test` targets.  A pre-compile task will automatically update the version in the Helm Chart.
+  * Publish docker image to DockerHub at `lightbend/kafka-lag-exporter`.  If not publishing to `lightbend` repository, 
+     update `./build.sbt` file with the correct repository, or publish locally instead (`sbt docker:publishLocal`).
+  * Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is 
+     executed from.
+3. Upload the tarball to a Helm Chart Repository.
+
+# Change log
+
+0.3.1
+
+* Default partition to 0 (instead of omitting it from being reported) when a consumer group returns no offset for a 
+group partition
+* Use `akkaSource` for actor path in logging
+
+0.3.0
+
+* Bugfix: Parse `poll-interval` in seconds
+* Rename metric from `kafka_consumergroup_latest_offset` to `kafka_partition_latest_offset`
+* Use JVM 8 experimental cgroup memory awareness flags when running exporter in container
+* Use snakecase for metric label names
+* Sample Grafana Dashboard
+
+0.2.0
+
+* Strimzi cluster auto discovery
+
+0.1.0
+
+* Initial release
 
