@@ -6,8 +6,8 @@ import com.lightbend.kafka.kafkametricstools.MetricsSink.{Message, Metric, Stop}
 
 object MetricsReporter {
   def init(
-    metricsSinkCreator: () => MetricsSink): Behavior[Message] = Behaviors.setup { _ =>
-    reporter(metricsSinkCreator())
+    metricsSink: MetricsSink): Behavior[Message] = Behaviors.setup { _ =>
+    reporter(metricsSink)
   }
 
   def reporter(metricsSink: MetricsSink): Behavior[Message] = Behaviors.receive {

@@ -35,6 +35,8 @@ spec:
               value: "{{ .Values.logLevel }}"
             - name: KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL
               value: "{{ .Values.kafkaLogLevel }}"
+            - name: KAFKA_LAG_EXPORTER_KAFKA_CLIENT_TIMEOUT_SECONDS
+              value: "{{ .Values.kafkaClientTimeoutSeconds }} seconds"
             - name: KAFKA_LAG_EXPORTER_STRIMZI
               value: "{{ .Values.watchers.strimzi }}"
             {{- range $index, $cluster := .Values.clusters }}

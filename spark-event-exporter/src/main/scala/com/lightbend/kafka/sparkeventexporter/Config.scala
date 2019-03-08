@@ -25,7 +25,7 @@ final case class Config(
                          sparkSession: SparkSession,
                          sparkEnv: SparkEnv,
                          metricsSink: MetricsSinkConfig,
-                         consumerTimeout: FiniteDuration = 10 seconds,
+                         kafkaClientTimeout: FiniteDuration = 10 seconds,
                          clientGroupId: String = s"spark-event-exporter-${UUID.randomUUID()}"
                        ) {
   require(cluster.bootstrapBrokers != null && cluster.bootstrapBrokers != "",
@@ -39,7 +39,7 @@ final case class Config(
        |  Bootstrap brokers: ${cluster.bootstrapBrokers}
        |Provided name: $providedName
        |Metrics sink: $metricsSink
-       |Consumer timeout ms: ${consumerTimeout.toMillis}
+       |Kafka client timeout ms: ${kafkaClientTimeout.toMillis}
        |Client consumer group id: $clientGroupId
      """.stripMargin
   }

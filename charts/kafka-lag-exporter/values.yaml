@@ -12,6 +12,8 @@ clientGroupId: "kafkalagexporter"
 logLevel: INFO
 ## The log level of `org.apache.kafka` logger
 kafkaLogLevel: INFO
+## The timeout when communicating with Kafka clusters
+kafkaClientTimeoutSeconds: 10
 ## Watchers will automatically discover and forget Kafka clusters
 watchers:
   ## The Strimzi Cluster Watcher automatically watches for `kafka.strimzi.io` group, `Kafka` kind resources and will
@@ -21,7 +23,7 @@ watchers:
 ## You probably won't need to change anything below this line.
 image:
   repository: lightbend/kafka-lag-exporter
-  tag: 0.3.4-SNAPSHOT
+  tag: 0.3.6
   pullPolicy: IfNotPresent
 service:
   type: ClusterIP

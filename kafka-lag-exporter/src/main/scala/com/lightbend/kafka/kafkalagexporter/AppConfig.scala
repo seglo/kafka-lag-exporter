@@ -12,7 +12,7 @@ object AppConfig {
     val pollInterval = config.getDuration("poll-interval").toScala
     val port = config.getInt("port")
     val clientGroupId = config.getString("client-group-id")
-    val consumerTimeout = config.getDuration("consumer-timeout").toScala
+    val consumerTimeout = config.getDuration("kafka-client-timeout").toScala
     val clusters = config.getConfigList("clusters").asScala.toList.map { clusterConfig =>
       KafkaCluster(
         clusterConfig.getString("name"),
@@ -25,7 +25,7 @@ object AppConfig {
 }
 
 final case class AppConfig(pollInterval: FiniteDuration, port: Int, clientGroupId: String,
-                           consumerTimeout: FiniteDuration, clusters: List[KafkaCluster],
+                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster],
                            strimziWatcher: Boolean) extends SimpleConfig {
   override def toString(): String = {
     val clusterString =
@@ -42,7 +42,7 @@ final case class AppConfig(pollInterval: FiniteDuration, port: Int, clientGroupI
        |Poll interval: $pollInterval
        |Prometheus metrics endpoint port: $port
        |Admin client consumer group id: $clientGroupId
-       |Consumer timeout: $consumerTimeout
+       |Kafka client timeout: $clientTimeout
        |Statically defined Clusters:
        |$clusterString
        |Watchers:

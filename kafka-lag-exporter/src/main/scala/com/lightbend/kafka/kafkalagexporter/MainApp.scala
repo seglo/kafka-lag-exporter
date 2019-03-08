@@ -16,11 +16,11 @@ object MainApp extends App {
   val appConfig = AppConfig(ConfigFactory.load().getConfig("kafka-lag-exporter"))
 
   val clientCreator = (bootstrapBrokers: String) =>
-    KafkaClient(bootstrapBrokers, appConfig.clientGroupId, appConfig.consumerTimeout)(kafkaClientEc)
-  val endpointCreator = () => PrometheusEndpointSink(appConfig.port, Metrics.metricDefinitions)
+    KafkaClient(bootstrapBrokers, appConfig.clientGroupId, appConfig.clientTimeout)(kafkaClientEc)
+  val sinkCreator = () => PrometheusEndpointSink(appConfig.port, Metrics.metricDefinitions)
 
   val system = ActorSystem(
-    KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafkalagexporterapp")
+    KafkaClusterManager.init(appConfig, sinkCreator, clientCreator), "kafka-lag-exporter")
 
   // Add shutdown hook to respond to SIGTERM and gracefully shutdown the actor system
   sys.ShutdownHookThread {

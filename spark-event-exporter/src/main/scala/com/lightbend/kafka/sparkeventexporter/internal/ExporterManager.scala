@@ -22,8 +22,9 @@ object ExporterManager {
       Behaviors.setup[Message] { context =>
         context.log.info("Starting Spark Events Exporter with configuration: \n{}", config)
 
+        val metricsSinkInst = metricsSinkCreator()
         val reporter: ActorRef[MetricsSink.Message] =
-            context.spawn(MetricsReporter.init(metricsSinkCreator), "lag-reporter")
+            context.spawn(MetricsReporter.init(metricsSinkInst), "lag-reporter")
         val collectorState = CollectorState(config.providedName, cluster)
         val collector: ActorRef[MetricCollector.Message] = context.spawn(
           MetricCollector.init(collectorState, clientCreator, reporter),"offset-collector")

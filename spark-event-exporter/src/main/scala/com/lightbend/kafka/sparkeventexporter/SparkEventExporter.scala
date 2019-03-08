@@ -24,7 +24,7 @@ final class SparkEventExporter(config: Config) {
   // Cached thread pool for various Kafka calls for non-blocking I/O
   private val kafkaClientEc = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
-  private val clientCreator = () => KafkaClient(cluster.bootstrapBrokers, clientGroupId, consumerTimeout)(kafkaClientEc)
+  private val clientCreator = () => KafkaClient(cluster.bootstrapBrokers, clientGroupId, kafkaClientTimeout)(kafkaClientEc)
 
   private val metricsSinkCreator = () => metricsSink match {
     case PrometheusEndpointSinkConfig(port) => PrometheusEndpointSink(port, Metrics.metricDefinitions)
