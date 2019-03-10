@@ -4,15 +4,15 @@
 
 The Kafka Lag Exporter is a Prometheus Exporter which will calculate the consumer lag for all consumer groups running
 in a Kafka cluster.  It exports several consumer group related metrics, including an extrapolation of consumer group
-lag in seconds.  
+lag in seconds.
 
 We can calculate a reasonable approximation of consumer lag in seconds by applying a linear extrapolation formula to
-predict the time that a consumer will reach the latest partition offset available based on previously measured 
-consumer group consumed offsets for the same partition.  
+predict the time that a consumer will reach the latest partition offset available based on previously measured
+consumer group consumed offsets for the same partition.
 
-For each poll interval we associate all the latest consumed offsets with current system time (wall clock).  After at 
-least two measurements are made we can extrapolate at what time an arbitrary offset in the future will be consumed.  As 
-a refresher, linear interpolation and extrapolation is just estimating a point on a slope and estimating its 
+For each poll interval we associate all the latest consumed offsets with current system time (wall clock).  After at
+least two measurements are made we can extrapolate at what time an arbitrary offset in the future will be consumed.  As
+a refresher, linear interpolation and extrapolation is just estimating a point on a slope and estimating its
 coordinates. [Read this post for more details.](https://math.tutorvista.com/calculus/extrapolation.html)
 
 ## Metrics
@@ -38,6 +38,7 @@ You can install the chart from the local filesystem.
 ```
 helm install ./charts/kafka-lag-exporter
 ```
+
 Or from the lightbend Helm Chart repository.
 
 ```
@@ -47,7 +48,7 @@ helm install lightbend/kafka-lag-exporter
 
 ### Examples
 
-Install with the [Strimzi](https://strimzi.io/) Kafka discovery feature. 
+Install with the [Strimzi](https://strimzi.io/) Kafka discovery feature.
 See [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher) for more details.
 
 ```
@@ -104,7 +105,7 @@ kubectl logs {POD_ID} --namespace myproject -f
 
 A Docker Compose cluster with producers and multiple consumer groups is defined in `./docker/docker-compose.yaml`.  This
 is useful to manually test the project locally, without K8s infrastructure.  These images are based on the popular
-[`wurstmeister`](https://hub.docker.com/r/wurstmeister/kafka/) Apache Kafka Docker images.  Confirm you match up the 
+[`wurstmeister`](https://hub.docker.com/r/wurstmeister/kafka/) Apache Kafka Docker images.  Confirm you match up the
 version of these images with the correct version of Kafka you wish to test.
 
 Remove any previous volume state.
@@ -122,12 +123,12 @@ docker-compose up
 ## Strimzi Kafka Cluster Watcher
 
 When you install the chart with `--set watchers.strimzi=true` then the exporter will create a new `ClusterRole` and
-`ClusterRoleBinding` to allow for the automatic discovery of [Strimzi](https://strimzi.io/) Kafka clusters.  The exporter will watch for 
-`Kafka` resources to be created or destroyed.  If the cluster already exists, or was created while the exporter was 
-online then it will automatically begin to collect consumer group metadata and export it.  If a `Kafka` resource is 
+`ClusterRoleBinding` to allow for the automatic discovery of [Strimzi](https://strimzi.io/) Kafka clusters.  The exporter will watch for
+`Kafka` resources to be created or destroyed.  If the cluster already exists, or was created while the exporter was
+online then it will automatically begin to collect consumer group metadata and export it.  If a `Kafka` resource is
 destroyed then it will stop collecting consumer group metadata for that cluster.
 
-The exporter will name the cluster the same as `Kafka` resources `metadata.name` field. 
+The exporter will name the cluster the same as `Kafka` resources `metadata.name` field.
 
 ## Grafana Dashboard
 
@@ -148,30 +149,30 @@ This dashboard has several rows that are described below.
   * Lag in seconds per group partition
   * Max lag in offsets per group
   * Lag in offsets per group partition
-* **Consumer Group Lag Per Group** - One panel for each consumer group that shows a sum of lag for all partitions on the 
+* **Consumer Group Lag Per Group** - One panel for each consumer group that shows a sum of lag for all partitions on the
 left Y axis.  The right Y axis has the sum of latest and last consumed offsets for all group partitions.
 * **Kafka Lag Exporter JVM Metrics** - Critical JVM metrics for the Kafka Lag Exporter itself.
 
 Example snapshot of dashboard showing all Consumer Groups (2)
 
-![Kafka Lag Exporter Dashboard](../grafana/example_dashboard_snapshot.png)
+![Kafka Lag Exporter Dashboard](./grafana/example_dashboard_snapshot.png)
 
-# Release Process
+## Release Process
 
-1. Update Change log
+1. Update the Change Log
 2. Run `./scripts/release.sh` which will do the following:
   * Run `compile` and `test` targets.  A pre-compile task will automatically update the version in the Helm Chart.
-  * Publish docker image to DockerHub at `lightbend/kafka-lag-exporter`.  If not publishing to `lightbend` repository, 
+  * Publish docker image to DockerHub at `lightbend/kafka-lag-exporter`.  If not publishing to `lightbend` repository,
      update `./build.sbt` file with the correct repository, or publish locally instead (`sbt docker:publishLocal`).
-  * Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is 
+  * Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is
      executed from.
 3. Upload the tarball to a Helm Chart Repository.
 
-# Change log
+## Change log
 
 0.3.1
 
-* Default partition to 0 (instead of omitting it from being reported) when a consumer group returns no offset for a 
+* Default partition to 0 (instead of omitting it from being reported) when a consumer group returns no offset for a
 group partition
 * Use `akkaSource` for actor path in logging
 

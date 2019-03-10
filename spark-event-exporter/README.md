@@ -1,12 +1,12 @@
 # Spark Event Exporter
 
-> Exports metrics from data in Spark's `StreamingQueryListener` events 
+> Exports metrics from data in Spark's `StreamingQueryListener` events
 
-Spark Event Exporter is a library you can include in your Spark driver application which can output several performance
-metrics including Kafka client lag, lag in seconds, last read offset, as well as input and processed records per 
+Spark Event Exporter is a library you can include in your Spark driver application that can output several performance
+metrics including Kafka client lag, lag in seconds, last read offset, as well as input and processed records per
 second per streaming source.
 
-Spark Event Exporter uses the Spark `StreamingQueryListener` to obtain this event data which can then be directly
+Spark Event Exporter uses the Spark `StreamingQueryListener` to obtain this event data that can then be directly
 exported as a Prometheus endpoint, or integrated into Spark's own metrics system as custom metrics for the Spark
 driver application.
 
@@ -24,11 +24,21 @@ The following metrics are exported.
 - Metrics sink configuration
 - Metric labels
 
-# Release Process
+## Building Yourself
 
-1. Run `sbt-release` to upgrade to the next version and publish Ivy artifacts to bintray.
+[SBT] is used to build this project.
 
-# Change log
+* Run `sbt test` to compile everything and run the tests
+* Run `sbt package` to create the binary artifacts
+* Run `sbt publishLocal` to create artifacts and publish to your local Ivy repository
+* Run `sbt publishM2` to create artifacts and publish to your local Maven repository
+* Run `sbt release` to upgrade to the next version and publish Ivy artifacts to bintray
+
+## Change log
+
+0.3.6
+
+* Final refinements before open sourcing the project.
 
 0.3.5
 
