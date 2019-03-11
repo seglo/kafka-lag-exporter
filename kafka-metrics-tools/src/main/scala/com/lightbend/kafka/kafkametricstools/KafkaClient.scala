@@ -139,8 +139,8 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String, clientTimeo
   }
 
   /**
-    * Get last committed Consumer Group offsets for all group topic partitions.  When a topic partition has no matched
-    * Consumer Group offset then a default offset of 0 is provided.
+    * Get last committed Consumer Group offsets for all group topic partitions given a list of consumer groups.  When a
+    * topic partition has no matched Consumer Group offset then a default offset of 0 is provided.
     * @return A series of Future's for Consumer Group offsets requests to Kafka.
     */
   def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]] = {

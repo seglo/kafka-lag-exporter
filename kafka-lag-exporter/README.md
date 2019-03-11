@@ -174,7 +174,7 @@ Example snapshot of dashboard showing all Consumer Groups (2)
 * Add `kafka-client-timeout` config.
 * Tune retry and timeout logic of Kafka admin client and consumer
 * Use backoff strategy restarting offset collection logic when transient runtime exceptions are encountered
-* Terminate when prometheus http server can't start (i.e. port can't be bound)
+* Terminate when Prometheus HTTP server can't start (i.e. port can't be bound)
 
 0.3.1
 
