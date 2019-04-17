@@ -1,6 +1,6 @@
 <configuration>
     <variable name="ROOT_LOG_LEVEL" value="${ROOT_LOG_LEVEL:-INFO}" />
-    <variable name="KAFKA_LAG_EXPORTER_LOG_LEVEL" value="${KAFKA_LAG_EXPORTER_LOG_LEVEL:-INFO}" />
+    <variable name="KAFKA_LAG_EXPORTER_LOG_LEVEL" value="${KAFKA_LAG_EXPORTER_LOG_LEVEL:-DEBUG}" />
     <variable name="KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL" value="${KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL:-INFO}" />
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

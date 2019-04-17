@@ -9,18 +9,19 @@ import scala.concurrent.duration.FiniteDuration
 
 object AppConfig {
   def apply(config: Config): AppConfig = {
-    val pollInterval = config.getDuration("poll-interval").toScala
-    val port = config.getInt("port")
-    val clientGroupId = config.getString("client-group-id")
-    val consumerTimeout = config.getDuration("kafka-client-timeout").toScala
-    val clusters = config.getConfigList("clusters").asScala.toList.map { clusterConfig =>
+    val c = config.getConfig("kafka-lag-exporter")
+    val pollInterval = c.getDuration("poll-interval").toScala
+    val port = c.getInt("port")
+    val clientGroupId = c.getString("client-group-id")
+    val kafkaClientTimeout = c.getDuration("kafka-client-timeout").toScala
+    val clusters = c.getConfigList("clusters").asScala.toList.map { clusterConfig =>
       KafkaCluster(
         clusterConfig.getString("name"),
         clusterConfig.getString("bootstrap-brokers")
       )
     }
-    val strimziWatcher = config.getString("watchers.strimzi").toBoolean
-    AppConfig(pollInterval, port, clientGroupId, consumerTimeout, clusters, strimziWatcher)
+    val strimziWatcher = c.getString("watchers.strimzi").toBoolean
+    AppConfig(pollInterval, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher)
   }
 }
 

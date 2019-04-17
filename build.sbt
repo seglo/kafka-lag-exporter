@@ -69,7 +69,9 @@ lazy val kafkaLagExporter =
         Logback,
         ScalaTest,
         AkkaTypedTestKit,
-        MockitoScala
+        MockitoScala,
+        AlpakkaKafkaTestKit,
+        AkkaHttp
       ),
       dockerUsername := Some("lightbend"),
       // Based on best practices found in OpenShift Creating images guidelines
