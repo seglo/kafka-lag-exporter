@@ -4,9 +4,12 @@ import io.prometheus.client.Gauge
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 
+import scala.util.Try
+
 object PrometheusEndpointSink {
   def apply(httpPort: Int, metricsDefinitions: MetricDefinitions): MetricsSink =
-    new PrometheusEndpointSink(httpPort, metricsDefinitions)
+    Try(new PrometheusEndpointSink(httpPort, metricsDefinitions))
+      .fold(t => throw new Exception("Could not create Prometheus Endpoint", t), sink => sink)
 }
 
 class PrometheusEndpointSink private(httpPort: Int, definitions: MetricDefinitions) extends MetricsSink {

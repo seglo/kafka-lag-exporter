@@ -4,13 +4,14 @@ import java.time.Clock
 
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
+import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
 import com.lightbend.kafka.kafkametricstools.{Domain, MetricsSink}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
+import scala.concurrent.duration._
 
 object ConsumerGroupCollector {
   import com.lightbend.kafka.kafkametricstools.Domain._
@@ -20,6 +21,7 @@ object ConsumerGroupCollector {
   final case object Collect extends Collect
   sealed trait Stop extends Message
   final case object Stop extends Stop
+  final case class StopWithError(throwable: Throwable) extends Message
   final case class NewOffsets(
                                timestamp: Long,
                                groups: List[ConsumerGroup],
@@ -42,10 +44,16 @@ object ConsumerGroupCollector {
 
   def init(config: CollectorConfig,
            clientCreator: String => KafkaClientContract,
-           reporter: ActorRef[MetricsSink.Message]): Behavior[ConsumerGroupCollector.Message] = Behaviors.setup { _ =>
-    val collectorState = CollectorState()
-    collector(config, clientCreator(config.clusterBootstrapBrokers), reporter, collectorState)
-  }
+           reporter: ActorRef[MetricsSink.Message]): Behavior[Message] = Behaviors.supervise[Message] {
+    Behaviors.setup { context =>
+      context.log.info(s"Spawned ConsumerGroupCollector for cluster ${config.clusterName}")
+
+      context.self ! Collect
+
+      val collectorState = CollectorState()
+      collector(config, clientCreator(config.clusterBootstrapBrokers), reporter, collectorState)
+    }
+  }.onFailure(SupervisorStrategy.restartWithBackoff(1 seconds, 10 seconds, 0.2))
 
   def collector(config: CollectorConfig,
                 client: KafkaClientContract,
@@ -76,9 +84,8 @@ object ConsumerGroupCollector {
       f.onComplete {
         case Success(newOffsets) =>
           context.self ! newOffsets
-        case Failure(ex) =>
-          context.log.error(ex, "An error occurred while retrieving offsets")
-          context.self ! Stop
+        case Failure(t) =>
+          context.self ! StopWithError(t)
       }(ec)
 
       Behaviors.same
@@ -111,6 +118,10 @@ object ConsumerGroupCollector {
             Behaviors.same
         }
       }
+    case (_, StopWithError(t)) =>
+      state.scheduledCollect.cancel()
+      client.close()
+      throw new Exception("A failure occurred while retrieving offsets.  Shutting down.", t)
   }
 
   private final case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Long, timeLag: Double)

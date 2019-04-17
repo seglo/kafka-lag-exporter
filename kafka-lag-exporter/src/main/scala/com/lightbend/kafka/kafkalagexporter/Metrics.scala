@@ -66,7 +66,7 @@ object Metrics {
     classOf[MaxGroupTimeLagMetric] -> GaugeDefinition(
       "kafka_consumergroup_group_max_lag_seconds",
       "Max group time lag",
-      "cluster_name", "topic", "partition"
+      "cluster_name", "group", "state", "is_simple_consumer"
     ),
     classOf[LastGroupOffsetMetric] -> GaugeDefinition(
       "kafka_consumergroup_group_offset",
