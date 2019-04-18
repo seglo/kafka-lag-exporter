@@ -6,8 +6,10 @@ import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.kafkametricstools.{Domain, MetricsSink}
+import com.lightbend.kafka.kafkametricstools.LookupTable.Point
+import com.lightbend.kafka.kafkametricstools.{Domain, LookupTable, MetricsSink}
 
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
@@ -39,6 +41,7 @@ object ConsumerGroupCollector {
   final case class CollectorState(
                                    latestOffsets: Domain.PartitionOffsets = Domain.PartitionOffsets(),
                                    lastGroupOffsets: Domain.GroupOffsets = Domain.GroupOffsets(),
+                                   topicPartitionTables: Domain.TopicPartitionTable = Domain.TopicPartitionTable(),
                                    scheduledCollect: Cancellable = Cancellable.alreadyCancelled
                                  )
 
@@ -90,20 +93,31 @@ object ConsumerGroupCollector {
 
       Behaviors.same
     case (context, newOffsets: NewOffsets) =>
-      val newOffsetsWithDefaults = defaultMissingPartitions(newOffsets)
-      val mergedLastGroupOffsets = mergeLastGroupOffsets(state.lastGroupOffsets, newOffsetsWithDefaults)
+      val groupOffsets = defaultMissingPartitions(newOffsets)
+
+      // Add Point's to lookup table
+      for {
+        (tp, measurement) <- newOffsets.latestOffsets
+      } yield {
+        val offset = measurement.offset
+        val timestamp = measurement.timestamp
+        val point = LookupTable.Point(offset, timestamp)
+        state.topicPartitionTables(tp).addPoint(point)
+      }
+
+      //val mergedLastGroupOffsets = mergeLastGroupOffsets(state.lastGroupOffsets, newOffsetsWithDefaults)
 
       context.log.debug("Reporting offsets")
 
-      reportLatestOffsetMetrics(config, reporter, newOffsetsWithDefaults)
-      reportConsumerGroupMetrics(config, reporter, newOffsetsWithDefaults, mergedLastGroupOffsets)
+      reportLatestOffsetMetrics(config, reporter, state.topicPartitionTables)
+      reportConsumerGroupMetrics(config, reporter, groupOffsets, state.topicPartitionTables)
 
       context.log.debug("Polling in {}", config.pollInterval)
       val scheduledCollect = context.scheduleOnce(config.pollInterval, context.self, Collect)
 
       val newState = state.copy(
-        latestOffsets = newOffsetsWithDefaults.latestOffsets,
-        lastGroupOffsets = mergedLastGroupOffsets,
+        latestOffsets = groupOffsets.latestOffsets,
+        //lastGroupOffsets = mergedLastGroupOffsets,
         scheduledCollect = scheduledCollect
       )
 
@@ -130,21 +144,25 @@ object ConsumerGroupCollector {
                                           config: CollectorConfig,
                                           reporter: ActorRef[MetricsSink.Message],
                                           newOffsets: NewOffsets,
-                                          updatedLastCommittedOffsets: Map[GroupTopicPartition, Measurements.Measurement]
+                                          tables: TopicPartitionTable
                                         ): Unit = {
-    val groupLag = for {
-      (gtp, measurement: Measurements.Double) <- updatedLastCommittedOffsets
+    val groupLag: immutable.Iterable[GroupPartitionLag] = for {
+      (gtp, measurement: Measurements.Measurement) <- newOffsets.lastGroupOffsets
       member <- gtp.group.members.find(_.partitions.contains(gtp.topicPartition))
-      latestOffset <- newOffsets.latestOffsets.get(gtp.topicPartition)
+      latestOffset <- tables(gtp.topicPartition).lastOffset().toOption
+      // TODO: Return Option or Either for lookup
+      pxTime = tables(gtp.topicPartition).lookup(measurement.offset) if !pxTime.isNaN && !pxTime.isInfinite
     } yield {
+      val delta = (newOffsets.timestamp.toDouble - pxTime) / 1000
       val offsetLag = measurement.offsetLag(latestOffset.offset)
-      val timeLag = measurement.timeLag(latestOffset.offset)
+      //val timeLag = 0
+      //val timeLag = measurement.timeLag(latestOffset.offset)
 
-      reporter ! Metrics.LastGroupOffsetMetric(config.clusterName, gtp, member, measurement.b.offset)
+      reporter ! Metrics.LastGroupOffsetMetric(config.clusterName, gtp, member, measurement.offset)
       reporter ! Metrics.OffsetLagMetric(config.clusterName, gtp, member, offsetLag)
-      reporter ! Metrics.TimeLagMetric(config.clusterName, gtp, member, timeLag)
+      reporter ! Metrics.TimeLagMetric(config.clusterName, gtp, member, delta)
 
-      GroupPartitionLag(gtp, offsetLag, timeLag)
+      GroupPartitionLag(gtp, offsetLag, delta)
     }
 
     for {
@@ -161,10 +179,12 @@ object ConsumerGroupCollector {
   private def reportLatestOffsetMetrics(
                                          config: CollectorConfig,
                                          reporter: ActorRef[MetricsSink.Message],
-                                         newOffsets: NewOffsets
+                                         tables: TopicPartitionTable
                                        ): Unit = {
-    for ((tp, measurement: Measurements.Single) <- newOffsets.latestOffsets)
-      reporter ! Metrics.LatestOffsetMetric(config.clusterName, tp, measurement.offset)
+    for {
+      (tp, table: LookupTable.Table) <- tables.all
+      point <- table.lastOffset()
+    } reporter ! Metrics.LatestOffsetMetric(config.clusterName, tp, point.offset)
   }
 
   private def defaultMissingPartitions(newOffsets: NewOffsets): NewOffsets = {
@@ -180,16 +200,16 @@ object ConsumerGroupCollector {
     newOffsets.copy(lastGroupOffsets = lastGroupOffsetsWithDefaults)
   }
 
-  private def mergeLastGroupOffsets(
-                                     lastGroupOffsets: GroupOffsets,
-                                     newOffsets: NewOffsets): GroupOffsets = {
-    for {
-      (groupTopicPartition, newMeasurement: Measurements.Single) <- newOffsets.lastGroupOffsets
-    } yield {
-      groupTopicPartition -> lastGroupOffsets
-        .get(groupTopicPartition)
-        .map(measurement => measurement.addMeasurement(newMeasurement))
-        .getOrElse(newMeasurement)
-    }
-  }
+//  private def mergeLastGroupOffsets(
+//                                     lastGroupOffsets: GroupOffsets,
+//                                     newOffsets: NewOffsets): GroupOffsets = {
+//    for {
+//      (groupTopicPartition, newMeasurement: Measurements.Single) <- newOffsets.lastGroupOffsets
+//    } yield {
+//      groupTopicPartition -> lastGroupOffsets
+//        .get(groupTopicPartition)
+//        .map(measurement => measurement.addMeasurement(newMeasurement))
+//        .getOrElse(newMeasurement)
+//    }
+//  }
 }

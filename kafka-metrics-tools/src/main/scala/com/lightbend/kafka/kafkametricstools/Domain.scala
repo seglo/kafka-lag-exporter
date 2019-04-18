@@ -2,11 +2,14 @@ package com.lightbend.kafka.kafkametricstools
 
 import com.lightbend.kafka.kafkametricstools.Domain.Measurements.Measurement
 
+import scala.collection.mutable
+
 object Domain {
   object Measurements {
 
     sealed trait Measurement {
       def offset: Long
+      def timestamp: Long
       def addMeasurement(single: Single): Double
       def offsetLag(lastOffset: Long): Long
     }
@@ -18,6 +21,7 @@ object Domain {
 
     final case class Double(a: Single, b: Single) extends Measurement {
       val offset: Long = b.offset
+      val timestamp: Long = b.timestamp
       def addMeasurement(c: Single): Double = Double(b, c)
       def offsetLag(lastOffset: Long): Long = {
         if (lastOffset <= 0 || b.offset > lastOffset) 0
@@ -66,5 +70,19 @@ object Domain {
 
   object PartitionOffsets {
     def apply(): PartitionOffsets = Map.empty[TopicPartition, Measurement]
+  }
+
+  class TopicPartitionTable private(var tables: Map[TopicPartition, LookupTable.Table]) {
+    def apply(tp: TopicPartition): LookupTable.Table = {
+      tables = tables.updated(tp, tables.getOrElse(tp, LookupTable.Table(20)))
+      tables(tp)
+    }
+
+    def all: Map[TopicPartition, LookupTable.Table] = tables
+  }
+
+  object TopicPartitionTable {
+    def apply(tables: Map[TopicPartition, LookupTable.Table] = Map.empty[TopicPartition, LookupTable.Table]): TopicPartitionTable =
+      new TopicPartitionTable(tables)
   }
 }
