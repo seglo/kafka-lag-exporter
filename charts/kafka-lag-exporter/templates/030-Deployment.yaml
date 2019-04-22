@@ -29,10 +29,14 @@ spec:
               value: "{{ .Values.service.port }}"
             - name: KAFKA_LAG_EXPORTER_POLL_INTERVAL_SECONDS
               value: "{{ .Values.pollIntervalSeconds }} seconds"
+            - name: KAFKA_LAG_EXPORTER_POLL_LOOKUP_TABLE_SIZE
+              value: "{{ .Values.lookupTableSize }}"
             - name: KAFKA_LAG_EXPORTER_CLIENT_GROUP_ID
               value: "{{ .Values.clientGroupId }}"
+            - name: ROOT_LOG_LEVEL
+              value: "{{ .Values.rootLogLevel }}"
             - name: KAFKA_LAG_EXPORTER_LOG_LEVEL
-              value: "{{ .Values.logLevel }}"
+              value: "{{ .Values.kafkaLagExporterLogLevel }}"
             - name: KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL
               value: "{{ .Values.kafkaLogLevel }}"
             - name: KAFKA_LAG_EXPORTER_KAFKA_CLIENT_TIMEOUT_SECONDS

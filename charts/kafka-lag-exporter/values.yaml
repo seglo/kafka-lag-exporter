@@ -6,10 +6,14 @@ clusters: {}
 #    bootstrapBrokers: "my-cluster-kafka-bootstrap:9092"
 ## The interval between refreshing metrics
 pollIntervalSeconds: 5
+## Size of the sliding window of offsets to keep in each partition's lookup table
+lookupTableSize: 20
 ## The Consumer Group `group.id` to use when connecting to Kafka
 clientGroupId: "kafkalagexporter"
 ## The log level of the ROOT logger
-logLevel: INFO
+rootLogLevel: INFO
+## The log level of Kafka Lag Exporter
+kafkaLagExporterLogLevel: INFO
 ## The log level of `org.apache.kafka` logger
 kafkaLogLevel: INFO
 ## The timeout when communicating with Kafka clusters
@@ -23,7 +27,7 @@ watchers:
 ## You probably won't need to change anything below this line.
 image:
   repository: lightbend/kafka-lag-exporter
-  tag: 0.3.6
+  tag: 0.4.0
   pullPolicy: IfNotPresent
 service:
   type: ClusterIP

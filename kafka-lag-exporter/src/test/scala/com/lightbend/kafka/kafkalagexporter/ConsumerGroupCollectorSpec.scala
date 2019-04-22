@@ -4,8 +4,8 @@ import java.time.{Clock, Instant, ZoneId}
 
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
 import com.lightbend.kafka.kafkametricstools
-import com.lightbend.kafka.kafkametricstools.Domain._
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
+import com.lightbend.kafka.kafkametricstools.LookupTable._
 import com.lightbend.kafka.kafkametricstools.{Domain, LookupTable, MetricsSink}
 import org.mockito.MockitoSugar
 import org.scalatest.{Matchers, _}
@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 
 class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametricstools.TestData with MockitoSugar {
   val client: KafkaClientContract = mock[KafkaClientContract]
-  val config = ConsumerGroupCollector.CollectorConfig(0 seconds, "default", "", Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
+  val config = ConsumerGroupCollector.CollectorConfig(0 seconds, 20, "default", "", Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
 
   val timestampNow = 200
 
@@ -24,16 +24,15 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     val lookupTable = LookupTable.Table(20)
     lookupTable.addPoint(LookupTable.Point(100, 100))
 
-    // TODO: remove anything from state not used anymore
     val state = ConsumerGroupCollector.CollectorState(
-      topicPartitionTables = Domain.TopicPartitionTable(Map(topicPartition0 -> lookupTable))
+      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable))
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = timestampNow))
-    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 180, timestamp = timestampNow))
+    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = timestampNow))
+    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Point(offset = 180, time = timestampNow))
 
     testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
 
@@ -75,35 +74,25 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     lookupTable.addPoint(LookupTable.Point(100, 100))
 
     val state = ConsumerGroupCollector.CollectorState(
-      topicPartitionTables = Domain.TopicPartitionTable(Map(
+      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(
         topicPartition0 -> lookupTable.copy(),
         topicPartition1 -> lookupTable.copy(),
         topicPartition2 -> lookupTable.copy()
       )),
-//      latestOffsets = Domain.PartitionOffsets() ++ List(
-//        topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100),
-//        topicPartition1 -> Measurements.Single(offset = 100, timestamp = 100),
-//        topicPartition2 -> Measurements.Single(offset = 100, timestamp = 100)
-//      ),
-//      lastGroupOffsets = Domain.GroupOffsets() ++ List(
-//        gtp0 -> Measurements.Single(offset = 90, timestamp = 100),
-//        gtp1 -> Measurements.Single(offset = 90, timestamp = 100),
-//        gtp2 -> Measurements.Single(offset = 90, timestamp = 100),
-//      )
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
     val newLatestOffsets = Domain.PartitionOffsets() ++ List(
-      topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200),
-      topicPartition1 -> Measurements.Single(offset = 200, timestamp = 200),
-      topicPartition2 -> Measurements.Single(offset = 200, timestamp = 200)
+      topicPartition0 -> Point(offset = 200, time = 200),
+      topicPartition1 -> Point(offset = 200, time = 200),
+      topicPartition2 -> Point(offset = 200, time = 200)
     )
     val newLastGroupOffsets = Domain.GroupOffsets() ++ List(
-      gtp0 -> Measurements.Single(offset = 180, timestamp = 200),
-      gtp1 -> Measurements.Single(offset = 100, timestamp = 200),
-      gtp2 -> Measurements.Single(offset = 180, timestamp = 200),
+      gtp0 -> Point(offset = 180, time = 200),
+      gtp1 -> Point(offset = 100, time = 200),
+      gtp2 -> Point(offset = 180, time = 200),
     )
 
     testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupThreeMember), newLatestOffsets, newLastGroupOffsets))
@@ -119,7 +108,6 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     }
   }
 
-  // TODO: debug
   "ConsumerGroupCollector when consumer group partitions have no offset should send" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
@@ -127,15 +115,13 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     lookupTable.addPoint(LookupTable.Point(100, 100))
 
     val state = ConsumerGroupCollector.CollectorState(
-      topicPartitionTables = Domain.TopicPartitionTable(Map(topicPartition0 -> lookupTable)),
-//      latestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
-//      lastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 0, timestamp = 100))
+      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable)),
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200))
+    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = 200))
     val newLastGroupOffsets = Domain.GroupOffsets() // <-- no new group offsets
 
     testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))

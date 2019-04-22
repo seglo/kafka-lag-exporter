@@ -10,7 +10,7 @@ import scala.util.Try
 
 class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) with BeforeAndAfterEach {
 
-  implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 1 second)
+  implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 2 second)
 
   "kafka lag exporter" should {
     val group = createGroupId(1)
@@ -30,7 +30,7 @@ class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) wi
           Rule.create(classOf[OffsetLagMetric], (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group, topic, partition)
         )
 
-        val simulator = new AppSimulator(topic, group)
+        val simulator = new LagSimulator(topic, group)
         simulator.produceElements(totalOffsets)
         simulator.consumeElements(offsetsToCommit)
 
@@ -45,8 +45,8 @@ class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) wi
 
       val testKit = ActorTestKit()
 
-      val simulator = new AppSimulator(topic, group)
-      val simulatorActor = testKit.spawn(appSimulatorActor(simulator), "app-simulator")
+      val simulator = new LagSimulator(topic, group)
+      val simulatorActor = testKit.spawn(lagSimActor(simulator), "app-simulator")
 
       simulatorActor ! Tick(10, 5)
 

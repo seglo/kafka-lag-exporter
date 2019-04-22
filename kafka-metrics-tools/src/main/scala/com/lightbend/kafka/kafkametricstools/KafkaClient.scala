@@ -5,7 +5,6 @@ import java.util.Properties
 import java.util.concurrent.TimeUnit
 import java.{lang, util}
 
-import com.lightbend.kafka.kafkametricstools.Domain.Measurements
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndMetadata}
@@ -28,9 +27,9 @@ object KafkaClient {
 
   trait KafkaClientContract {
     def getGroups(): Future[List[Domain.ConsumerGroup]]
-    def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]]
-    def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Try[Map[Domain.TopicPartition, Measurements.Single]]
-    def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, Measurements.Single]]
+    def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, LookupTable.Point]]
+    def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Try[Map[Domain.TopicPartition, LookupTable.Point]]
+    def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, LookupTable.Point]]
     def close(): Unit
   }
 
@@ -121,7 +120,7 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String, clientTimeo
   /**
     * Get latest offsets for a set of consumer groups.
     */
-  def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Try[Map[Domain.TopicPartition, Measurements.Single]] = {
+  def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Try[Map[Domain.TopicPartition, LookupTable.Point]] = {
     val partitions = dedupeGroupPartitions(groups)
     getLatestOffsets(now, partitions)
   }
@@ -133,9 +132,9 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String, clientTimeo
   /**
     * Get latest offsets for a set of topic partitions.
     */
-  def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, Measurements.Single]] = Try {
+  def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, LookupTable.Point]] = Try {
     val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava, _clientTimeout)
-    topicPartitions.map(tp => tp -> Measurements.Single(offsets.get(tp.asKafka).toLong,now)).toMap
+    topicPartitions.map(tp => tp -> LookupTable.Point(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 
   /**
@@ -143,10 +142,10 @@ class KafkaClient private(bootstrapBrokers: String, groupId: String, clientTimeo
     * topic partition has no matched Consumer Group offset then a default offset of 0 is provided.
     * @return A series of Future's for Consumer Group offsets requests to Kafka.
     */
-  def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, Measurements.Measurement]] = {
-    def actualGroupOffsets(group: Domain.ConsumerGroup, offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata]): List[(Domain.GroupTopicPartition, Measurements.Single)] = {
+  def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, LookupTable.Point]] = {
+    def actualGroupOffsets(group: Domain.ConsumerGroup, offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata]): List[(Domain.GroupTopicPartition, LookupTable.Point)] = {
       offsetMap.map { case (tp, offsets) =>
-        Domain.GroupTopicPartition(group, tp.asDomain) -> Measurements.Single(offsets.offset(), now)
+        Domain.GroupTopicPartition(group, tp.asDomain) -> LookupTable.Point(offsets.offset(), now)
       }.toList
     }
 

@@ -19,8 +19,8 @@ abstract class SpecBase(kafkaPort: Int, val exporterPort: Int)
     with Matchers
     with ScalaFutures
     with Eventually
-    with PrometheusTestUtils
-    with KafkaAppSimulator {
+    with PrometheusUtils
+    with LagSim {
 
   def createKafkaConfig: EmbeddedKafkaConfig =
     EmbeddedKafkaConfig(kafkaPort,

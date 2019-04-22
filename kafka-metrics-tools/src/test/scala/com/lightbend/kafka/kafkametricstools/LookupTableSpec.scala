@@ -1,5 +1,5 @@
 package com.lightbend.kafka.kafkametricstools
-import org.scalatest.{FlatSpec, FreeSpec, Matchers}
+import org.scalatest.{FreeSpec, Matchers}
 
 class LookupTableSpec extends FreeSpec with Matchers {
 
@@ -54,7 +54,13 @@ class LookupTableSpec extends FreeSpec with Matchers {
 
         table.addPoint(Point(100, 30))
         table.addPoint(Point(200, 60))
+        table.addPoint(Point(200, 120))
         table.addPoint(Point(200, 700))
+
+        if (table.points.length != 3) {
+          fail(s"Expected table to have 3 entries.  Table should truncate compress middle value for offset 200.  $table")
+        }
+
         table.addPoint(Point(300, 730))
         table.addPoint(Point(300, 9000))
         table.addPoint(Point(400, 9030))
@@ -110,7 +116,7 @@ class LookupTableSpec extends FreeSpec with Matchers {
 
         table.lookup(1600) shouldBe 2.5
         table.lookup(0) shouldBe 0
-        table.lookup(1) shouldBe 0.1
+        table.lookup(1) shouldBe 0.09999999999999998
         table.lookup(9) shouldBe 0.9
         table.lookup(10) shouldBe 1
         table.lookup(200) shouldBe 2
@@ -124,25 +130,25 @@ class LookupTableSpec extends FreeSpec with Matchers {
       }
     }
 
-    "lastOffset" in {
+    "mostRecentPoint" in {
       val table = Table(5)
 
-      val result = table.lastOffset()
+      val result = table.mostRecentPoint()
 
       if (result.isRight) {
-        fail(s"Expected last offset on empty table to fail with an error, but got $result")
+        fail(s"Expected most recent point on empty table to fail with an error, but got $result")
       }
 
       for (n <- 0 to 10) {
         table.addPoint(Point(n, n*10))
-        val result = table.lastOffset()
+        val result = table.mostRecentPoint()
 
         if (result.isLeft) {
-          fail(s"Last offset on $table returned error unexpectedly: $result")
+          fail(s"Most recent point on $table returned error unexpectedly: $result")
         }
 
         if (n != result.right.get.offset) {
-          fail(s"Last offset on $table expected $n, but got ${result.right.get.offset}")
+          fail(s"Most recent point on $table expected $n, but got ${result.right.get.offset}")
         }
       }
     }

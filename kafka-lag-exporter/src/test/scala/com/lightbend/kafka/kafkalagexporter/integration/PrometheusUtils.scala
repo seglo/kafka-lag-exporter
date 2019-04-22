@@ -5,8 +5,8 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import com.lightbend.kafka.kafkalagexporter.Metrics
+import org.scalatest.Matchers
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Assertion, Matchers}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -14,8 +14,8 @@ import scala.util.matching.Regex
 
 /**
  * Test utilities to parse the Prometheus health endpoint to assert metrics in integration tests.
-  */
-trait PrometheusTestUtils extends Matchers with ScalaFutures {
+ */
+trait PrometheusUtils extends Matchers with ScalaFutures {
 
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
@@ -37,7 +37,7 @@ trait PrometheusTestUtils extends Matchers with ScalaFutures {
 
   def scrapeAndAssert(port: Int, description: String, rules: Rule*)
                      (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit = {
-    val results = scrape(8000, rules: _*).futureValue
+    val results = scrape(port, rules: _*).futureValue
     log.debug("Start: {}", description)
     results.foreach(_.assert())
     log.debug("End (Successful): {}", description)

@@ -11,6 +11,7 @@ object AppConfig {
   def apply(config: Config): AppConfig = {
     val c = config.getConfig("kafka-lag-exporter")
     val pollInterval = c.getDuration("poll-interval").toScala
+    val lookupTableSize = c.getInt("lookup-table-size")
     val port = c.getInt("port")
     val clientGroupId = c.getString("client-group-id")
     val kafkaClientTimeout = c.getDuration("kafka-client-timeout").toScala
@@ -21,13 +22,13 @@ object AppConfig {
       )
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
-    AppConfig(pollInterval, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher)
+    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher)
   }
 }
 
-final case class AppConfig(pollInterval: FiniteDuration, port: Int, clientGroupId: String,
-                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster],
-                           strimziWatcher: Boolean) extends SimpleConfig {
+final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, port: Int, clientGroupId: String,
+                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean)
+  extends SimpleConfig {
   override def toString(): String = {
     val clusterString =
       if (clusters.isEmpty)
@@ -41,6 +42,7 @@ final case class AppConfig(pollInterval: FiniteDuration, port: Int, clientGroupI
         }.mkString("\n")
     s"""
        |Poll interval: $pollInterval
+       |Lookup table size: $lookupTableSize
        |Prometheus metrics endpoint port: $port
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
