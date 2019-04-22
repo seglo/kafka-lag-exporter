@@ -11,7 +11,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-abstract class SpecBase(kafkaPort: Int)
+abstract class SpecBase(kafkaPort: Int, val exporterPort: Int)
   extends ScalatestKafkaSpec(kafkaPort)
     with WordSpecLike
     with BeforeAndAfterEach
@@ -19,7 +19,8 @@ abstract class SpecBase(kafkaPort: Int)
     with Matchers
     with ScalaFutures
     with Eventually
-    with PrometheusTestUtils{
+    with PrometheusTestUtils
+    with KafkaAppSimulator {
 
   def createKafkaConfig: EmbeddedKafkaConfig =
     EmbeddedKafkaConfig(kafkaPort,
@@ -37,6 +38,7 @@ abstract class SpecBase(kafkaPort: Int)
                                             |  clusters = [
                                             |    {
                                             |      name: "$clusterName"
+                                            |      port: $exporterPort
                                             |      bootstrap-brokers: "localhost:$kafkaPort"
                                             |    }
                                             |  ]
@@ -48,6 +50,6 @@ abstract class SpecBase(kafkaPort: Int)
 
   override def afterEach(): Unit = {
     kafkaLagExporter ! KafkaClusterManager.Stop
-    Await.result(kafkaLagExporter.whenTerminated, 5 seconds)
+    Await.result(kafkaLagExporter.whenTerminated, 10 seconds)
   }
 }

@@ -15,7 +15,7 @@ object MainApp extends App {
   // Add shutdown hook to respond to SIGTERM and gracefully shutdown the actor system
   sys.ShutdownHookThread {
     system ! KafkaClusterManager.Stop
-    Await.result(system.whenTerminated, 5 seconds)
+    Await.result(system.whenTerminated, 10 seconds)
   }
 
   def start(config: Config = ConfigFactory.load()): ActorSystem[KafkaClusterManager.Message] = {

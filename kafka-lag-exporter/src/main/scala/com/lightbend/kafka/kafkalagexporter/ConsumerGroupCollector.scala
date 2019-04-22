@@ -151,7 +151,7 @@ object ConsumerGroupCollector {
       member <- gtp.group.members.find(_.partitions.contains(gtp.topicPartition))
       latestOffset <- tables(gtp.topicPartition).lastOffset().toOption
       // TODO: Return Option or Either for lookup
-      pxTime = tables(gtp.topicPartition).lookup(measurement.offset) if !pxTime.isNaN && !pxTime.isInfinite
+      pxTime = tables(gtp.topicPartition).lookup(measurement.offset) //if !pxTime.isNaN && !pxTime.isInfinite
     } yield {
       val delta = (newOffsets.timestamp.toDouble - pxTime) / 1000
       val offsetLag = measurement.offsetLag(latestOffset.offset)
