@@ -2,62 +2,15 @@ import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 import Dependencies._
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerCommands, dockerUsername}
 
-lazy val root =
-  Project(id = "root", base = file("."))
-    .settings(
-      name := "root",
-      skip in publish := true
-    )
-    .withId("root")
-    .settings(commonSettings)
-    .aggregate(
-      kafkaMetricsTools,
-      kafkaLagExporter,
-//      sparkEventExporter
-    )
-
-lazy val kafkaMetricsTools =
-  module("kafka-metrics-tools")
-    .settings(
-      description := "Tools to help get and report Kafka client metrics",
-      libraryDependencies ++= Vector(
-        Kafka,
-        AkkaTyped,
-        AkkaSlf4j,
-        Logback,
-        Prometheus,
-        PrometheusHotSpot,
-        PrometheusHttpServer,
-        DropwizardMetrics,
-        ScalaJava8Compat,
-        ScalaTest,
-        AkkaTypedTestKit,
-        MockitoScala
-      )
-    )
-
-//lazy val sparkEventExporter =
-//  module("spark-event-exporter")
-//    .dependsOn(kafkaMetricsTools % "compile->compile;test->test")
-//    .settings(
-//      description := "Spark event exporter exposes offset and throughput related metrics for Spark Streaming apps",
-//      libraryDependencies ++= Vector(
-//        Spark,
-//        SparkSql,
-//        ScalaTest,
-//        AkkaTypedTestKit,
-//        MockitoScala
-//      )
-//    )
-
 lazy val updateHelmChartVersions = taskKey[Unit]("Update Helm Chart versions")
 
 lazy val kafkaLagExporter =
-  module("kafka-lag-exporter")
-    .dependsOn(kafkaMetricsTools % "compile->compile;test->test")
+  Project(id = "kafka-lag-exporter", base = file("."))
     .enablePlugins(JavaAppPackaging)
     .enablePlugins(DockerPlugin)
+    .settings(commonSettings)
     .settings(
+      name := "kafka-lag-exporter",
       description := "Kafka lag exporter finds and reports Kafka consumer group lag metrics",
       libraryDependencies ++= Vector(
         LightbendConfig,
@@ -66,6 +19,10 @@ lazy val kafkaLagExporter =
         AkkaSlf4j,
         Fabric8Model,
         Fabric8Client,
+        Prometheus,
+        PrometheusHotSpot,
+        PrometheusHttpServer,
+        ScalaJava8Compat,
         Logback,
         ScalaTest,
         AkkaTypedTestKit,
@@ -97,9 +54,7 @@ lazy val kafkaLagExporter =
     )
 
 lazy val commonSettings = Seq(
-  organization := "com.lightbend.kafka",
-  bintrayOrganization := Some("lightbend"),
-  bintrayRepository := "pipelines-internal",
+  organization := "com.lightbend.kafkalagexporter",
   publishMavenStyle := false,
   bintrayOmitLicense := true,
   scalaVersion := Version.Scala,
@@ -119,12 +74,3 @@ lazy val commonSettings = Seq(
   scalacOptions in (Compile, console) := (scalacOptions in (Global)).value.filter(_ == "-Ywarn-unused-import"),
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
 )
-
-def module(moduleId: String): Project = {
-  Project(id = moduleId, base = file(moduleId))
-    .settings(
-      name := moduleId
-    )
-    .withId(moduleId)
-    .settings(commonSettings)
-}
