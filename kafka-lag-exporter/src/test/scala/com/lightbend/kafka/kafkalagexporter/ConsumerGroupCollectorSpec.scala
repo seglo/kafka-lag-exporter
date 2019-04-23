@@ -4,9 +4,9 @@ import java.time.{Clock, Instant, ZoneId}
 
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
 import com.lightbend.kafka.kafkametricstools
-import com.lightbend.kafka.kafkametricstools.Domain._
 import com.lightbend.kafka.kafkametricstools.KafkaClient.KafkaClientContract
-import com.lightbend.kafka.kafkametricstools.{Domain, MetricsSink}
+import com.lightbend.kafka.kafkametricstools.LookupTable._
+import com.lightbend.kafka.kafkametricstools.{Domain, LookupTable, MetricsSink}
 import org.mockito.MockitoSugar
 import org.scalatest.{Matchers, _}
 
@@ -14,23 +14,27 @@ import scala.concurrent.duration._
 
 class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametricstools.TestData with MockitoSugar {
   val client: KafkaClientContract = mock[KafkaClientContract]
-  val config = ConsumerGroupCollector.CollectorConfig(0 seconds, "default", "", Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
+  val config = ConsumerGroupCollector.CollectorConfig(0 seconds, 20, "default", "", Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
+
+  val timestampNow = 200
 
   "ConsumerGroupCollector should send" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
+    val lookupTable = LookupTable.Table(20)
+    lookupTable.addPoint(LookupTable.Point(100, 100))
+
     val state = ConsumerGroupCollector.CollectorState(
-      latestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
-      lastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 90, timestamp = 100))
+      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable))
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200))
-    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 180, timestamp = 200))
+    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = timestampNow))
+    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Point(offset = 180, time = timestampNow))
 
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = 0, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
@@ -51,7 +55,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     }
 
     "time lag metric" in {
-      metrics should contain(Metrics.TimeLagMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 0.022))
+      metrics should contain(Metrics.TimeLagMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 0.02))
     }
 
     "max group offset lag metric" in {
@@ -59,41 +63,39 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupSingleMember, value = 0.022))
+      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupSingleMember, value = 0.02))
     }
   }
 
   "ConsumerGroupCollector should calculate max group metrics and send" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
+    val lookupTable = LookupTable.Table(20)
+    lookupTable.addPoint(LookupTable.Point(100, 100))
+
     val state = ConsumerGroupCollector.CollectorState(
-      latestOffsets = Domain.PartitionOffsets() ++ List(
-        topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100),
-        topicPartition1 -> Measurements.Single(offset = 100, timestamp = 100),
-        topicPartition2 -> Measurements.Single(offset = 100, timestamp = 100)
-      ),
-      lastGroupOffsets = Domain.GroupOffsets() ++ List(
-        gtp0 -> Measurements.Single(offset = 90, timestamp = 100),
-        gtp1 -> Measurements.Single(offset = 90, timestamp = 100),
-        gtp2 -> Measurements.Single(offset = 90, timestamp = 100),
-      )
+      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(
+        topicPartition0 -> lookupTable.copy(),
+        topicPartition1 -> lookupTable.copy(),
+        topicPartition2 -> lookupTable.copy()
+      )),
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
     val newLatestOffsets = Domain.PartitionOffsets() ++ List(
-      topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200),
-      topicPartition1 -> Measurements.Single(offset = 200, timestamp = 200),
-      topicPartition2 -> Measurements.Single(offset = 200, timestamp = 200)
+      topicPartition0 -> Point(offset = 200, time = 200),
+      topicPartition1 -> Point(offset = 200, time = 200),
+      topicPartition2 -> Point(offset = 200, time = 200)
     )
     val newLastGroupOffsets = Domain.GroupOffsets() ++ List(
-      gtp0 -> Measurements.Single(offset = 180, timestamp = 200),
-      gtp1 -> Measurements.Single(offset = 100, timestamp = 200),
-      gtp2 -> Measurements.Single(offset = 180, timestamp = 200),
+      gtp0 -> Point(offset = 180, time = 200),
+      gtp1 -> Point(offset = 100, time = 200),
+      gtp2 -> Point(offset = 180, time = 200),
     )
 
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = 0, List(consumerGroupThreeMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupThreeMember), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
@@ -102,25 +104,27 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupThreeMember, value = 1.000))
+      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupThreeMember, value = 0.1))
     }
   }
 
   "ConsumerGroupCollector when consumer group partitions have no offset should send" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
+    val lookupTable = LookupTable.Table(20)
+    lookupTable.addPoint(LookupTable.Point(100, 100))
+
     val state = ConsumerGroupCollector.CollectorState(
-      latestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 100, timestamp = 100)),
-      lastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Measurements.Single(offset = 0, timestamp = 100))
+      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable)),
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Measurements.Single(offset = 200, timestamp = 200))
+    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = 200))
     val newLastGroupOffsets = Domain.GroupOffsets() // <-- no new group offsets
 
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = 0, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
@@ -137,7 +141,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     }
 
     "time lag metric" in {
-      metrics should contain(Metrics.TimeLagMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 0))
+      metrics should contain(Metrics.TimeLagMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 0.2))
     }
 
     "max group offset lag metric" in {
@@ -145,7 +149,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with kafkametric
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupSingleMember, value = 0))
+      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupSingleMember, value = 0.2))
     }
   }
 }

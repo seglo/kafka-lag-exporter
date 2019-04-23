@@ -40,8 +40,16 @@ object KafkaClusterManager {
       case (context, ClusterAdded(cluster)) =>
         context.log.info(s"Cluster Added: $cluster")
 
-        val config = ConsumerGroupCollector.CollectorConfig(appConfig.pollInterval, cluster.name, cluster.bootstrapBrokers)
-        val collector = context.spawn(ConsumerGroupCollector.init(config, clientCreator, reporter), s"consumer-group-collector-${cluster.name}")
+        val config = ConsumerGroupCollector.CollectorConfig(
+          appConfig.pollInterval,
+          appConfig.lookupTableSize,
+          cluster.name,
+          cluster.bootstrapBrokers
+        )
+        val collector = context.spawn(
+          ConsumerGroupCollector.init(config, clientCreator, reporter),
+          s"consumer-group-collector-${cluster.name}"
+        )
 
         manager(appConfig, clientCreator, reporter, collectors + (cluster -> collector), watchers)
 

@@ -1,6 +1,6 @@
 package com.lightbend.kafka.kafkametricstools
 import com.lightbend.kafka.kafkametricstools.MetricsSink.{Metric, MetricDefinitions}
-import io.prometheus.client.Gauge
+import io.prometheus.client.{CollectorRegistry, Gauge}
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 
@@ -15,6 +15,7 @@ object PrometheusEndpointSink {
 class PrometheusEndpointSink private(httpPort: Int, definitions: MetricDefinitions) extends MetricsSink {
 
   private val server = new HTTPServer(httpPort)
+  private val registry = CollectorRegistry.defaultRegistry
 
   DefaultExports.initialize()
 
@@ -23,12 +24,19 @@ class PrometheusEndpointSink private(httpPort: Int, definitions: MetricDefinitio
       .name(defn.name)
       .help(defn.help)
       .labelNames(defn.label: _*)
-      .register()
+      .register(registry)
   }.toMap
 
   override def report(m: Metric): Unit = {
     val metric = metrics.getOrElse(m.getClass, throw new IllegalArgumentException(s"No metric with type ${m.getClass.getName} defined"))
     metric.labels(m.labels: _*).set(m.value)
   }
-  override def stop(): Unit = server.stop()
+  override def stop(): Unit = {
+    /*
+     * Unregister all collectors (i.e. Gauges).  Useful for integration tests.
+     * NOTE: This will nuke all JVM metrics too, but we don't care about those in tests.
+     */
+    registry.clear()
+    server.stop()
+  }
 }

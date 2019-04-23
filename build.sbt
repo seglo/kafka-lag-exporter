@@ -13,7 +13,7 @@ lazy val root =
     .aggregate(
       kafkaMetricsTools,
       kafkaLagExporter,
-      sparkEventExporter
+//      sparkEventExporter
     )
 
 lazy val kafkaMetricsTools =
@@ -36,19 +36,19 @@ lazy val kafkaMetricsTools =
       )
     )
 
-lazy val sparkEventExporter =
-  module("spark-event-exporter")
-    .dependsOn(kafkaMetricsTools % "compile->compile;test->test")
-    .settings(
-      description := "Spark event exporter exposes offset and throughput related metrics for Spark Streaming apps",
-      libraryDependencies ++= Vector(
-        Spark,
-        SparkSql,
-        ScalaTest,
-        AkkaTypedTestKit,
-        MockitoScala
-      )
-    )
+//lazy val sparkEventExporter =
+//  module("spark-event-exporter")
+//    .dependsOn(kafkaMetricsTools % "compile->compile;test->test")
+//    .settings(
+//      description := "Spark event exporter exposes offset and throughput related metrics for Spark Streaming apps",
+//      libraryDependencies ++= Vector(
+//        Spark,
+//        SparkSql,
+//        ScalaTest,
+//        AkkaTypedTestKit,
+//        MockitoScala
+//      )
+//    )
 
 lazy val updateHelmChartVersions = taskKey[Unit]("Update Helm Chart versions")
 
