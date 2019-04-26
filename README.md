@@ -44,13 +44,6 @@ You can install the chart from the local filesystem.
 helm install ./charts/kafka-lag-exporter
 ```
 
-Or from the lightbend Helm Chart repository.
-
-```
-helm repo add lightbend https://repo.lightbend.com/helm-charts
-helm install lightbend/kafka-lag-exporter
-```
-
 ### Examples
 
 Install with the [Strimzi](https://strimzi.io/) Kafka discovery feature.
@@ -59,7 +52,7 @@ See [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher) for more det
 ```
 helm install ./charts/kafka-lag-exporter \
   --name kafka-lag-exporter \
-  --namespace myproject \
+  --namespace kafka-lag-exporter \
   --set watchers.strimzi=true
 ```
 
@@ -112,6 +105,14 @@ A Docker Compose cluster with producers and multiple consumer groups is defined 
 is useful to manually test the project locally, without K8s infrastructure.  These images are based on the popular
 [`wurstmeister`](https://hub.docker.com/r/wurstmeister/kafka/) Apache Kafka Docker images.  Confirm you match up the
 version of these images with the correct version of Kafka you wish to test.
+
+To configure cluster connection info either create an `application.conf` or pass environment variables.
+
+```
+KAFKA_LAG_EXPORTER_CLUSTERS.0.name=default
+KAFKA_LAG_EXPORTER_CLUSTERS.0.bootstrap-brokers=localhost:9094
+```
+
 
 Remove any previous volume state.
 
