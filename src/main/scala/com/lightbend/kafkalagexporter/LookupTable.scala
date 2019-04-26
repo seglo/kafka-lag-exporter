@@ -5,6 +5,8 @@ import scala.collection.mutable
 object LookupTable {
   case class Point(offset: Long, time: Long)
   case class Table(limit: Int, points: mutable.Queue[Point]) {
+    import Table._
+
     /**
      * Add the `Point` to the table.
      */
@@ -40,8 +42,8 @@ object LookupTable {
      * Predict the timestamp of a provided offset using interpolation if in the sliding window, or extrapolation if
      * outside the sliding window.
      */
-    def lookup(offset: Long): Double = {
-      def estimate(): Double = {
+    def lookup(offset: Long): Result = {
+      def estimate(): Result = {
         // search for two cells that contains the given offset
         val (left, right) = points
           .reverseIterator
@@ -63,12 +65,16 @@ object LookupTable {
         val Px = (right.time).toDouble
         val Dy = (right.offset - offset).toDouble
 
-        Px - Dy*dx/dy
+        Prediction(Px - Dy * dx / dy)
       }
 
-      // require at least 2 points to create an estimate
-      if (points.length <= 1) Double.NaN
-      else estimate()
+      points.toList match {
+        case p if p.length < 2 => TooFewPoints
+        // if we only have 2 points at the same offset
+        case p1 :: p2 :: Nil if p1.offset == p2.offset => LagIsZero
+        case _ => estimate()
+
+      }
     }
 
     /**
@@ -82,5 +88,10 @@ object LookupTable {
 
   object Table {
     def apply(limit: Int): Table = Table(limit, mutable.Queue[Point]())
+
+    sealed trait Result
+    case object TooFewPoints extends Result
+    case object LagIsZero extends Result
+    final case class Prediction(time: Double) extends Result
   }
 }

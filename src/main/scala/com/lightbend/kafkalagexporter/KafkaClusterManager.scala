@@ -19,6 +19,9 @@ object KafkaClusterManager {
 
     context.log.info("Starting Kafka Lag Exporter with configuration: \n{}", appConfig)
 
+    if (appConfig.clusters.isEmpty && !appConfig.strimziWatcher)
+      context.log.info("No watchers are defined and no clusters are statically configured.  Nothing to do.")
+
     val metricsSinkInst: MetricsSink = metricsSink()
     val watchers: Seq[ActorRef[Watcher.Message]] = Watcher.createClusterWatchers(context, appConfig)
     val reporter: ActorRef[MetricsSink.Message] = context.spawn(MetricsReporter.init(metricsSinkInst), "lag-reporter")

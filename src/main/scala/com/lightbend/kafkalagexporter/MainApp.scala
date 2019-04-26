@@ -28,6 +28,6 @@ object MainApp extends App {
     val endpointCreator = () => PrometheusEndpointSink(appConfig.port, Metrics.metricDefinitions)
 
     ActorSystem(
-      KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafkalagexporterapp")
+      KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafka-lag-exporter")
   }
 }

@@ -1,5 +1,6 @@
 package com.lightbend.kafkalagexporter
 
+import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
 import org.scalatest.{FreeSpec, Matchers}
 
 class LookupTableSpec extends FreeSpec with Matchers {
@@ -15,12 +16,12 @@ class LookupTableSpec extends FreeSpec with Matchers {
           fail(s"New table should be empty $table")
         }
 
-        assert(table.lookup(0).isNaN)
+        table.lookup(0) shouldBe TooFewPoints
 
         // Point(offset: Long, time: Long)
         table.addPoint(Point(100, 100))
 
-        assert(table.lookup(0).isNaN)
+        table.lookup(0) shouldBe TooFewPoints
 
         // invalid points.
         // should be monotonically increasing in time and offset
@@ -47,7 +48,7 @@ class LookupTableSpec extends FreeSpec with Matchers {
         300, 100 // extrapolation over the table
         )
 
-        tests.foreach(expected => table.lookup(expected) shouldBe expected)
+        tests.foreach(expected => table.lookup(expected) shouldBe Prediction(expected))
       }
 
       "lookups with flat sections" in {
@@ -66,13 +67,22 @@ class LookupTableSpec extends FreeSpec with Matchers {
         table.addPoint(Point(300, 9000))
         table.addPoint(Point(400, 9030))
 
-        table.lookup(199) shouldBe 59.7
-        table.lookup(200) shouldBe 700 // should find the latest (right hand side) of the flat section
-        table.lookup(201) shouldBe 700.3
-        table.lookup(250) shouldBe 715
-        table.lookup(299) shouldBe 729.7
-        table.lookup(300) shouldBe 9000 // ditto
-        table.lookup(301) shouldBe 9000.3
+        table.lookup(199) shouldBe Prediction(59.7)
+        table.lookup(200) shouldBe Prediction(700) // should find the latest (right hand side) of the flat section
+        table.lookup(201) shouldBe Prediction(700.3)
+        table.lookup(250) shouldBe Prediction(715)
+        table.lookup(299) shouldBe Prediction(729.7)
+        table.lookup(300) shouldBe Prediction(9000) // ditto
+        table.lookup(301) shouldBe Prediction(9000.3)
+      }
+
+      "lookups when table only contains flat section" in {
+        val table = Table(5)
+
+        table.addPoint(Point(0, 0))
+        table.addPoint(Point(0, 100))
+
+        table.lookup(0) shouldBe LagIsZero
       }
 
       "infinite lookups, dy == 0, flat curve/no growth" in {
@@ -91,8 +101,8 @@ class LookupTableSpec extends FreeSpec with Matchers {
           fail(s"Expected compressed table to have last timestamp $table")
         }
 
-        assert(table.lookup(99).isNegInfinity)
-        assert(table.lookup(101).isPosInfinity)
+        table.lookup(99) shouldBe LagIsZero
+        table.lookup(101) shouldBe LagIsZero
       }
 
       "normal case, table truncates, steady timestamps, different val rates" in {
@@ -115,19 +125,19 @@ class LookupTableSpec extends FreeSpec with Matchers {
           fail(s"Expected table to limit to 5 entries $table")
         }
 
-        table.lookup(1600) shouldBe 2.5
-        table.lookup(0) shouldBe 0
-        table.lookup(1) shouldBe 0.09999999999999998
-        table.lookup(9) shouldBe 0.9
-        table.lookup(10) shouldBe 1
-        table.lookup(200) shouldBe 2
-        table.lookup(2999) shouldBe 2.9996428571428573
-        table.lookup(3000) shouldBe 3
-        table.lookup(3001) shouldBe 3.000027027027027
-        table.lookup(40000) shouldBe 4
+        table.lookup(1600) shouldBe Prediction(2.5)
+        table.lookup(0) shouldBe Prediction(0.0)
+        table.lookup(1) shouldBe Prediction(0.09999999999999998)
+        table.lookup(9) shouldBe Prediction(0.9)
+        table.lookup(10) shouldBe Prediction(1)
+        table.lookup(200) shouldBe Prediction(2)
+        table.lookup(2999) shouldBe Prediction(2.9996428571428573)
+        table.lookup(3000) shouldBe Prediction(3)
+        table.lookup(3001) shouldBe Prediction(3.000027027027027)
+        table.lookup(40000) shouldBe Prediction(4)
         // extrapolation
-        table.lookup(-10000) shouldBe -1
-        table.lookup(50000) shouldBe 5
+        table.lookup(-10000) shouldBe Prediction(-1)
+        table.lookup(50000) shouldBe Prediction(5)
       }
     }
 
