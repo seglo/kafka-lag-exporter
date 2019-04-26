@@ -2,6 +2,11 @@
 
 > A Kafka consumer group lag exporter for Kubernetes
 
+<!-- NOTE: The Travis build status includes a token that's only used for build status for this repo while it's private.  Replace with travis-ci.org when open sourced -->
+[![Build Status](https://travis-ci.com/lightbend/kafka-lag-exporter.svg?token=2pVAwATGcRCDMfGabuBX&branch=master)](https://travis-ci.com/lightbend/kafka-lag-exporter)
+![GitHub release](https://img.shields.io/github/release/lightbend/kafka-lag-exporter.svg)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/lightbend/kafka-lag-exporter/blob/master/LICENSE.txt)
+
 The Kafka Lag Exporter is a Prometheus Exporter which will calculate the consumer lag for all consumer groups running
 in a Kafka cluster.  It exports several consumer group related metrics, including an interpolation or extrapolation of 
 consumer group lag in seconds.
