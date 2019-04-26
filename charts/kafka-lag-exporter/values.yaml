@@ -27,7 +27,7 @@ watchers:
 ## You probably won't need to change anything below this line.
 image:
   repository: lightbend/kafka-lag-exporter
-  tag: 0.4.0
+  tag: 0.4.0-SNAPSHOT
   pullPolicy: Always
 service:
   type: ClusterIP
