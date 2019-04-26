@@ -28,7 +28,7 @@ watchers:
 image:
   repository: lightbend/kafka-lag-exporter
   tag: 0.4.0
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 service:
   type: ClusterIP
   port: 8000

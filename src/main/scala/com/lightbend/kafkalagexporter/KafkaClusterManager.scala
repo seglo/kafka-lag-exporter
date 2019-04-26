@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016 - 2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package com.lightbend.kafkalagexporter
 
 import akka.actor.typed.scaladsl.Behaviors
@@ -18,6 +22,9 @@ object KafkaClusterManager {
             clientCreator: String => KafkaClientContract): Behavior[Message] = Behaviors.setup { context =>
 
     context.log.info("Starting Kafka Lag Exporter with configuration: \n{}", appConfig)
+
+    if (appConfig.clusters.isEmpty && !appConfig.strimziWatcher)
+      context.log.info("No watchers are defined and no clusters are statically configured.  Nothing to do.")
 
     val metricsSinkInst: MetricsSink = metricsSink()
     val watchers: Seq[ActorRef[Watcher.Message]] = Watcher.createClusterWatchers(context, appConfig)

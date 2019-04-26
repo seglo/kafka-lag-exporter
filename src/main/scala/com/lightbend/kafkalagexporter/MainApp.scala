@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016 - 2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package com.lightbend.kafkalagexporter
 
 import java.util.concurrent.Executors
@@ -28,6 +32,6 @@ object MainApp extends App {
     val endpointCreator = () => PrometheusEndpointSink(appConfig.port, Metrics.metricDefinitions)
 
     ActorSystem(
-      KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafkalagexporterapp")
+      KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafka-lag-exporter")
   }
 }

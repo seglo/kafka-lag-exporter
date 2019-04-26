@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016 - 2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package com.lightbend.kafkalagexporter
 
 import java.time.Clock
@@ -6,6 +10,7 @@ import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
+import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -142,8 +147,12 @@ object ConsumerGroupCollector {
       member <- gtp.group.members.find(_.partitions.contains(gtp.topicPartition))
       mostRecentPoint <- tables(gtp.topicPartition).mostRecentPoint().toOption
     } yield {
-      val pxTime = tables(gtp.topicPartition).lookup(groupPoint.offset)
-      val timeLag = (newOffsets.timestamp.toDouble - pxTime) / 1000
+      val timeLag = tables(gtp.topicPartition).lookup(groupPoint.offset) match {
+        case Prediction(pxTime) => (newOffsets.timestamp.toDouble - pxTime) / 1000
+        case LagIsZero => 0d
+        case TooFewPoints => Double.NaN
+      }
+
       val offsetLag = mostRecentPoint.offset - groupPoint.offset
 
       reporter ! Metrics.LastGroupOffsetMetric(config.clusterName, gtp, member, groupPoint.offset)
