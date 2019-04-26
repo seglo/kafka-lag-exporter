@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 APP_VERSION=$1
 VERSION=`echo $1|sed -r 's/(\S+)-(\S+)/\1/'` # Strip out -SNAPSHOT if it exists

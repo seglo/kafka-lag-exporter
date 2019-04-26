@@ -1,11 +1,14 @@
 import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 import Dependencies._
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerCommands, dockerUsername}
-
-lazy val updateHelmChartVersions = taskKey[Unit]("Update Helm Chart versions")
+import ReleaseTransformations._
+import ReleasePlugin.autoImport._
+import ReleaseKeys._
+import scala.sys.process._
 
 lazy val kafkaLagExporter =
   Project(id = "kafka-lag-exporter", base = file("."))
+    .enablePlugins(AutomateHeaderPlugin)
     .enablePlugins(JavaAppPackaging)
     .enablePlugins(DockerPlugin)
     .settings(commonSettings)
@@ -47,16 +50,31 @@ lazy val kafkaLagExporter =
         import scala.sys.process._
         s"./scripts/update_chart.sh ${version.value}" !
       },
-      compile in Compile := (compile in Compile).dependsOn(updateHelmChartVersions).value,
+      //compile in Compile := (compile in Compile).dependsOn(updateHelmChartVersions).value,
       publishArtifact in (Compile, packageDoc) := false,
       publishArtifact in (Compile, packageSrc) := false,
-      skip in publish := true
+      skip in publish := true,
+      releaseProcess := Seq[ReleaseStep](
+        lintHelmChart,                          // Lint the Helm Chart for errors
+        checkSnapshotDependencies,
+        inquireVersions,
+        runClean,
+        runTest,
+        setReleaseVersion,
+        updateHelmChart,                        // Update the Helm Chart with the release version
+        publishDockerImage,                     // Publish the Docker images used by the chart to dockerhub
+        commitReleaseVersion,
+        tagRelease,
+        githubReleaseDraft,                     // Create a GitHub release draft
+        setNextVersion,
+        updateHelmChart,                        // Update the Helm Chart with the next snapshot version
+        commitNextVersion,
+        pushChanges
+      )
     )
 
 lazy val commonSettings = Seq(
   organization := "com.lightbend.kafkalagexporter",
-  publishMavenStyle := false,
-  bintrayOmitLicense := true,
   scalaVersion := Version.Scala,
   scalacOptions ++= Seq(
     "-encoding", "UTF-8",
@@ -70,7 +88,54 @@ lazy val commonSettings = Seq(
     "-language:_",
     "-unchecked"
   ),
-
   scalacOptions in (Compile, console) := (scalacOptions in (Global)).value.filter(_ == "-Ywarn-unused-import"),
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
+  organizationName := "Lightbend Inc. <http://www.lightbend.com>",
+  startYear := Some(2019),
+  licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+  headerLicense := Some(
+    HeaderLicense.Custom(
+      """|Copyright (C) 2016 - 2019 Lightbend Inc. <http://www.lightbend.com>
+         |""".stripMargin
+    )
+  ),
+)
+
+lazy val updateHelmChartVersions = taskKey[Unit]("Update Helm Chart versions")
+
+def exec(cmd: String, errorMessage: String): Unit = {
+  val e = cmd.!
+  if (e != 0) sys.error(errorMessage)
+}
+
+lazy val lintHelmChart = ReleaseStep(action = st => {
+  exec("./scripts/lint_chart.sh", "Error while linting Helm Chart")
+  st
+})
+
+lazy val updateHelmChart = ReleaseStep(action = st => {
+  val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
+  exec(s"./scripts/update_chart.sh $releaseVersion", "Error while updating Helm Chart versions")
+  st
+})
+
+lazy val packageChart = ReleaseStep(action = st => {
+  exec("./scripts/package_chart.sh", "Error while packaging Helm Chart")
+  st
+})
+
+lazy val githubReleaseDraft = ReleaseStep(action = st => {
+  val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
+  exec(
+    s"./scripts/github_release.sh lightbend/kafka-lag-exporter v$releaseVersion -- kafka-lag-exporter-$releaseVersion.tgz",
+    "Error while publishing GitHub release draft")
+  st
+})
+
+lazy val publishDockerImage = ReleaseStep(
+  action = { st: State =>
+    val extracted = Project.extract(st)
+    val ref = extracted.get(thisProjectRef)
+    extracted.runAggregated(publish in Docker in ref, st)
+  }
 )

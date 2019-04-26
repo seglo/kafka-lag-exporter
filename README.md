@@ -7,9 +7,34 @@
 ![GitHub release](https://img.shields.io/github/release/lightbend/kafka-lag-exporter.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/lightbend/kafka-lag-exporter/blob/master/LICENSE.txt)
 
+![Consumer Group Lag In Time Per Group Over Offset Lag Example](./grafana/offset_lag_time_with_offset_lag.png)
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Introduction](#introduction)
+- [Metrics](#metrics)
+- [Configuration](#configuration)
+- [Install with Helm](#install-with-helm)
+  - [Examples](#examples)
+  - [View the health endpoint](#view-the-health-endpoint)
+  - [View exporter logs](#view-exporter-logs)
+- [Testing with local `docker-compose.yaml`](#testing-with-local-docker-composeyaml)
+- [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher)
+- [Grafana Dashboard](#grafana-dashboard)
+- [Release](#release)
+  - [Pre-requisites](#pre-requisites)
+  - [Release steps](#release-steps)
+- [Change log](#change-log)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Introduction
+
 The Kafka Lag Exporter is a Prometheus Exporter which will calculate the consumer lag for all consumer groups running
-in a Kafka cluster.  It exports several consumer group related metrics, including an interpolation or extrapolation of 
-consumer group lag in seconds.
+in a Kafka cluster.  It exports several consumer group related metrics, including an estimation of consumer group lag in
+seconds using interpolation or extrapolation.
 
 We can calculate a reasonable approximation of consumer lag in seconds by applying a linear extrapolation formula to
 predict the time that a consumer will reach the latest partition offset available based on previously measured
@@ -89,7 +114,7 @@ Ex)
 kubectl port-forward service/kafka-lag-exporter-service 8080:8000 --namespace myproject
 ```
 
-### Exporter logs
+### View exporter logs
 
 To view the logs of the exporter, identify the pod name of the exporter and use the `kubectl logs` command.
 
@@ -143,46 +168,59 @@ with a Prometheus datasource that is reading the Kafka Lag Exporter's Prometheus
 
 The dashboard contains several high level user-configurable variables.
 
-* **Namespace** - The namespace of the Kafka cluster.  Only 1 namespace can be selected at a time.
+* **Namespace** - The namespace of the Kafka Lag Exporter.  Only 1 namespace can be selected at a time.
 * **Cluster Name** - The name of the Kafka cluster.  Only 1 cluster name can be selected at a time.
 * **Consumer Group** - The name of the Consumer Group.  This is a multi-select list which allows you to view the dashboard
 for 1 to All consumer groups.
 
-This dashboard has several rows that are described below.
+This dashboard has 4 rows that are described below.
 
-* **All Consumer Group Lag** - A high level set of 4 panels.
+1. **All Consumer Group Lag** - A high level set of 4 panels.
   * Max lag in seconds per group
   * Lag in seconds per group partition
   * Max lag in offsets per group
   * Lag in offsets per group partition
-* **Consumer Group Lag Per Group** - One panel for each consumer group that shows a sum of lag for all partitions on the
-left Y axis.  The right Y axis has the sum of latest and last consumed offsets for all group partitions.
-* **Kafka Lag Exporter JVM Metrics** - Critical JVM metrics for the Kafka Lag Exporter itself.
+2. **Consumer Group Lag In Time Per Group Over Offset Lag** - One panel for each consumer group that shows the max lag 
+in time on the left Y axis and max lag in offsets on the right Y axis. Ex)
+![Consumer Group Lag In Time Per Group Over Offset Lag Example](./grafana/offset_lag_time_with_offset_lag.png)
+3. **Consumer Group Lag in Time Per Group Over Summed Offsets** - One panel for each consumer group that shows the max lag in time on the left Y 
+axis.  The right Y axis has the sum of latest and last consumed offsets for all group partitions. Ex)
+![Consumer Group Lag in Time Per Group Over Summed Offsets Example](./grafana/offset_lag_time_over_summed_offsets.png)
+4. **Kafka Lag Exporter JVM Metrics** - JVM metrics for the Kafka Lag Exporter itself.
 
-Example snapshot of dashboard showing all Consumer Groups (2)
+## Release
 
-![Kafka Lag Exporter Dashboard](./grafana/example_dashboard_snapshot.png)
+### Pre-requisites
 
-## Release Process
+The release process is orchestrated by the [`sbt-release`](https://github.com/sbt/sbt-release).  Privileged access is 
+required.  Before running a release make sure the following pre-req's are met.
 
-1. Update the Change Log
-2. Run `./scripts/release.sh` which will do the following:
-  * Run `compile` and `test` targets.  A pre-compile task will automatically update the version in the Helm Chart.
-  * Publish docker image to DockerHub at `lightbend/kafka-lag-exporter`.  If not publishing to `lightbend` repository,
-     update `./build.sbt` file with the correct repository, or publish locally instead (`sbt docker:publishLocal`).
-  * Bundle Helm Chart into a tarball artifact.  The `helm package` command will output the artifact in the CWD it is
-     executed from.
-3. Upload the tarball to a Helm Chart Repository.
+* Authenticated with Docker Hub with the `docker` command.
+* Authenticated with GitHub
+* `~/.netrc` file setup with GitHub credentials/token 
+
+### Release steps
+
+1. Update the Change log
+2. Run `doctoc` on `README.md`
+3. Run `sbt release`.  To see what steps are performed during release consult the `build.sbt`.
+4. Review the GitHub release draft and submit it.
 
 ## Change log
 
 0.4.0
 
+* Open Sourced! 🎆 #17
 * Add Integration tests using Embedded Kafka #11
 * Replace lag in time implementation with interpolation table implementation #5
 * Removed `spark-event-exporter`.  See the [`spark-committer`](https://github.com/lightbend/spark-committer) GitHub
 project to commit offsets in Spark Structured Streaming back to Kafka. #9
 * Implement backoff strategy for Kafka connections in Kafka Lag Exporter #6
+* Travis build #7
+* Update docs #14
+* Update Grafana dashboard
+* Licensing headers
+* Script release process
 
 0.3.6
 
