@@ -46,7 +46,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1546540947635,
+  "iteration": 1556312150750,
   "links": [],
   "panels": [
     {
@@ -101,7 +101,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "kafka_consumergroup_group_max_lag_seconds{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"}",
+          "expr": "topk(50, kafka_consumergroup_group_max_lag_seconds{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"})",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -129,10 +129,10 @@
       "yaxes": [
         {
           "format": "s",
-          "label": "extrapolated lag in seconds",
+          "label": "estimated lag in seconds",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -187,7 +187,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "kafka_consumergroup_group_lag_seconds{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"}",
+          "expr": "topk(25, kafka_consumergroup_group_lag_seconds{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"})",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -215,10 +215,10 @@
       "yaxes": [
         {
           "format": "s",
-          "label": "extrapolated lag in seconds",
+          "label": "estimated lag in seconds",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -275,7 +275,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "kafka_consumergroup_group_max_lag{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"}",
+          "expr": "topk(50, kafka_consumergroup_group_max_lag{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"})",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -306,7 +306,7 @@
           "label": "offsets",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -361,7 +361,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "kafka_consumergroup_group_lag_seconds{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"}",
+          "expr": "topk(25, kafka_consumergroup_group_lag_seconds{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"})",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -392,7 +392,7 @@
           "label": "offsets",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -417,9 +417,9 @@
         "x": 0,
         "y": 21
       },
-      "id": 106,
+      "id": 149,
       "panels": [],
-      "title": "Consumer Group Lag Per Group",
+      "title": "Consumer Group Lag In Time Per Group Over Offset Lag",
       "type": "row"
     },
     {
@@ -432,9 +432,133 @@
       "fill": 0,
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 8,
         "x": 0,
         "y": 22
+      },
+      "id": 147,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "minSpan": 8,
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeat": "consumer_group",
+      "repeatDirection": "h",
+      "seriesOverrides": [
+        {
+          "alias": "Consumer group lag in offsets",
+          "color": "#cca300",
+          "linewidth": 2,
+          "yaxis": 2
+        },
+        {
+          "alias": "Consumer group lag in time",
+          "color": "rgb(255, 0, 0)",
+          "linewidth": 2,
+          "yaxis": 1
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "kafka_consumergroup_group_max_lag_seconds{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"}",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "Consumer group lag in time",
+          "refId": "A"
+        },
+        {
+          "expr": "kafka_consumergroup_group_max_lag{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"}",
+          "format": "time_series",
+          "hide": false,
+          "intervalFactor": 1,
+          "legendFormat": "Consumer group lag in offsets",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "$consumer_group",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": false,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": "estimated lag in seconds",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": "lag in offsets",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 106,
+      "panels": [],
+      "title": "Consumer Group Lag in Time Per Group Over Summed Offsets",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_CINNAMON_PROMETHEUS}",
+      "description": "",
+      "fill": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 31
       },
       "id": 107,
       "legend": {
@@ -459,15 +583,15 @@
       "repeatDirection": "h",
       "seriesOverrides": [
         {
-          "alias": "Sum Group Offset",
+          "alias": "Sum of group offsets",
           "yaxis": 2
         },
         {
-          "alias": "Sum Latest Offset",
+          "alias": "Sum of latest offsets",
           "yaxis": 2
         },
         {
-          "alias": "/Consumer Group.*/",
+          "alias": "/Consumer group.*/",
           "color": "rgb(255, 0, 0)",
           "linewidth": 2
         }
@@ -481,7 +605,7 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "Consumer Group: {{group}}",
+          "legendFormat": "Consumer group lag in time",
           "refId": "A"
         },
         {
@@ -489,14 +613,14 @@
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
-          "legendFormat": "Sum Group Offset",
+          "legendFormat": "Sum of group offsets",
           "refId": "B"
         },
         {
-          "expr": "sum((kafka_consumergroup_group_offset{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"} * 0)\n+ on(namespace,cluster_name,topic,partition) kafka_partition_latest_offset{namespace=\"$namespace\",cluster_name=\"$cluster_name\"})",
+          "expr": "sum((kafka_consumergroup_group_offset{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"} * 0)\n+ on(namespace,cluster_name,topic,partition) group_left() kafka_partition_latest_offset{namespace=\"$namespace\",cluster_name=\"$cluster_name\"})",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "Sum Latest Offset",
+          "legendFormat": "Sum of latest offsets",
           "refId": "C"
         }
       ],
@@ -521,10 +645,10 @@
       "yaxes": [
         {
           "format": "s",
-          "label": "extrapolated lag in seconds",
+          "label": "estimated lag in seconds",
           "logBase": 1,
           "max": null,
-          "min": null,
+          "min": "0",
           "show": true
         },
         {
@@ -547,7 +671,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 39
       },
       "id": 101,
       "panels": [],
@@ -565,7 +689,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 31
+        "y": 40
       },
       "id": 99,
       "legend": {
@@ -649,7 +773,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 31
+        "y": 40
       },
       "id": 95,
       "legend": {
@@ -701,7 +825,7 @@
       },
       "yaxes": [
         {
-          "format": "ms",
+          "format": "s",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -714,7 +838,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         }
       ],
       "yaxis": {
@@ -733,7 +857,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 31
+        "y": 40
       },
       "id": 97,
       "legend": {
@@ -769,7 +893,7 @@
       "thresholds": [],
       "timeFrom": null,
       "timeShift": null,
-      "title": "JVM GC Count",
+      "title": "JVM GC Rate",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -785,7 +909,7 @@
       },
       "yaxes": [
         {
-          "format": "short",
+          "format": "ops",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -798,7 +922,7 @@
           "logBase": 1,
           "max": null,
           "min": null,
-          "show": true
+          "show": false
         }
       ],
       "yaxis": {
@@ -807,7 +931,7 @@
       }
     }
   ],
-  "refresh": false,
+  "refresh": "5m",
   "schemaVersion": 16,
   "style": "dark",
   "tags": [],
@@ -827,7 +951,7 @@
         "refresh": 1,
         "regex": "/.*namespace=\"([^\"]*).*/",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -848,7 +972,7 @@
         "refresh": 1,
         "regex": "/.*cluster_name=\"([^\"]*).*/",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -869,7 +993,7 @@
         "refresh": 1,
         "regex": "/.*group=\"([^\"]*).*/",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -879,8 +1003,8 @@
     ]
   },
   "time": {
-    "from": "now-2h",
-    "to": "now-1h"
+    "from": "now-30m",
+    "to": "now"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -910,5 +1034,5 @@
   "timezone": "",
   "title": "Kafka Lag Exporter",
   "uid": "8LW1Yd8ik",
-  "version": 5
+  "version": 14
 }
