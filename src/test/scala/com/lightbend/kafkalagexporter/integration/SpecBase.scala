@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package com.lightbend.kafkalagexporter.integration
 
 import akka.actor.typed.ActorSystem
@@ -43,6 +47,8 @@ abstract class SpecBase(kafkaPort: Int, val exporterPort: Int)
                                             |      bootstrap-brokers: "localhost:$kafkaPort"
                                             |    }
                                             |  ]
+                                            |  poll-interval = 5 seconds
+                                            |  lookup-table-size = 20
                                             |}""".stripMargin).withFallback(ConfigFactory.load())
 
   override def beforeEach(): Unit = {
