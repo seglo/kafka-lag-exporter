@@ -76,7 +76,7 @@ class LookupTableSpec extends FreeSpec with Matchers {
         table.lookup(301) shouldBe Prediction(9000.3)
       }
 
-      "lookups when table only contains flat section" in {
+      "lookups when table only contains a flat section with offsets same as lookup" in {
         val table = Table(5)
 
         table.addPoint(Point(0, 0))
@@ -101,8 +101,8 @@ class LookupTableSpec extends FreeSpec with Matchers {
           fail(s"Expected compressed table to have last timestamp $table")
         }
 
-        table.lookup(99) shouldBe LagIsZero
-        table.lookup(101) shouldBe LagIsZero
+        table.lookup(99) shouldBe Prediction(Double.NegativeInfinity)
+        table.lookup(101) shouldBe Prediction(Double.PositiveInfinity)
       }
 
       "normal case, table truncates, steady timestamps, different val rates" in {

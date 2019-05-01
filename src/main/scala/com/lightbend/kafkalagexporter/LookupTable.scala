@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 - 2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -74,8 +74,10 @@ object LookupTable {
 
       points.toList match {
         case p if p.length < 2 => TooFewPoints
-        // if we only have 2 points at the same offset
-        case p1 :: p2 :: Nil if p1.offset == p2.offset => LagIsZero
+        // if we only have 2 points the same as the current offset then report
+        // lag as zero
+        case p1 :: p2 :: Nil if p1.offset == p2.offset &&
+                                p2.offset == offset => LagIsZero
         case _ => estimate()
 
       }

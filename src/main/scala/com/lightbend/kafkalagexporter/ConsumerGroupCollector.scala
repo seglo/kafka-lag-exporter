@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 - 2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2019 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -148,7 +148,7 @@ object ConsumerGroupCollector {
       mostRecentPoint <- tables(gtp.topicPartition).mostRecentPoint().toOption
     } yield {
       val timeLag = tables(gtp.topicPartition).lookup(groupPoint.offset) match {
-        case Prediction(pxTime) => (newOffsets.timestamp.toDouble - pxTime) / 1000
+        case Prediction(pxTime) => (groupPoint.time.toDouble - pxTime) / 1000
         case LagIsZero => 0d
         case TooFewPoints => Double.NaN
       }

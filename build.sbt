@@ -50,9 +50,6 @@ lazy val kafkaLagExporter =
         import scala.sys.process._
         s"./scripts/update_chart.sh ${version.value}" !
       },
-      //compile in Compile := (compile in Compile).dependsOn(updateHelmChartVersions).value,
-      publishArtifact in (Compile, packageDoc) := false,
-      publishArtifact in (Compile, packageSrc) := false,
       skip in publish := true,
       releaseProcess := Seq[ReleaseStep](
         lintHelmChart,                          // Lint the Helm Chart for errors
@@ -95,8 +92,8 @@ lazy val commonSettings = Seq(
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   headerLicense := Some(
     HeaderLicense.Custom(
-      """|Copyright (C) 2016 - 2019 Lightbend Inc. <http://www.lightbend.com>
-         |""".stripMargin
+      s"""|Copyright (C) ${startYear.value.get} Lightbend Inc. <http://www.lightbend.com>
+          |""".stripMargin
     )
   ),
 )

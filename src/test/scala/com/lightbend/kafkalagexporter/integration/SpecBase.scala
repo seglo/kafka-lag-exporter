@@ -43,6 +43,8 @@ abstract class SpecBase(kafkaPort: Int, val exporterPort: Int)
                                             |      bootstrap-brokers: "localhost:$kafkaPort"
                                             |    }
                                             |  ]
+                                            |  poll-interval = 5 seconds
+                                            |  lookup-table-size = 20
                                             |}""".stripMargin).withFallback(ConfigFactory.load())
 
   override def beforeEach(): Unit = {
