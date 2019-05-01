@@ -15,14 +15,19 @@
 
 - [Introduction](#introduction)
 - [Metrics](#metrics)
+  - [Labels](#labels)
 - [Configuration](#configuration)
 - [Install with Helm](#install-with-helm)
   - [Examples](#examples)
   - [View the health endpoint](#view-the-health-endpoint)
   - [View exporter logs](#view-exporter-logs)
-- [Testing with local `docker-compose.yaml`](#testing-with-local-docker-composeyaml)
+- [Estimate Consumer Group Time Lag](#estimate-consumer-group-time-lag)
 - [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher)
-- [Grafana Dashboard](#grafana-dashboard)
+- [Monitoring with Grafana](#monitoring-with-grafana)
+- [Development](#development)
+  - [Tests](#tests)
+  - [Testing with local `docker-compose.yaml`](#testing-with-local-docker-composeyaml)
+  - [Building your own Helm Chart](#building-your-own-helm-chart)
 - [Release](#release)
   - [Pre-requisites](#pre-requisites)
   - [Release steps](#release-steps)
@@ -337,14 +342,14 @@ required.  Before running a release make sure the following pre-req's are met.
 
 0.4.0
 
-* Open Sourced! 🎆 #17
-* Add Integration tests using Embedded Kafka #11
-* Replace lag in time implementation with interpolation table implementation #5
+* Open Sourced! 🎆 [#17](https://github.com/lightbend/kafka-lag-exporter/issues/17)
+* Add Integration tests using Embedded Kafka [#11](https://github.com/lightbend/kafka-lag-exporter/issues/11)
+* Replace lag in time implementation with interpolation table implementation [#5](https://github.com/lightbend/kafka-lag-exporter/issues/5)
 * Removed `spark-event-exporter`.  See the [`spark-committer`](https://github.com/lightbend/spark-committer) GitHub
-project to commit offsets in Spark Structured Streaming back to Kafka. #9
-* Implement backoff strategy for Kafka connections in Kafka Lag Exporter #6
-* Travis build #7
-* Update docs #14
+project to commit offsets in Spark Structured Streaming back to Kafka. [#9](https://github.com/lightbend/kafka-lag-exporter/issues/9)
+* Implement backoff strategy for Kafka connections in Kafka Lag Exporter [#6](https://github.com/lightbend/kafka-lag-exporter/issues/6)
+* Travis build [#7](https://github.com/lightbend/kafka-lag-exporter/issues/7)
+* Update docs [#14](https://github.com/lightbend/kafka-lag-exporter/issues/14)
 * Update Grafana dashboard
 * Licensing headers
 * Script release process
