@@ -1,13 +1,13 @@
 # Kafka Lag Exporter
 
-> A Kafka consumer group lag exporter for Kubernetes
+> Monitor Kafka Consumer Group Latency with Kafka Lag Exporter
 
 <!-- NOTE: The Travis build status includes a token that's only used for build status for this repo while it's private.  Replace with travis-ci.org when open sourced -->
 [![Build Status](https://travis-ci.com/lightbend/kafka-lag-exporter.svg?token=2pVAwATGcRCDMfGabuBX&branch=master)](https://travis-ci.com/lightbend/kafka-lag-exporter)
 ![GitHub release](https://img.shields.io/github/release/lightbend/kafka-lag-exporter.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/lightbend/kafka-lag-exporter/blob/master/LICENSE.txt)
 
-![Consumer Group Lag In Time Per Group Over Offset Lag Example](./grafana/offset_lag_time_with_offset_lag.png)
+![Max Consumer Group Time Lag Over Offset Lag Example](./grafana/max_consumer_group_time_lag_over_offset_lag.png)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -32,29 +32,76 @@
 
 ## Introduction
 
-The Kafka Lag Exporter is a Prometheus Exporter which will calculate the consumer lag for all consumer groups running
-in a Kafka cluster.  It exports several consumer group related metrics, including an estimation of consumer group lag in
-seconds using interpolation or extrapolation.
+Kafka Lag Exporter is a project to make it easy to view the latency of your [Apache Kafka](https://kafka.apache.org/) 
+consumer groups. Kafka Lag Exporter can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/) 
+clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) 
+monitoring stack.
 
-We can calculate a reasonable approximation of consumer lag in seconds by applying a linear extrapolation formula to
-predict the time that a consumer will reach the latest partition offset available based on previously measured
-consumer group consumed offsets for the same partition.
-
-For each poll interval we associate all the latest consumed offsets with current system time (wall clock).  After at
-least two measurements are made we can extrapolate at what time an arbitrary offset in the future will be consumed.  As
-a refresher, linear interpolation and extrapolation is just estimating a point on a slope and estimating its
-coordinates. [Read this post for more details.](https://math.tutorvista.com/calculus/extrapolation.html)
+<!-- TODO: Add link to post when posted -->
+For more information about Kafka Lag Exporter's feature see Lightbend's blog post: Monitor Kafka Consumer Group Latency with Kafka Lag Exporter.
 
 ## Metrics
 
-The following metrics are exposed:
+[Prometheus](https://prometheus.io/) is emerging as the de-facto standard way to represent metrics in a modern cross-platform manner. Kafka Lag 
+Exporter exposes several metrics as an HTTP endpoint that can be readily scraped by Prometheus. When installed using 
+Helm and when enabling the Kubernetes pod self-discovery features within Prometheus server, Prometheus server will 
+automatically detect the HTTP endpoint and scrape its data.
 
-* `kafka_consumergroup_group_lag_seconds` - Extrapolated lag in seconds for each partition.
-* `kafka_consumergroup_group_max_lag_seconds` - Max extrapolated lag in seconds for each consumer group.
-* `kafka_consumergroup_group_lag` - Lag in offsets for each partition (latest offset - last consumed offset).
-* `kafka_consumergroup_group_max_lag` - Max offset lag for each consumer group.
-* `kafka_consumergroup_group_offset` - Last consumed offset for each consumer group partition.
-* `kafka_partition_latest_offset` - Latest offset available for each partition.
+**`kafka_consumergroup_group_offset`**
+
+Labels: `cluster_name, group, topic, partition, state, is_simple_consumer, member_host, consumer_id, client_id`
+
+The offset of the last consumed offset for this partition in this topic partition for this group.
+
+**`kafka_consumergroup_group_lag`**
+
+Labels: `cluster_name, group, topic, partition, state, is_simple_consumer, member_host, consumer_id, client_id`
+
+The difference between the last produced offset and the last consumed offset for this partition in this topic partition for this group.
+
+**`kafka_consumergroup_group_lag_seconds`**
+
+Labels: `cluster_name, group, topic, partition, state, is_simple_consumer, member_host, consumer_id, client_id`
+
+The estimated lag in seconds.  This metric correlates with lag in offsets.  For more information on how this is calculated read the Estimate consumer group lag in time section below.
+
+**`kafka_consumergroup_group_max_lag`**
+
+Labels: `cluster_name, group, state, is_simple_consumer`
+
+The highest (maximum) lag in offsets for a given consumer group.
+
+**`kafka_consumergroup_group_max_lag_seconds`**
+
+Labels: `cluster_name, group, state, is_simple_consumer`
+
+The highest (maximum) lag in time for a given consumer group.
+
+**`kafka_partition_latest_offset`**
+
+Labels: `cluster_name, topic, partition`
+
+The latest offset available for topic partition.  Kafka Lag Exporter will calculate a set of partitions for all consumer groups available and then poll for the last produced offset.  The last produced offset is used in the calculation of other metrics provided, so it is exported for informational purposes.  For example, the accompanying Grafana dashboard makes use of it to visualize the last produced offset and the last consumed offset in certain panels.
+Labels
+
+### Labels
+
+Each metric may include the following labels when reported.
+
+* `cluster_name` - Either the statically defined Kafka cluster name, or the metadata.name of the Strimzi Kafka cluster that was discovered with the Strimzi auto discovery feature.
+* `topic` - The Kafka topic.
+* `partition` - The Kafka partition.
+* `group` - The Kafka consumer group.id.
+
+The rest of the labels are passed along from the consumer group metadata requests.
+
+* `state` - The state of the consumer group when the group data was polled.
+* `is_simple_consumer` - Is this group using the [old] simple consumer API.
+* `member_host` - The hostname or IP of the machine or container running the consumer group member that is assigned this partition.
+* `client_id` - The id of the consumer group member.  This is usually generated automatically by the group coordinator.
+* `consumer_id` - The globally unique id of the consumer group member.  This is usually a combination of the client_id and a GUID generated by the group coordinator.
+
+Prometheus server may add additional labels based on your configuration.  For example, Kubernetes pod information about the Kafka Lag Exporter pod where the metrics were scraped from.
 
 ## Configuration
 
@@ -124,7 +171,88 @@ Ex)
 kubectl logs {POD_ID} --namespace myproject -f
 ```
 
-## Testing with local `docker-compose.yaml`
+## Estimate Consumer Group Time Lag
+
+One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag.  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.  
+
+For example, a topic with two consumer groups may have different lag characteristics.  Application A is a consumer which performs CPU intensive (and slow) business logic on each message it receives. It’s distributed across many consumer group members to handle the high load, but since its processing throughput is slower it takes longer to process each message per partition.   Meanwhile Application B is a consumer which performs a simple ETL operation to land streaming data in another system, such as an HDFS data lake.  It may have similar offset lag to Application A, but because it has a higher processing throughput its lag in time may be significantly less.
+
+It’s easier to build monitoring alerts using a time lag measurement than an offset lag measurement, because latency is best described in requirements as a unit of time.
+
+There are several ways to calculate time lag.  The easiest way would be to parse the message timestamp and subtract it from the current time.  However, this requires us to actually poll for messages in each partition that we wish to calculate time lag for.  We must download the message payload and parse this information out of a ConsumerRecord.  This is an expensive operation to perform and will likely not scale well in the general use case where messages can be of any size (though less than 1MB, unless default broker config is changed) and the number of partitions for any given topic could range from one to thousands.  Another way to determine time lag is to estimate it.
+
+Kafka Lag Exporter estimates time lag by either interpolation or extrapolation of the timestamp of when the last consumed offset was first produced.  We begin by retrieving the source data from Kafka.  We poll the last produced offset for all partitions in all consumer groups and store the offset (x) and current time (y) as a coordinate in a table (the interpolation table) for each partition.  This information is retrieved as a metadata call using the KafkaConsumer endOffsets call and does not require us to actually poll for messages.  The Kafka Consumer Group coordinator will return the last produced offsets for all the partitions we are subscribed to (the set of all partitions of all consumer groups).  Similarly, we use the Kafka AdminClient’s listConsumerGroupOffsets API to poll for consumer group metadata from all consumer groups to get the last consumed offset for each partition in a consumer group.
+
+Once we’ve built up an interpolation table of at least two values we can begin estimating time lag by performing the following operations (some edge cases are omitted for clarity) for each last consumed offset of each partition.
+
+1. Lookup interpolation table for a consumer group partition
+2. Find two points within the table that contain the last consumed offset
+  1. If there are no two points that contain the last consumed offset then use the first and last points as input to the interpolation formula.  This is the extrapolation use case.
+3. Interpolate inside (or extrapolate outside) the two points from the table we picked to predict a timestamp for when the last consumed message was first produced.
+4. Take the difference of the time of the last consumed offset (~ the current time) and the predicted timestamp to find the time lag.
+
+Below you will find a diagram that demonstrates the interpolation use case.
+
+![Interpolation](./docs/interpolation.png)
+
+The extrapolation use case uses different points in the interpolation table (the first and last points), but the calculation is the same.
+
+![Extrapolation](./docs/extrapolation.png)
+
+Interpolation is always desirable because we can be more assured that the prediction will be more accurate because we’re plotting a point within two points of our existing dataset.  Extrapolation will always be less accurate because we’re predicting points that may be a fair distance away from our dataset.
+
+## Strimzi Kafka Cluster Watcher
+
+When you install the chart with `--set watchers.strimzi=true` then the exporter will create a new `ClusterRole` and
+`ClusterRoleBinding` to allow for the automatic discovery of [Strimzi](https://strimzi.io/) Kafka clusters.  The exporter will watch for
+`Kafka` resources to be created or destroyed.  If the cluster already exists, or was created while the exporter was
+online then it will automatically begin to collect consumer group metadata and export it.  If a `Kafka` resource is
+destroyed then it will stop collecting consumer group metadata for that cluster.
+
+The exporter will name the cluster the same as `Kafka` resources `metadata.name` field.
+
+## Monitoring with Grafana
+
+A sample Grafana dashboard is provided in `./grafana/`.  It can be imported into a Grafana server that is configured
+with a Prometheus datasource that is reading the Kafka Lag Exporter's Prometheus health endpoint.
+
+The dashboard contains several high level user-configurable variables.
+
+* **Namespace** - The namespace of the Kafka Lag Exporter.  Only 1 namespace can be selected at a time.
+* **Cluster Name** - The name of the Kafka cluster.  Only 1 cluster name can be selected at a time.
+* **Consumer Group** - The name of the Consumer Group.  This is a multi-select list which allows you to view the dashboard
+for 1 to All consumer groups.
+
+This dashboard has 4 rows that are described below.
+
+1. **All Consumer Group Lag** - A high level set of 4 panels.
+  * Consumer Group Max Time Lag
+  * Consumer Group Time Lag Top Partitions
+  * Consumer Group Max Offset Lag
+  * Consumer Group Offset Lag Top Partitions
+![Consumer Group Max Time Lag](./grafana/consumer_group_max_time_lag.png)
+2. **Max Consumer Group Time Lag Over Offset Lag** - One panel for each consumer group that shows the max lag 
+in time on the left Y axis and max lag in offsets on the right Y axis. Ex)
+![Max Consumer Group Time Lag Over Offset Lag Example](./grafana/max_consumer_group_time_lag_over_offset_lag.png)
+3. **Max Consumer Group Time Lag Over Summed Offsets** - One panel for each consumer group that shows the max lag in time on the left Y 
+axis.  The right Y axis has the sum of latest and last consumed offsets for all group partitions. Ex)
+![Max Consumer Group Time Lag Over Summed Offsets](./grafana/max_consumer_group_time_lag_over_summed_offsets.png)
+4. **Kafka Lag Exporter JVM Metrics** - JVM metrics for the Kafka Lag Exporter itself.
+
+## Development
+
+### Tests
+
+Kafka Lag Exporter has unit and integration tests.  The integration tests use [Alpakka Kafka Testkit](https://doc.akka.io/docs/akka-stream-kafka/current/testing.html#testing-with-an-embedded-kafka-server)
+to provide an embedded Kafka instance and simulate consumer group lag.
+
+Run all tests with SBT.
+
+```
+sbt test
+```
+
+### Testing with local `docker-compose.yaml`
 
 A Docker Compose cluster with producers and multiple consumer groups is defined in `./docker/docker-compose.yaml`.  This
 is useful to manually test the project locally, without K8s infrastructure.  These images are based on the popular
@@ -151,42 +279,41 @@ Start up the cluster in the foreground.
 docker-compose up
 ```
 
-## Strimzi Kafka Cluster Watcher
+### Building your own Helm Chart
 
-When you install the chart with `--set watchers.strimzi=true` then the exporter will create a new `ClusterRole` and
-`ClusterRoleBinding` to allow for the automatic discovery of [Strimzi](https://strimzi.io/) Kafka clusters.  The exporter will watch for
-`Kafka` resources to be created or destroyed.  If the cluster already exists, or was created while the exporter was
-online then it will automatically begin to collect consumer group metadata and export it.  If a `Kafka` resource is
-destroyed then it will stop collecting consumer group metadata for that cluster.
+If you want to build your own Helm Chart and accompanying docker images you can override the Docker repository and 
+username with environment variables.
 
-The exporter will name the cluster the same as `Kafka` resources `metadata.name` field.
+`DOCKER_REPOSITORY` - A custom Docker repository, such as a private company's docker repository (defaults to DockerHub)
+`DOCKER_USERNAME` - A custom Docker username (defaults to `lightbend`)
 
-## Grafana Dashboard
+Run the `updateHelmChart` sbt task to update the Helm Chart with the appropriate Docker repository and username.
 
-A sample Grafana dashboard is provided in `./grafana/`.  It can be imported into a Grafana server that is configured
-with a Prometheus datasource that is reading the Kafka Lag Exporter's Prometheus health endpoint.
+Run the `docker:publishLocal` sbt task to publish a local Docker image.
 
-The dashboard contains several high level user-configurable variables.
+Run the `docker:publish` sbt task to publish the Docker image to the specified Docker repository.
 
-* **Namespace** - The namespace of the Kafka Lag Exporter.  Only 1 namespace can be selected at a time.
-* **Cluster Name** - The name of the Kafka cluster.  Only 1 cluster name can be selected at a time.
-* **Consumer Group** - The name of the Consumer Group.  This is a multi-select list which allows you to view the dashboard
-for 1 to All consumer groups.
+For example, to update the Helm Chart to use a custom docker registry and username and to publish the chart locally.
 
-This dashboard has 4 rows that are described below.
-
-1. **All Consumer Group Lag** - A high level set of 4 panels.
-  * Max lag in seconds per group
-  * Lag in seconds per group partition
-  * Max lag in offsets per group
-  * Lag in offsets per group partition
-2. **Consumer Group Lag In Time Per Group Over Offset Lag** - One panel for each consumer group that shows the max lag 
-in time on the left Y axis and max lag in offsets on the right Y axis. Ex)
-![Consumer Group Lag In Time Per Group Over Offset Lag Example](./grafana/offset_lag_time_with_offset_lag.png)
-3. **Consumer Group Lag in Time Per Group Over Summed Offsets** - One panel for each consumer group that shows the max lag in time on the left Y 
-axis.  The right Y axis has the sum of latest and last consumed offsets for all group partitions. Ex)
-![Consumer Group Lag in Time Per Group Over Summed Offsets Example](./grafana/offset_lag_time_over_summed_offsets.png)
-4. **Kafka Lag Exporter JVM Metrics** - JVM metrics for the Kafka Lag Exporter itself.
+```
+$ export DOCKER_REPOSITORY="docker.xyzcorp.com"
+$ export DOCKER_USERNAME="foobar"
+$ sbt updateHelmChart docker:publishLocal
+[info] Loading settings for project global-plugins from idea.sbt ...
+[info] Loading global plugins from /home/seglo/.sbt/1.0/plugins
+[info] Loading settings for project kafka-lag-exporter-build from plugins.sbt ...
+[info] Loading project definition from /home/seglo/source/kafka-lag-exporter/project
+[info] Loading settings for project kafka-lag-exporter from version.sbt,build.sbt ...
+[info] Set current project to kafka-lag-exporter (in build file:/home/seglo/source/kafka-lag-exporter/)
+Update Chart.yaml appVersion to 0.4.0-SNAPSHOT and version to 0.4.0
+Update values.yaml docker image tag to 0.4.0-SNAPSHOT
+Update values.yaml docker repository to docker.xyzcorp.com/foobar/kafka-lag-exporter
+...
+[info] Successfully built f392402958b7
+[info] Successfully tagged docker.xyzcorp.com/foobar/kafka-lag-exporter:0.4.0-SNAPSHOT
+[info] Built image docker.xyzcorp.com/foobar/kafka-lag-exporter with tags [0.4.0-SNAPSHOT]
+[success] Total time: 17 s, completed 1-May-2019 2:37:28 PM
+``` 
 
 ## Release
 
