@@ -1,9 +1,10 @@
-import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 import Dependencies._
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerCommands, dockerUsername}
+import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import ReleaseTransformations._
 import ReleasePlugin.autoImport._
 import ReleaseKeys._
+
 import scala.sys.process._
 
 lazy val kafkaLagExporter =
@@ -33,7 +34,8 @@ lazy val kafkaLagExporter =
         AlpakkaKafkaTestKit,
         AkkaHttp
       ),
-      dockerUsername := Some("lightbend"),
+      dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),
+      dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("lightbend")),
       // Based on best practices found in OpenShift Creating images guidelines
       // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
       dockerCommands := Seq(
@@ -46,9 +48,10 @@ lazy val kafkaLagExporter =
         Cmd("USER",           "1001"),
         ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap"),
       ),
-      updateHelmChartVersions := {
+      updateHelmChart := {
         import scala.sys.process._
-        s"./scripts/update_chart.sh ${version.value}" !
+        val repo = dockerAlias.value.withTag(None).toString
+        s"./scripts/update_chart.sh ${version.value} $repo" !
       },
       skip in publish := true,
       releaseProcess := Seq[ReleaseStep](
@@ -58,13 +61,13 @@ lazy val kafkaLagExporter =
         runClean,
         runTest,
         setReleaseVersion,
-        updateHelmChart,                        // Update the Helm Chart with the release version
-        publishDockerImage,                     // Publish the Docker images used by the chart to dockerhub
+        updateHelmChartRelease,                 // Update the Helm Chart
+        publishDockerImage,                     // Publish the Docker images used by the chart
         commitReleaseVersion,
         tagRelease,
         githubReleaseDraft,                     // Create a GitHub release draft
         setNextVersion,
-        updateHelmChart,                        // Update the Helm Chart with the next snapshot version
+        updateHelmChartRelease,                 // Update the Helm Chart with the next snapshot version
         commitNextVersion,
         pushChanges
       )
@@ -98,7 +101,7 @@ lazy val commonSettings = Seq(
   ),
 )
 
-lazy val updateHelmChartVersions = taskKey[Unit]("Update Helm Chart versions")
+lazy val updateHelmChart = taskKey[Unit]("Update Helm Chart")
 
 def exec(cmd: String, errorMessage: String): Unit = {
   val e = cmd.!
@@ -110,9 +113,11 @@ lazy val lintHelmChart = ReleaseStep(action = st => {
   st
 })
 
-lazy val updateHelmChart = ReleaseStep(action = st => {
+lazy val updateHelmChartRelease = ReleaseStep(action = st => {
   val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
-  exec(s"./scripts/update_chart.sh $releaseVersion", "Error while updating Helm Chart versions")
+  val extracted = Project.extract(st)
+  val repo = extracted.get(dockerAlias in thisProjectRef).withTag(None)
+  exec(s"./scripts/update_chart.sh $releaseVersion $repo", "Error while updating Helm Chart")
   st
 })
 
