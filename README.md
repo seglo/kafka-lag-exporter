@@ -117,7 +117,7 @@ file of the accompanying Helm Chart.
 You can install the chart from the local filesystem.
 
 ```
-helm install ./charts/kafka-lag-exporter
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.0/kafka-lag-exporter-0.3.0.tgz
 ```
 
 ### Examples
@@ -126,7 +126,7 @@ Install with the [Strimzi](https://strimzi.io/) Kafka discovery feature.
 See [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher) for more details.
 
 ```
-helm install ./charts/kafka-lag-exporter \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.3.0/kafka-lag-exporter-0.3.0.tgz \
   --name kafka-lag-exporter \
   --namespace kafka-lag-exporter \
   --set watchers.strimzi=true
@@ -135,7 +135,7 @@ helm install ./charts/kafka-lag-exporter \
 Install with statically defined cluster at the CLI.
 
 ```
-helm install ./charts/kafka-lag-exporter \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.3.0/kafka-lag-exporter-0.3.0.tgz \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set clusters\[0\].name=my-cluster \
@@ -145,7 +145,7 @@ helm install ./charts/kafka-lag-exporter \
 Run a debug install (`DEBUG` logging, debug helm chart install, force docker pull policy to `Always`).
 
 ```
-helm install ./charts/kafka-lag-exporter \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.3.0/kafka-lag-exporter-0.3.0.tgz \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set image.pullPolicy=Always \

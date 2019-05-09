@@ -4,6 +4,7 @@ import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import ReleaseTransformations._
 import ReleasePlugin.autoImport._
 import ReleaseKeys._
+import sbt.IO
 
 import scala.sys.process._
 
@@ -63,11 +64,15 @@ lazy val kafkaLagExporter =
         setReleaseVersion,
         updateHelmChartRelease,                 // Update the Helm Chart
         publishDockerImage,                     // Publish the Docker images used by the chart
+        packageChart,                           // Package the Helm Chart
         commitReleaseVersion,
+        updateReadmeRelease,                    // Update the README.md with this version
+        commitReadmeVersion,                    // Commit the README.md
         tagRelease,
         githubReleaseDraft,                     // Create a GitHub release draft
         setNextVersion,
-        updateHelmChartRelease,                 // Update the Helm Chart with the next snapshot version
+        updateHelmChartNextVersion,             // Update the Helm Chart with the next snapshot version
+        commitProjectArtifactsNextVersion,      // Commit the Helm Chart
         commitNextVersion,
         pushChanges
       )
@@ -118,6 +123,43 @@ lazy val updateHelmChartRelease = ReleaseStep(action = st => {
   val extracted = Project.extract(st)
   val repo = extracted.get(dockerAlias in thisProjectRef).withTag(None)
   exec(s"./scripts/update_chart.sh $releaseVersion $repo", "Error while updating Helm Chart")
+  st
+})
+
+lazy val updateHelmChartNextVersion = ReleaseStep(action = st => {
+  val (_, nextVersion) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
+  val extracted = Project.extract(st)
+  val repo = extracted.get(dockerAlias in thisProjectRef).withTag(None)
+  exec(s"./scripts/update_chart.sh $nextVersion $repo", "Error while updating Helm Chart")
+  st
+})
+
+lazy val updateReadmeRelease = ReleaseStep(action = st => {
+  val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
+  exec(s"./scripts/update_readme_version.sh $releaseVersion", "Error while updating README")
+  st
+})
+
+lazy val commitReadmeVersion = ReleaseStep(action = st => {
+  val vcs = Project.extract(st).get(releaseVcs).getOrElse(sys.error("Aborting release. Working directory is not a repository of a recognized VCS."))
+  val readme = (vcs.baseDir / "README.md").getCanonicalFile
+  val base = vcs.baseDir.getCanonicalFile
+  val relativeReadme = IO.relativize(base, readme).getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(readme, base))
+  vcs.add(relativeReadme).!!
+  vcs.commit("Update version in README", sign = false, signOff = false).!
+  st
+})
+
+lazy val commitProjectArtifactsNextVersion = ReleaseStep(action = st => {
+  val vcs = Project.extract(st).get(releaseVcs).getOrElse(sys.error("Aborting release. Working directory is not a repository of a recognized VCS."))
+  val chartYaml = (vcs.baseDir / "charts/kafka-lag-exporter/Chart.yaml").getCanonicalFile
+  val valuesYaml = (vcs.baseDir / "charts/kafka-lag-exporter/values.yaml").getCanonicalFile
+  val base = vcs.baseDir.getCanonicalFile
+  val relativeChartYaml = IO.relativize(base, chartYaml).getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(chartYaml, base))
+  val relativeValuesYaml = IO.relativize(base, valuesYaml).getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(valuesYaml, base))
+  vcs.add(relativeChartYaml).!!
+  vcs.add(relativeValuesYaml).!!
+  vcs.commit("Update versions in chart", sign = false, signOff = false).!
   st
 })
 
