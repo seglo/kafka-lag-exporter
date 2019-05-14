@@ -86,7 +86,6 @@ The highest (maximum) lag in time for a given consumer group.
 Labels: `cluster_name, topic, partition`
 
 The latest offset available for topic partition.  Kafka Lag Exporter will calculate a set of partitions for all consumer groups available and then poll for the last produced offset.  The last produced offset is used in the calculation of other metrics provided, so it is exported for informational purposes.  For example, the accompanying Grafana dashboard makes use of it to visualize the last produced offset and the last consumed offset in certain panels.
-Labels
 
 ### Labels
 
