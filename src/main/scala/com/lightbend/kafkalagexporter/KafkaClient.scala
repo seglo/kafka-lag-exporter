@@ -11,7 +11,9 @@ import java.{lang, util}
 
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.admin._
+import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndMetadata}
+import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.{KafkaFuture, TopicPartition => KafkaTopicPartition}
 
@@ -26,8 +28,8 @@ object KafkaClient {
   val CommonClientConfigRetryBackoffMs = 1000 // longer interval between retry attempts so we don't overload clusters (default = 100ms)
   val ConsumerConfigAutoCommit = false
 
-  def apply(bootstrapBrokers: String, groupId: String, clientTimeout: FiniteDuration)(implicit ec: ExecutionContext): KafkaClientContract =
-    new KafkaClient(bootstrapBrokers, groupId, clientTimeout)(ec)
+  def apply(cluster: KafkaCluster, groupId: String, clientTimeout: FiniteDuration)(implicit ec: ExecutionContext): KafkaClientContract =
+    new KafkaClient(cluster, groupId, clientTimeout)(ec)
 
   trait KafkaClientContract {
     def getGroups(): Future[List[Domain.ConsumerGroup]]
@@ -49,20 +51,26 @@ object KafkaClient {
     p.future
   }
 
-  private def createAdminClient(brokers: String, clientTimeout: Duration): AdminClient = {
+  private def createAdminClient(cluster: KafkaCluster, clientTimeout: Duration): AdminClient = {
     val props = new Properties()
     // AdminClient config: https://kafka.apache.org/documentation/#adminclientconfigs
-    props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, brokers)
+    props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, cluster.bootstrapBrokers)
+    props.put(AdminClientConfig.SECURITY_PROTOCOL_CONFIG, cluster.securityProtocol)
+    props.put(SaslConfigs.SASL_MECHANISM, cluster.saslMechanism)
+    props.put(SaslConfigs.SASL_JAAS_CONFIG, cluster.saslJaasConfig)
     props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, clientTimeout.toMillis.toString)
     props.put(AdminClientConfig.RETRIES_CONFIG, AdminClientConfigRetries.toString)
     props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, CommonClientConfigRetryBackoffMs.toString)
     AdminClient.create(props)
   }
 
-  private def createConsumerClient(brokers: String, groupId: String, clientTimeout: Duration): KafkaConsumer[String, String] = {
+  private def createConsumerClient(cluster: KafkaCluster, groupId: String, clientTimeout: Duration): KafkaConsumer[String, String] = {
     val props = new Properties()
     val deserializer = (new StringDeserializer).getClass.getName
-    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers)
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, cluster.bootstrapBrokers)
+    props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, cluster.securityProtocol)
+    props.put(SaslConfigs.SASL_MECHANISM, cluster.saslMechanism)
+    props.put(SaslConfigs.SASL_JAAS_CONFIG, cluster.saslJaasConfig)
     props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId)
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, ConsumerConfigAutoCommit.toString)
     //props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000")
@@ -83,14 +91,14 @@ object KafkaClient {
   }
 }
 
-class KafkaClient private(bootstrapBrokers: String, groupId: String, clientTimeout: FiniteDuration)
+class KafkaClient private(cluster: KafkaCluster, groupId: String, clientTimeout: FiniteDuration)
                          (implicit ec: ExecutionContext) extends KafkaClientContract {
   import KafkaClient._
 
   private implicit val _clientTimeout: Duration = clientTimeout.toJava
 
-  private lazy val adminClient = createAdminClient(bootstrapBrokers, _clientTimeout)
-  private lazy val consumer = createConsumerClient(bootstrapBrokers, groupId, _clientTimeout)
+  private lazy val adminClient = createAdminClient(cluster, _clientTimeout)
+  private lazy val consumer = createConsumerClient(cluster, groupId, _clientTimeout)
 
   private lazy val listGroupOptions = new ListConsumerGroupsOptions().timeoutMs(_clientTimeout.toMillis().toInt)
   private lazy val describeGroupOptions = new DescribeConsumerGroupsOptions().timeoutMs(_clientTimeout.toMillis().toInt)
