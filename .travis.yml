@@ -1,6 +1,7 @@
 language: scala
 sudo: false
 jdk: oraclejdk8
+dist: trusty
 cache:
   directories:
     - "$HOME/.ivy2/cache"
