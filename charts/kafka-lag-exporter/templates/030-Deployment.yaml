@@ -48,6 +48,18 @@ spec:
               value: "{{ $cluster.name }}"
             - name: "KAFKA_LAG_EXPORTER_CLUSTERS.{{ $index }}.bootstrap-brokers"
               value: "{{ $cluster.bootstrapBrokers }}"
+            {{- if $cluster.securityProtocol }}
+            - name: "KAFKA_LAG_EXPORTER_CLUSTERS.{{ $index }}.security-protocol"
+              value: "{{ $cluster.securityProtocol }}"
+            {{- end }}
+            {{- if $cluster.saslMechanism }}
+            - name: "KAFKA_LAG_EXPORTER_CLUSTERS.{{ $index }}.sasl-mechanism"
+              value: "{{ $cluster.saslMechanism }}"
+            {{- end }}
+            {{- if $cluster.saslJaasConfig }}
+            - name: "KAFKA_LAG_EXPORTER_CLUSTERS.{{ $index }}.sasl-jaas-config"
+              value: "{{ $cluster.saslJaasConfig }}"
+            {{- end }}
             {{- end }}
           ports:
             - name: http

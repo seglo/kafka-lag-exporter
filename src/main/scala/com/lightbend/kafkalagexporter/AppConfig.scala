@@ -21,7 +21,10 @@ object AppConfig {
     val clusters = c.getConfigList("clusters").asScala.toList.map { clusterConfig =>
       KafkaCluster(
         clusterConfig.getString("name"),
-        clusterConfig.getString("bootstrap-brokers")
+        clusterConfig.getString("bootstrap-brokers"),
+        if (clusterConfig.hasPath("security-protocol")) clusterConfig.getString("security-protocol") else "PLAINTEXT",
+        if (clusterConfig.hasPath("sasl-mechanism")) clusterConfig.getString("sasl-mechanism") else "",
+        if (clusterConfig.hasPath("sasl-jaas-config")) clusterConfig.getString("sasl-jaas-config") else ""
       )
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
@@ -29,7 +32,8 @@ object AppConfig {
   }
 }
 
-final case class KafkaCluster(name: String, bootstrapBrokers: String)
+final case class KafkaCluster(name: String, bootstrapBrokers: String, securityProtocol: String = "PLAINTEXT",
+                              saslMechanism: String = "", saslJaasConfig: String = "")
 final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, port: Int, clientGroupId: String,
                            clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean) {
   override def toString(): String = {
@@ -41,6 +45,8 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
           s"""
              |  Cluster name: ${cluster.name}
              |  Cluster Kafka bootstrap brokers: ${cluster.bootstrapBrokers}
+             |  Cluster security protocol: ${cluster.securityProtocol}
+             |  Cluster SASL mechanism: ${cluster.saslMechanism}
            """.stripMargin
         }.mkString("\n")
     s"""

@@ -27,8 +27,8 @@ object MainApp extends App {
 
     val appConfig = AppConfig(config)
 
-    val clientCreator = (bootstrapBrokers: String) =>
-      KafkaClient(bootstrapBrokers, appConfig.clientGroupId, appConfig.clientTimeout)(kafkaClientEc)
+    val clientCreator = (cluster: KafkaCluster) =>
+      KafkaClient(cluster, appConfig.clientGroupId, appConfig.clientTimeout)(kafkaClientEc)
     val endpointCreator = () => PrometheusEndpointSink(appConfig.port, Metrics.metricDefinitions)
 
     ActorSystem(

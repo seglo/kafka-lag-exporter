@@ -19,7 +19,7 @@ object KafkaClusterManager {
   def init(
             appConfig: AppConfig,
             metricsSink: () => MetricsSink,
-            clientCreator: String => KafkaClientContract): Behavior[Message] = Behaviors.setup { context =>
+            clientCreator: KafkaCluster => KafkaClientContract): Behavior[Message] = Behaviors.setup { context =>
 
     context.log.info("Starting Kafka Lag Exporter with configuration: \n{}", appConfig)
 
@@ -38,7 +38,7 @@ object KafkaClusterManager {
 
   def manager(
                appConfig: AppConfig,
-               clientCreator: String => KafkaClientContract,
+               clientCreator: KafkaCluster => KafkaClientContract,
                reporter: ActorRef[MetricsSink.Message],
                collectors: Map[KafkaCluster, ActorRef[ConsumerGroupCollector.Message]],
                watchers: Seq[ActorRef[Watcher.Message]]): Behavior[Message] =
@@ -49,8 +49,7 @@ object KafkaClusterManager {
         val config = ConsumerGroupCollector.CollectorConfig(
           appConfig.pollInterval,
           appConfig.lookupTableSize,
-          cluster.name,
-          cluster.bootstrapBrokers
+          cluster
         )
         val collector = context.spawn(
           ConsumerGroupCollector.init(config, clientCreator, reporter),

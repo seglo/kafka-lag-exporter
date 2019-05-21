@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 
 class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData with MockitoSugar {
   val client: KafkaClientContract = mock[KafkaClientContract]
-  val config = ConsumerGroupCollector.CollectorConfig(0 seconds, 20, "default", "", Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
+  val config = ConsumerGroupCollector.CollectorConfig(0 seconds, 20, KafkaCluster("default", ""), Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
 
   val timestampNow = 200
 
@@ -44,28 +44,28 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     "latest offset metric" in {
       metrics should contain(
-        Metrics.LatestOffsetMetric(config.clusterName, topicPartition0, value = 200))
+        Metrics.LatestOffsetMetric(config.cluster.name, topicPartition0, value = 200))
     }
 
     "last group offset metric" in {
       metrics should contain(
-        Metrics.LastGroupOffsetMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 180))
+        Metrics.LastGroupOffsetMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 180))
     }
 
     "offset lag metric" in {
-      metrics should contain(Metrics.OffsetLagMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 20))
+      metrics should contain(Metrics.OffsetLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 20))
     }
 
     "time lag metric" in {
-      metrics should contain(Metrics.TimeLagMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 0.02))
+      metrics should contain(Metrics.TimeLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0.02))
     }
 
     "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.clusterName, consumerGroupSingleMember, value = 20))
+      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupSingleMember, value = 20))
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupSingleMember, value = 0.02))
+      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupSingleMember, value = 0.02))
     }
   }
 
@@ -102,11 +102,11 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     val metrics = reporter.receiveAll()
 
     "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.clusterName, consumerGroupThreeMember, value = 100))
+      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupThreeMember, value = 100))
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupThreeMember, value = 0.1))
+      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupThreeMember, value = 0.1))
     }
   }
 
@@ -131,27 +131,27 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     val metrics = reporter.receiveAll()
 
     "latest offset metric" in {
-      metrics should contain(Metrics.LatestOffsetMetric(config.clusterName, topicPartition0, value = 200))
+      metrics should contain(Metrics.LatestOffsetMetric(config.cluster.name, topicPartition0, value = 200))
     }
 
     "last group offset metric" in {
-      metrics should contain(Metrics.LastGroupOffsetMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 0))
+      metrics should contain(Metrics.LastGroupOffsetMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0))
     }
 
     "offset lag metric" in {
-      metrics should contain(Metrics.OffsetLagMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 200))
+      metrics should contain(Metrics.OffsetLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 200))
     }
 
     "time lag metric" in {
-      metrics should contain(Metrics.TimeLagMetric(config.clusterName, gtpSingleMember, consumerGroupMember0, value = 0.2))
+      metrics should contain(Metrics.TimeLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0.2))
     }
 
     "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.clusterName, consumerGroupSingleMember, value = 200))
+      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupSingleMember, value = 200))
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.clusterName, consumerGroupSingleMember, value = 0.2))
+      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupSingleMember, value = 0.2))
     }
   }
 }

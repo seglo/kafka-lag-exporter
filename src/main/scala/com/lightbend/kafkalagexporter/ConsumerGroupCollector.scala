@@ -36,8 +36,7 @@ object ConsumerGroupCollector {
   final case class CollectorConfig(
                                     pollInterval: FiniteDuration,
                                     lookupTableSize: Int,
-                                    clusterName: String,
-                                    clusterBootstrapBrokers: String,
+                                    cluster: KafkaCluster,
                                     clock: Clock = Clock.systemUTC()
                                   )
 
@@ -47,15 +46,15 @@ object ConsumerGroupCollector {
                                  )
 
   def init(config: CollectorConfig,
-           clientCreator: String => KafkaClientContract,
+           clientCreator: KafkaCluster => KafkaClientContract,
            reporter: ActorRef[MetricsSink.Message]): Behavior[Message] = Behaviors.supervise[Message] {
     Behaviors.setup { context =>
-      context.log.info("Spawned ConsumerGroupCollector for cluster: {}", config.clusterName)
+      context.log.info("Spawned ConsumerGroupCollector for cluster: {}", config.cluster.name)
 
       context.self ! Collect
 
       val collectorState = CollectorState(Domain.TopicPartitionTable(config.lookupTableSize))
-      collector(config, clientCreator(config.clusterBootstrapBrokers), reporter, collectorState)
+      collector(config, clientCreator(config.cluster), reporter, collectorState)
     }
   }.onFailure(SupervisorStrategy.restartWithBackoff(1 seconds, 10 seconds, 0.2))
 
@@ -115,7 +114,7 @@ object ConsumerGroupCollector {
         Behaviors.receiveSignal {
           case (_, PostStop) =>
             client.close()
-            context.log.info("Gracefully stopped polling and Kafka client for cluster: {}", config.clusterName)
+            context.log.info("Gracefully stopped polling and Kafka client for cluster: {}", config.cluster.name)
             Behaviors.same
         }
       }
@@ -155,9 +154,9 @@ object ConsumerGroupCollector {
 
       val offsetLag = mostRecentPoint.offset - groupPoint.offset
 
-      reporter ! Metrics.LastGroupOffsetMetric(config.clusterName, gtp, member, groupPoint.offset)
-      reporter ! Metrics.OffsetLagMetric(config.clusterName, gtp, member, offsetLag)
-      reporter ! Metrics.TimeLagMetric(config.clusterName, gtp, member, timeLag)
+      reporter ! Metrics.LastGroupOffsetMetric(config.cluster.name, gtp, member, groupPoint.offset)
+      reporter ! Metrics.OffsetLagMetric(config.cluster.name, gtp, member, offsetLag)
+      reporter ! Metrics.TimeLagMetric(config.cluster.name, gtp, member, timeLag)
 
       GroupPartitionLag(gtp, offsetLag, timeLag)
     }
@@ -168,8 +167,8 @@ object ConsumerGroupCollector {
       val maxOffsetLag = values.maxBy(_.offsetLag)
       val maxTimeLag = values.maxBy(_.timeLag)
 
-      reporter ! Metrics.MaxGroupOffsetLagMetric(config.clusterName, group, maxOffsetLag.offsetLag)
-      reporter ! Metrics.MaxGroupTimeLagMetric(config.clusterName, group, maxTimeLag.timeLag)
+      reporter ! Metrics.MaxGroupOffsetLagMetric(config.cluster.name, group, maxOffsetLag.offsetLag)
+      reporter ! Metrics.MaxGroupTimeLagMetric(config.cluster.name, group, maxTimeLag.timeLag)
     }
   }
 
@@ -181,7 +180,7 @@ object ConsumerGroupCollector {
     for {
       (tp, table: LookupTable.Table) <- tables.all
       point <- table.mostRecentPoint()
-    } reporter ! Metrics.LatestOffsetMetric(config.clusterName, tp, point.offset)
+    } reporter ! Metrics.LatestOffsetMetric(config.cluster.name, tp, point.offset)
   }
 
   private def defaultMissingPartitions(newOffsets: NewOffsets): NewOffsets = {
