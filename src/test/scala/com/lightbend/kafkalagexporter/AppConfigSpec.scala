@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package com.lightbend.kafkalagexporter
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{FreeSpec, Matchers}
