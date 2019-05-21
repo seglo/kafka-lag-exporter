@@ -40,10 +40,10 @@ abstract class SpecBase(kafkaPort: Int, val exporterPort: Int)
 
   val config: Config = ConfigFactory.parseString(s"""
                                             |kafka-lag-exporter {
+                                            |  port: $exporterPort
                                             |  clusters = [
                                             |    {
                                             |      name: "$clusterName"
-                                            |      port: $exporterPort
                                             |      bootstrap-brokers: "localhost:$kafkaPort"
                                             |    }
                                             |  ]
