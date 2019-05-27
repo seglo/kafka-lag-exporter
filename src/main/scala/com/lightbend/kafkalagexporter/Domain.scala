@@ -8,13 +8,23 @@ object Domain {
   final case class TopicPartition(topic: String, partition: Int)
   final case class GroupTopicPartition(group: ConsumerGroup, topicPartition: TopicPartition)
 
+  final case class FlatGroupTopicPartition(
+                                            id: String,
+                                            clientId: String,
+                                            consumerId: String,
+                                            host: String,
+                                            topic: String,
+                                            partition: Int) {
+    lazy val tp: TopicPartition = TopicPartition(topic, partition)
+  }
+
   final case class ConsumerGroup(id: String, isSimpleGroup: Boolean, state: String, members: List[ConsumerGroupMember])
   final case class ConsumerGroupMember(clientId: String, consumerId: String, host: String, partitions: Set[TopicPartition])
 
-  type GroupOffsets = Map[GroupTopicPartition, LookupTable.Point]
+  type GroupOffsets = Map[FlatGroupTopicPartition, LookupTable.Point]
 
   object GroupOffsets {
-    def apply(): GroupOffsets = Map.empty[GroupTopicPartition, LookupTable.Point]
+    def apply(): GroupOffsets = Map.empty[FlatGroupTopicPartition, LookupTable.Point]
   }
 
   type PartitionOffsets = Map[TopicPartition, LookupTable.Point]
@@ -28,6 +38,8 @@ object Domain {
       tables = tables.updated(tp, tables.getOrElse(tp, LookupTable.Table(limit)))
       tables(tp)
     }
+
+    def clear(evictedTps: List[TopicPartition]): Unit = tables.filterKeys(tp => evictedTps.contains(tp))
 
     def all: Map[TopicPartition, LookupTable.Table] = tables
   }

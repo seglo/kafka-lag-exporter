@@ -36,7 +36,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = timestampNow))
     val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Point(offset = 180, time = timestampNow))
 
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
@@ -97,7 +97,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       gtp2 -> Point(offset = 180, time = 200),
     )
 
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupThreeMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(consumerGroupThreeMember), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
@@ -126,7 +126,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = 200))
     val newLastGroupOffsets = Domain.GroupOffsets() // <-- no new group offsets
 
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 

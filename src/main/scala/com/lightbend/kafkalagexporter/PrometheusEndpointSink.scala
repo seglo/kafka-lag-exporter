@@ -4,7 +4,7 @@
 
 package com.lightbend.kafkalagexporter
 
-import com.lightbend.kafkalagexporter.MetricsSink.{Metric, MetricDefinitions}
+import com.lightbend.kafkalagexporter.MetricsSink._
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 import io.prometheus.client.{CollectorRegistry, Gauge}
@@ -12,8 +12,8 @@ import io.prometheus.client.{CollectorRegistry, Gauge}
 import scala.util.Try
 
 object PrometheusEndpointSink {
-  def apply(httpPort: Int, metricsDefinitions: MetricDefinitions): MetricsSink =
-    Try(new PrometheusEndpointSink(httpPort, metricsDefinitions))
+  def apply(httpPort: Int, definitions: MetricDefinitions): MetricsSink =
+    Try(new PrometheusEndpointSink(httpPort, definitions))
       .fold(t => throw new Exception("Could not create Prometheus Endpoint", t), sink => sink)
 }
 
@@ -24,18 +24,23 @@ class PrometheusEndpointSink private(httpPort: Int, definitions: MetricDefinitio
 
   DefaultExports.initialize()
 
-  private val metrics: Map[Class[_], Gauge] = definitions.map { case (key, defn) =>
-    key -> Gauge.build()
-      .name(defn.name)
-      .help(defn.help)
-      .labelNames(defn.label: _*)
+  private val metrics: Map[GaugeDefinition, Gauge] = definitions.map(definition =>
+    definition -> Gauge.build()
+      .name(definition.name)
+      .help(definition.help)
+      .labelNames(definition.labels: _*)
       .register(registry)
-  }.toMap
+  ).toMap
 
-  override def report(m: Metric): Unit = {
-    val metric = metrics.getOrElse(m.getClass, throw new IllegalArgumentException(s"No metric with type ${m.getClass.getName} defined"))
+  override def report(m: MetricValue): Unit = {
+    val metric = metrics.getOrElse(m.definition, throw new IllegalArgumentException(s"No metric with definition ${m.definition.name} registered"))
     metric.labels(m.labels: _*).set(m.value)
   }
+
+
+  override def remove(m: RemoveMetric): Unit =
+    metrics.get(m.definition).foreach(_.remove(m.labels: _*))
+
   override def stop(): Unit = {
     /*
      * Unregister all collectors (i.e. Gauges).  Useful for integration tests.
