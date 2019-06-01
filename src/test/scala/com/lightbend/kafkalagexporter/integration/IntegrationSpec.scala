@@ -28,10 +28,10 @@ class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) wi
         val totalOffsets = 10
 
         val rules = List(
-          Rule.create(classOf[LatestOffsetMetric], (actual: String) => actual shouldBe (totalOffsets + 1).toDouble.toString, clusterName, topic, partition),
-          Rule.create(classOf[LastGroupOffsetMetric], (actual: String) => actual shouldBe offsetsToCommit.toDouble.toString, clusterName, group, topic, partition),
-          Rule.create(classOf[MaxGroupOffsetLagMetric], (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group),
-          Rule.create(classOf[OffsetLagMetric], (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group, topic, partition)
+          Rule.create(LatestOffsetMetric, (actual: String) => actual shouldBe (totalOffsets + 1).toDouble.toString, clusterName, topic, partition),
+          Rule.create(LastGroupOffsetMetric, (actual: String) => actual shouldBe offsetsToCommit.toDouble.toString, clusterName, group, topic, partition),
+          Rule.create(MaxGroupOffsetLagMetric, (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group),
+          Rule.create(OffsetLagMetric, (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group, topic, partition)
         )
 
         val simulator = new LagSimulator(topic, group)
@@ -64,7 +64,7 @@ class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) wi
         lastLagInTime = parsedDouble
       }
 
-      val isIncreasingRule = Rule.create(classOf[TimeLagMetric], isIncreasing, clusterName, group, topic, partition)
+      val isIncreasingRule = Rule.create(TimeLagMetric, isIncreasing, clusterName, group, topic, partition)
 
       (1 to 3).foreach { i =>
         eventually(scrapeAndAssert(exporterPort, s"Assert lag in time metrics are increasing ($i)", isIncreasingRule))

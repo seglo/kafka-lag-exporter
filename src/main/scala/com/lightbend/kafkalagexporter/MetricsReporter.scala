@@ -6,7 +6,7 @@ package com.lightbend.kafkalagexporter
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{Behavior, PostStop}
-import com.lightbend.kafkalagexporter.MetricsSink.{Message, Metric, RemoveMetric, Stop}
+import com.lightbend.kafkalagexporter.MetricsSink._
 
 object MetricsReporter {
   def init(
@@ -15,7 +15,7 @@ object MetricsReporter {
   }
 
   def reporter(metricsSink: MetricsSink): Behavior[Message] = Behaviors.receive {
-    case (_, m: Metric) =>
+    case (_, m: MetricValue) =>
       metricsSink.report(m)
       Behaviors.same
     case (_, rm: RemoveMetric) =>

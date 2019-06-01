@@ -100,7 +100,7 @@ object ConsumerGroupCollector {
       val evictedGroups = state.lastSnapshot.map(_.groups.diff(snapshot.groups)).getOrElse(Nil)
       val evictedGtps = state.lastSnapshot.map(_.lastGroupOffsets.keySet.diff(snapshot.lastGroupOffsets.keySet)).getOrElse(Nil).toList
 
-      context.log.debug("Update lookup tables")
+      context.log.debug("Updating lookup tables")
       refreshLookupTable(state, snapshot, evictedTps)
 
       context.log.debug("Reporting offsets")

@@ -34,9 +34,9 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     val testKit = BehaviorTestKit(behavior)
 
     val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = timestampNow))
-    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Point(offset = 180, time = timestampNow))
+    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember2 -> Point(offset = 180, time = timestampNow))
 
-    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
@@ -44,28 +44,28 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     "latest offset metric" in {
       metrics should contain(
-        Metrics.LatestOffsetMetric(config.cluster.name, topicPartition0, value = 200))
+        Metrics.TopicPartitionValueMessage(Metrics.LatestOffsetMetric, config.cluster.name, topicPartition0, value = 200))
     }
 
     "last group offset metric" in {
       metrics should contain(
-        Metrics.LastGroupOffsetMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 180))
+        Metrics.GroupPartitionValueMessage(Metrics.LastGroupOffsetMetric, config.cluster.name, gtpSingleMember2, value = 180))
     }
 
     "offset lag metric" in {
-      metrics should contain(Metrics.OffsetLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 20))
+      metrics should contain(Metrics.GroupPartitionValueMessage(Metrics.OffsetLagMetric, config.cluster.name, gtpSingleMember2, value = 20))
     }
 
     "time lag metric" in {
-      metrics should contain(Metrics.TimeLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0.02))
+      metrics should contain(Metrics.GroupPartitionValueMessage(Metrics.TimeLagMetric, config.cluster.name, gtpSingleMember2, value = 0.02))
     }
 
     "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupSingleMember, value = 20))
+      metrics should contain(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, config.cluster.name, groupId, value = 20))
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupSingleMember, value = 0.02))
+      metrics should contain(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, config.cluster.name, groupId, value = 0.02))
     }
   }
 
@@ -92,66 +92,21 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       topicPartition2 -> Point(offset = 200, time = 200)
     )
     val newLastGroupOffsets = Domain.GroupOffsets() ++ List(
-      gtp0 -> Point(offset = 180, time = 200),
-      gtp1 -> Point(offset = 100, time = 200),
-      gtp2 -> Point(offset = 180, time = 200),
+      gtp02 -> Point(offset = 180, time = 200),
+      gtp12 -> Point(offset = 100, time = 200),
+      gtp22 -> Point(offset = 180, time = 200),
     )
 
-    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(consumerGroupThreeMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
     "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupThreeMember, value = 100))
+      metrics should contain(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, config.cluster.name, groupId, value = 100))
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupThreeMember, value = 0.1))
-    }
-  }
-
-  "ConsumerGroupCollector when consumer group partitions have no offset should send" - {
-    val reporter = TestInbox[MetricsSink.Message]()
-
-    val lookupTable = LookupTable.Table(20)
-    lookupTable.addPoint(LookupTable.Point(100, 100))
-
-    val state = ConsumerGroupCollector.CollectorState(
-      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable)),
-    )
-
-    val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
-    val testKit = BehaviorTestKit(behavior)
-
-    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = 200))
-    val newLastGroupOffsets = Domain.GroupOffsets() // <-- no new group offsets
-
-    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
-
-    val metrics = reporter.receiveAll()
-
-    "latest offset metric" in {
-      metrics should contain(Metrics.LatestOffsetMetric(config.cluster.name, topicPartition0, value = 200))
-    }
-
-    "last group offset metric" in {
-      metrics should contain(Metrics.LastGroupOffsetMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0))
-    }
-
-    "offset lag metric" in {
-      metrics should contain(Metrics.OffsetLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 200))
-    }
-
-    "time lag metric" in {
-      metrics should contain(Metrics.TimeLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0.2))
-    }
-
-    "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupSingleMember, value = 200))
-    }
-
-    "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupSingleMember, value = 0.2))
+      metrics should contain(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, config.cluster.name, groupId, value = 0.1))
     }
   }
 }

@@ -10,6 +10,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import com.lightbend.kafkalagexporter.Metrics
+import com.lightbend.kafkalagexporter.MetricsSink.GaugeDefinition
 import org.scalatest.Matchers
 import org.scalatest.concurrent.ScalaFutures
 import org.slf4j.{Logger, LoggerFactory}
@@ -49,10 +50,9 @@ trait PrometheusUtils extends Matchers with ScalaFutures {
   }
 
   object Rule {
-    def create(clazz: Class[_], assertion: String => _, labelValues: String*): Rule = {
-      val metric = Metrics.metricDefinitions(clazz)
-      val name = metric.name
-      val labels = metric.label.zip(labelValues).map { case (k, v) => s"""$k="$v""""}.mkString(",")
+    def create(definition: GaugeDefinition, assertion: String => _, labelValues: String*): Rule = {
+      val name = definition.name
+      val labels = definition.labels.zip(labelValues).map { case (k, v) => s"""$k="$v""""}.mkString(",")
       /*
        * Ex)
        * kafka_consumergroup_group_lag\{cluster_name="default",group="group-1-2",topic="topic-1-1",partition="0".*\}\s+(-?\d+\.\d+)
