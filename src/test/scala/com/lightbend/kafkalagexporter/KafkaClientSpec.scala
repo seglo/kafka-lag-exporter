@@ -25,9 +25,9 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData {
         topicPartition0.asKafka -> offset,
         topicPartition1.asKafka -> offset
       )
-      val groupOffsets = client.actualGroupOffsets(0, List(gtp02, gtp12, gtp22), offsetMap)
+      val groupOffsets = client.actualGroupOffsets(0, List(gtp0, gtp1, gtp2), offsetMap)
 
-      groupOffsets(gtp22) shouldEqual LookupTable.Point(0, 0)
+      groupOffsets(gtp2) shouldEqual LookupTable.Point(0, 0)
     }
   }
 

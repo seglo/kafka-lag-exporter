@@ -34,7 +34,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     val testKit = BehaviorTestKit(behavior)
 
     val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = timestampNow))
-    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember2 -> Point(offset = 180, time = timestampNow))
+    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Point(offset = 180, time = timestampNow))
 
     testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))
 
@@ -49,15 +49,15 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     "last group offset metric" in {
       metrics should contain(
-        Metrics.GroupPartitionValueMessage(Metrics.LastGroupOffsetMetric, config.cluster.name, gtpSingleMember2, value = 180))
+        Metrics.GroupPartitionValueMessage(Metrics.LastGroupOffsetMetric, config.cluster.name, gtpSingleMember, value = 180))
     }
 
     "offset lag metric" in {
-      metrics should contain(Metrics.GroupPartitionValueMessage(Metrics.OffsetLagMetric, config.cluster.name, gtpSingleMember2, value = 20))
+      metrics should contain(Metrics.GroupPartitionValueMessage(Metrics.OffsetLagMetric, config.cluster.name, gtpSingleMember, value = 20))
     }
 
     "time lag metric" in {
-      metrics should contain(Metrics.GroupPartitionValueMessage(Metrics.TimeLagMetric, config.cluster.name, gtpSingleMember2, value = 0.02))
+      metrics should contain(Metrics.GroupPartitionValueMessage(Metrics.TimeLagMetric, config.cluster.name, gtpSingleMember, value = 0.02))
     }
 
     "max group offset lag metric" in {
@@ -92,9 +92,9 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       topicPartition2 -> Point(offset = 200, time = 200)
     )
     val newLastGroupOffsets = Domain.GroupOffsets() ++ List(
-      gtp02 -> Point(offset = 180, time = 200),
-      gtp12 -> Point(offset = 100, time = 200),
-      gtp22 -> Point(offset = 180, time = 200),
+      gtp0 -> Point(offset = 180, time = 200),
+      gtp1 -> Point(offset = 100, time = 200),
+      gtp2 -> Point(offset = 180, time = 200),
     )
 
     testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))

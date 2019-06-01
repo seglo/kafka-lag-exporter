@@ -67,7 +67,7 @@ object ConsumerGroupCollector {
     case (context, _: Collect) =>
       implicit val ec: ExecutionContextExecutor = context.executionContext
 
-      def getOffsetSnapshot(groups: List[String], groupTopicPartitions: List[Domain.FlatGroupTopicPartition]): Future[OffsetsSnapshot] = {
+      def getOffsetSnapshot(groups: List[String], groupTopicPartitions: List[Domain.GroupTopicPartition]): Future[OffsetsSnapshot] = {
         val now = config.clock.instant().toEpochMilli
         val distinctPartitions = groupTopicPartitions.map(_.tp).toSet
 
@@ -141,7 +141,7 @@ object ConsumerGroupCollector {
     for((tp, point) <- snapshot.latestOffsets) state.topicPartitionTables(tp).addPoint(point)
   }
 
-  private final case class GroupPartitionLag(gtp: FlatGroupTopicPartition, offsetLag: Long, timeLag: Double)
+  private final case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Long, timeLag: Double)
 
   private def reportConsumerGroupMetrics(
                                           config: CollectorConfig,
@@ -193,7 +193,7 @@ object ConsumerGroupCollector {
                                     reporter: ActorRef[MetricsSink.Message],
                                     tps: List[Domain.TopicPartition],
                                     groups: List[String],
-                                    gtps: List[Domain.FlatGroupTopicPartition]): Unit = {
+                                    gtps: List[Domain.GroupTopicPartition]): Unit = {
     tps.foreach(tp => reporter ! Metrics.TopicPartitionRemoveMetricMessage(Metrics.LatestOffsetMetric, config.cluster.name, tp))
     groups.foreach { group =>
       reporter ! Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupOffsetLagMetric, config.cluster.name, group)

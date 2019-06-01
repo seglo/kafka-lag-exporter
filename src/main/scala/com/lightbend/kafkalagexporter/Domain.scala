@@ -6,25 +6,23 @@ package com.lightbend.kafkalagexporter
 
 object Domain {
   final case class TopicPartition(topic: String, partition: Int)
-  final case class GroupTopicPartition(group: ConsumerGroup, topicPartition: TopicPartition)
 
-  final case class FlatGroupTopicPartition(
-                                            id: String,
-                                            clientId: String,
-                                            consumerId: String,
-                                            host: String,
-                                            topic: String,
-                                            partition: Int) {
+  // Once upon a time I had a nested data structure for all these types, but I found that a flat datastructure
+  // is much easier to work with, at the sacrifice of some duplication.
+  final case class GroupTopicPartition(
+                                        id: String,
+                                        clientId: String,
+                                        consumerId: String,
+                                        host: String,
+                                        topic: String,
+                                        partition: Int) {
     lazy val tp: TopicPartition = TopicPartition(topic, partition)
   }
 
-  final case class ConsumerGroup(id: String, isSimpleGroup: Boolean, state: String, members: List[ConsumerGroupMember])
-  final case class ConsumerGroupMember(clientId: String, consumerId: String, host: String, partitions: Set[TopicPartition])
-
-  type GroupOffsets = Map[FlatGroupTopicPartition, LookupTable.Point]
+  type GroupOffsets = Map[GroupTopicPartition, LookupTable.Point]
 
   object GroupOffsets {
-    def apply(): GroupOffsets = Map.empty[FlatGroupTopicPartition, LookupTable.Point]
+    def apply(): GroupOffsets = Map.empty[GroupTopicPartition, LookupTable.Point]
   }
 
   type PartitionOffsets = Map[TopicPartition, LookupTable.Point]

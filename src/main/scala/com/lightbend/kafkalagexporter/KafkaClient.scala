@@ -34,8 +34,8 @@ object KafkaClient {
     new KafkaClient(cluster, groupId, clientTimeout)(ec)
 
   trait KafkaClientContract {
-    def getGroups(): Future[(List[String], List[Domain.FlatGroupTopicPartition])]
-    def getGroupOffsets(now: Long, groups: List[String], groupTopicPartitions: List[Domain.FlatGroupTopicPartition]): Future[Map[Domain.FlatGroupTopicPartition, LookupTable.Point]]
+    def getGroups(): Future[(List[String], List[Domain.GroupTopicPartition])]
+    def getGroupOffsets(now: Long, groups: List[String], groupTopicPartitions: List[Domain.GroupTopicPartition]): Future[Map[Domain.GroupTopicPartition, LookupTable.Point]]
     def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, LookupTable.Point]]
     def close(): Unit
   }
@@ -108,7 +108,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster, groupId: Stri
   /**
     * Get a list of consumer groups
     */
-  def getGroups(): Future[(List[String], List[Domain.FlatGroupTopicPartition])] = {
+  def getGroups(): Future[(List[String], List[Domain.GroupTopicPartition])] = {
     for {
       groups <- kafkaFuture(adminClient.listConsumerGroups(listGroupOptions).all())
       groupIds = groups.asScala.map(_.groupId()).toList
@@ -119,11 +119,11 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster, groupId: Stri
     }
   }
 
-  private[kafkalagexporter] def groupTopicPartitions(groupId: String, desc: ConsumerGroupDescription): List[Domain.FlatGroupTopicPartition] = {
+  private[kafkalagexporter] def groupTopicPartitions(groupId: String, desc: ConsumerGroupDescription): List[Domain.GroupTopicPartition] = {
     val groupTopicPartitions = for {
       member <- desc.members().asScala
       ktp <- member.assignment().topicPartitions().asScala
-    } yield Domain.FlatGroupTopicPartition(
+    } yield Domain.GroupTopicPartition(
       groupId,
       member.clientId(),
       member.consumerId(),
@@ -147,7 +147,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster, groupId: Stri
     * topic partition has no matched Consumer Group offset then a default offset of 0 is provided.
     * @return A series of Future's for Consumer Group offsets requests to Kafka.
     */
-  def getGroupOffsets(now: Long, groups: List[String], gtps: List[Domain.FlatGroupTopicPartition]): Future[GroupOffsets] = {
+  def getGroupOffsets(now: Long, groups: List[String], gtps: List[Domain.GroupTopicPartition]): Future[GroupOffsets] = {
     Future.sequence {
       groups.map { group =>
         kafkaFuture(adminClient
@@ -160,9 +160,9 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster, groupId: Stri
 
   private[kafkalagexporter] def actualGroupOffsets(
                                                     now: Long,
-                                                    gtps: List[Domain.FlatGroupTopicPartition],
+                                                    gtps: List[Domain.GroupTopicPartition],
                                                     offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata]): GroupOffsets = {
-    def getOffsetOrZero(offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata], gtp: Domain.FlatGroupTopicPartition): Long =
+    def getOffsetOrZero(offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata], gtp: Domain.GroupTopicPartition): Long =
       offsetMap.get(gtp.tp.asKafka).map(_.offset()).getOrElse(0)
 
     for {

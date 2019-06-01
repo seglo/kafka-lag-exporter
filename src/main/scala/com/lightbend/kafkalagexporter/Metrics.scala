@@ -39,7 +39,7 @@ object Metrics {
   sealed trait GroupPartitionMessage extends Message with Metric {
     def definition: GaugeDefinition
     def clusterName: String
-    def gtp: Domain.FlatGroupTopicPartition
+    def gtp: Domain.GroupTopicPartition
     override def labels: List[String] =
       List(
         clusterName,
@@ -51,8 +51,8 @@ object Metrics {
         gtp.clientId)
   }
 
-  final case class GroupPartitionValueMessage(definition: GaugeDefinition, clusterName: String, gtp: Domain.FlatGroupTopicPartition, value: Double) extends GroupPartitionMessage with MetricValue
-  final case class GroupPartitionRemoveMetricMessage(definition: GaugeDefinition, clusterName: String, gtp: Domain.FlatGroupTopicPartition) extends GroupPartitionMessage with RemoveMetric
+  final case class GroupPartitionValueMessage(definition: GaugeDefinition, clusterName: String, gtp: Domain.GroupTopicPartition, value: Double) extends GroupPartitionMessage with MetricValue
+  final case class GroupPartitionRemoveMetricMessage(definition: GaugeDefinition, clusterName: String, gtp: Domain.GroupTopicPartition) extends GroupPartitionMessage with RemoveMetric
 
   val topicPartitionLabels = List("cluster_name", "topic", "partition")
 
