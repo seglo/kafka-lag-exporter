@@ -23,12 +23,14 @@ object Domain {
 
   object GroupOffsets {
     def apply(): GroupOffsets = Map.empty[GroupTopicPartition, LookupTable.Point]
+    def apply(tuples: (GroupTopicPartition, LookupTable.Point)*): GroupOffsets = Map(tuples: _*)
   }
 
   type PartitionOffsets = Map[TopicPartition, LookupTable.Point]
 
   object PartitionOffsets {
     def apply(): PartitionOffsets = Map.empty[TopicPartition, LookupTable.Point]
+    def apply(tuples: (TopicPartition, LookupTable.Point)*): PartitionOffsets = Map(tuples: _*)
   }
 
   class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, LookupTable.Table]) {

@@ -72,5 +72,10 @@ class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) wi
 
       testKit.stop(simulatorActor)
     }
+
+    "does not report metrics for group members or partitions that no longer exist" in {
+
+      ???
+    }
   }
 }

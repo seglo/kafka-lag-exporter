@@ -15,7 +15,7 @@ import scala.concurrent.duration.FiniteDuration
 
 class KafkaClientSpec extends FreeSpec with Matchers with TestData {
   "KafkaClient" - {
-    "get group offsets" in {
+    "actualGroupOffsets returns offsets of 0 for missing partitions" in {
       implicit val ec = ExecutionContext.global
       val offset = new OffsetAndMetadata(1, Optional.empty(), "")
       val client = new KafkaClient(cluster, groupId, FiniteDuration(0, "ms"))
