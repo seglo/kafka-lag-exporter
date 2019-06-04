@@ -7,11 +7,13 @@ package com.lightbend.kafkalagexporter
 import java.time.{Clock, Instant, ZoneId}
 
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
+import akka.actor.typed.ActorRef
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import com.lightbend.kafkalagexporter.LookupTable._
 import com.lightbend.kafkalagexporter.Domain._
 import com.lightbend.kafkalagexporter.Metrics._
 import org.mockito.MockitoSugar
+import org.mockito.ArgumentMatchers._
 import org.scalatest.{Matchers, _}
 
 import scala.concurrent.duration._
@@ -116,20 +118,22 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
   "ConsumerGroupCollector should evict data when group metadata changes" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
-    val lastTimestamp = timestampNow - 100
-    val tpTables = TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTableOnePoint.copy()))
-    val state = ConsumerGroupCollector.CollectorState(
-      topicPartitionTables = tpTables,
-      lastSnapshot = Some(ConsumerGroupCollector.OffsetsSnapshot(
-        timestamp = lastTimestamp,
-        groups = List(groupId),
-        latestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = lastTimestamp)),
-        lastGroupOffsets = GroupOffsets(gtpSingleMember -> Point(offset = 180, time = lastTimestamp))
-      ))
-    )
+    def newState() = {
+      val lastTimestamp = timestampNow - 100
+      val tpTables = TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTableOnePoint.copy()))
+      ConsumerGroupCollector.CollectorState(
+        topicPartitionTables = tpTables,
+        lastSnapshot = Some(ConsumerGroupCollector.OffsetsSnapshot(
+          timestamp = lastTimestamp,
+          groups = List(groupId),
+          latestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = lastTimestamp)),
+          lastGroupOffsets = GroupOffsets(gtpSingleMember -> Point(offset = 180, time = lastTimestamp))
+        ))
+      )
+    }
 
     "remove metric for consumer ids no longer being reported" in {
-      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, newState())
       val testKit = BehaviorTestKit(behavior)
 
       val newConsumerId = s"$consumerId-new"
@@ -150,7 +154,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     }
 
     "remove metrics for topic group partitions no longer being reported" in {
-      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, newState())
       val testKit = BehaviorTestKit(behavior)
 
       val newGroupId = s"$groupId-new"
@@ -173,10 +177,13 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     }
 
     "remove metrics for topic partitions no longer being reported" - {
-      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+      // spy required to inspect internal state of behavior.
+      // see example: https://gist.github.com/patriknw/5f0c54f5748d25d7928389165098b89e#file-synctestingfsmmockitoexamplespec
+      val collectorBehavior = spy(new ConsumerGroupCollector.CollectorBehavior)
+
+      val behavior = collectorBehavior.collector(config, client, reporter.ref, newState())
       val testKit = BehaviorTestKit(behavior)
 
-      val newGroupId = s"$groupId-new"
       val snapshot = ConsumerGroupCollector.OffsetsSnapshot(
         timestamp = timestampNow,
         groups = List(),
@@ -201,7 +208,13 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       }
 
       "topic partition in topic partition table removed" in {
-        ???
+        // collector is called once during test setup and once for state transition after processing OffsetSnapshot msg
+        verify(collectorBehavior, times(2)).collector(
+          any[ConsumerGroupCollector.CollectorConfig],
+          any[KafkaClient.KafkaClientContract],
+          any[ActorRef[MetricsSink.Message]],
+          argThat[ConsumerGroupCollector.CollectorState](_.topicPartitionTables.tables.isEmpty)
+        )
       }
 
     }

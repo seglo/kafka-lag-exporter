@@ -4,12 +4,12 @@
 
 package com.lightbend.kafkalagexporter
 
+import akka.actor.typed.ActorRef
 import com.lightbend.kafkalagexporter.MetricsSink._
 
 object MetricsSink {
   trait Message
-  sealed trait Stop extends Message
-  final case object Stop extends Stop
+  final case class Stop(sender: ActorRef[KafkaClusterManager.Message]) extends Message
 
   final case class GaugeDefinition(name: String, help: String, labels: List[String])
   type MetricDefinitions = List[GaugeDefinition]

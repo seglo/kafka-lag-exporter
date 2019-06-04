@@ -21,12 +21,13 @@ object MetricsReporter {
     case (_, rm: RemoveMetric) =>
       metricsSink.remove(rm)
       Behaviors.same
-    case (context, _: Stop) =>
+    case (context, Stop(sender)) =>
       Behaviors.stopped {
         Behaviors.receiveSignal {
           case (_, PostStop) =>
             metricsSink.stop()
             context.log.info("Gracefully stopped Prometheus metrics endpoint HTTP server")
+            sender ! KafkaClusterManager.Done
             Behaviors.same
         }
       }

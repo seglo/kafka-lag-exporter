@@ -9,7 +9,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
-import com.lightbend.kafkalagexporter.Metrics
 import com.lightbend.kafkalagexporter.MetricsSink.GaugeDefinition
 import org.scalatest.Matchers
 import org.scalatest.concurrent.ScalaFutures
@@ -42,10 +41,19 @@ trait PrometheusUtils extends Matchers with ScalaFutures {
   }
 
   def scrapeAndAssert(port: Int, description: String, rules: Rule*)
-                     (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit = {
+                     (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit =
+    scrapeAndAssert(port, description, _.assert(), rules: _*)
+
+  def scrapeAndAssertDne(port: Int, description: String, rules: Rule*)
+                        (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit =
+    scrapeAndAssert(port, description, _.assertDne(), rules: _*)
+
+
+  private def scrapeAndAssert(port: Int, description: String, resultF: Result => Unit, rules: Rule*)
+                             (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit = {
     val results = scrape(port, rules: _*).futureValue
     log.debug("Start: {}", description)
-    results.foreach(_.assert())
+    results.foreach(resultF)
     log.debug("End (Successful): {}", description)
   }
 
@@ -55,10 +63,10 @@ trait PrometheusUtils extends Matchers with ScalaFutures {
       val labels = definition.labels.zip(labelValues).map { case (k, v) => s"""$k="$v""""}.mkString(",")
       /*
        * Ex)
-       * kafka_consumergroup_group_lag\{cluster_name="default",group="group-1-2",topic="topic-1-1",partition="0".*\}\s+(-?\d+\.\d+)
-       * https://regex101.com/r/haxLfS/1
+       * kafka_consumergroup_group_lag\{cluster_name="default",group="group-1-2",topic="topic-1-1",partition="0".*\}\s+(-?.+)
+       * https://regex101.com/r/haxLfS/2
        */
-      val regex = s"""$name\\{$labels.*\\}\\s+(-?\\d+\\.\\d+)""".r
+      val regex = s"""$name\\{$labels.*\\}\\s+(-?.+)""".r
       log.debug(s"Created regex: {}", regex.pattern.toString)
       Rule(regex, assertion)
     }
@@ -67,6 +75,11 @@ trait PrometheusUtils extends Matchers with ScalaFutures {
   case class Rule(regex: Regex, assertion: String => _)
 
   case class Result(rule: Rule, groupResults: List[String]) {
+    def assertDne(): Unit = {
+      log.debug(s"Rule: ${rule.regex.toString}")
+      groupResults.length shouldBe 0
+    }
+
     def assert(): Unit = {
       log.debug(s"Rule: ${rule.regex.toString}")
       groupResults.length shouldBe 1

@@ -39,7 +39,8 @@ object Domain {
       tables(tp)
     }
 
-    def clear(evictedTps: List[TopicPartition]): Unit = tables.filterKeys(tp => evictedTps.contains(tp))
+    def clear(evictedTps: List[TopicPartition]): Unit =
+      tables = tables.filterKeys(tp => !evictedTps.contains(tp))
 
     def all: Map[TopicPartition, LookupTable.Table] = tables
   }
