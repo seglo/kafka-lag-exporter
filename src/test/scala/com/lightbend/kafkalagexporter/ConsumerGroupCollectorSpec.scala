@@ -7,9 +7,13 @@ package com.lightbend.kafkalagexporter
 import java.time.{Clock, Instant, ZoneId}
 
 import akka.actor.testkit.typed.scaladsl.{BehaviorTestKit, TestInbox}
+import akka.actor.typed.ActorRef
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import com.lightbend.kafkalagexporter.LookupTable._
+import com.lightbend.kafkalagexporter.Domain._
+import com.lightbend.kafkalagexporter.Metrics._
 import org.mockito.MockitoSugar
+import org.mockito.ArgumentMatchers._
 import org.scalatest.{Matchers, _}
 
 import scala.concurrent.duration._
@@ -17,26 +21,27 @@ import scala.concurrent.duration._
 class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData with MockitoSugar {
   val client: KafkaClientContract = mock[KafkaClientContract]
   val config = ConsumerGroupCollector.CollectorConfig(0 seconds, 20, KafkaCluster("default", ""), Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
+  val clusterName = config.cluster.name
 
   val timestampNow = 200
 
   "ConsumerGroupCollector should send" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
-    val lookupTable = LookupTable.Table(20)
-    lookupTable.addPoint(LookupTable.Point(100, 100))
+    val lookupTable = Table(20)
+    lookupTable.addPoint(Point(100, 100))
 
     val state = ConsumerGroupCollector.CollectorState(
-      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable))
+      topicPartitionTables = TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable))
     )
 
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = timestampNow))
-    val newLastGroupOffsets = Domain.GroupOffsets() + (gtpSingleMember -> Point(offset = 180, time = timestampNow))
+    val newLatestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = timestampNow))
+    val newLastGroupOffsets = GroupOffsets(gtpSingleMember -> Point(offset = 180, time = timestampNow))
 
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
@@ -44,39 +49,39 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     "latest offset metric" in {
       metrics should contain(
-        Metrics.LatestOffsetMetric(config.cluster.name, topicPartition0, value = 200))
+        Metrics.TopicPartitionValueMessage(LatestOffsetMetric, config.cluster.name, topicPartition0, value = 200))
     }
 
     "last group offset metric" in {
       metrics should contain(
-        Metrics.LastGroupOffsetMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 180))
+        GroupPartitionValueMessage(LastGroupOffsetMetric, config.cluster.name, gtpSingleMember, value = 180))
     }
 
     "offset lag metric" in {
-      metrics should contain(Metrics.OffsetLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 20))
+      metrics should contain(GroupPartitionValueMessage(OffsetLagMetric, config.cluster.name, gtpSingleMember, value = 20))
     }
 
     "time lag metric" in {
-      metrics should contain(Metrics.TimeLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0.02))
+      metrics should contain(GroupPartitionValueMessage(TimeLagMetric, config.cluster.name, gtpSingleMember, value = 0.02))
     }
 
     "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupSingleMember, value = 20))
+      metrics should contain(GroupValueMessage(MaxGroupOffsetLagMetric, config.cluster.name, groupId, value = 20))
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupSingleMember, value = 0.02))
+      metrics should contain(GroupValueMessage(MaxGroupTimeLagMetric, config.cluster.name, groupId, value = 0.02))
     }
   }
 
   "ConsumerGroupCollector should calculate max group metrics and send" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
-    val lookupTable = LookupTable.Table(20)
-    lookupTable.addPoint(LookupTable.Point(100, 100))
+    val lookupTable = Table(20)
+    lookupTable.addPoint(Point(100, 100))
 
     val state = ConsumerGroupCollector.CollectorState(
-      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(
+      topicPartitionTables = TopicPartitionTable(config.lookupTableSize, Map(
         topicPartition0 -> lookupTable.copy(),
         topicPartition1 -> lookupTable.copy(),
         topicPartition2 -> lookupTable.copy()
@@ -86,72 +91,132 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
     val testKit = BehaviorTestKit(behavior)
 
-    val newLatestOffsets = Domain.PartitionOffsets() ++ List(
+    val newLatestOffsets = PartitionOffsets(
       topicPartition0 -> Point(offset = 200, time = 200),
       topicPartition1 -> Point(offset = 200, time = 200),
       topicPartition2 -> Point(offset = 200, time = 200)
     )
-    val newLastGroupOffsets = Domain.GroupOffsets() ++ List(
+    val newLastGroupOffsets = GroupOffsets(
       gtp0 -> Point(offset = 180, time = 200),
       gtp1 -> Point(offset = 100, time = 200),
       gtp2 -> Point(offset = 180, time = 200),
     )
 
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupThreeMember), newLatestOffsets, newLastGroupOffsets))
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))
 
     val metrics = reporter.receiveAll()
 
     "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupThreeMember, value = 100))
+      metrics should contain(GroupValueMessage(MaxGroupOffsetLagMetric, clusterName, groupId, value = 100))
     }
 
     "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupThreeMember, value = 0.1))
+      metrics should contain(GroupValueMessage(MaxGroupTimeLagMetric, clusterName, groupId, value = 0.1))
     }
   }
 
-  "ConsumerGroupCollector when consumer group partitions have no offset should send" - {
+  "ConsumerGroupCollector should evict data when group metadata changes" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
-    val lookupTable = LookupTable.Table(20)
-    lookupTable.addPoint(LookupTable.Point(100, 100))
-
-    val state = ConsumerGroupCollector.CollectorState(
-      topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable)),
-    )
-
-    val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
-    val testKit = BehaviorTestKit(behavior)
-
-    val newLatestOffsets = Domain.PartitionOffsets() + (topicPartition0 -> Point(offset = 200, time = 200))
-    val newLastGroupOffsets = Domain.GroupOffsets() // <-- no new group offsets
-
-    testKit.run(ConsumerGroupCollector.NewOffsets(timestamp = timestampNow, List(consumerGroupSingleMember), newLatestOffsets, newLastGroupOffsets))
-
-    val metrics = reporter.receiveAll()
-
-    "latest offset metric" in {
-      metrics should contain(Metrics.LatestOffsetMetric(config.cluster.name, topicPartition0, value = 200))
+    def newState() = {
+      val lastTimestamp = timestampNow - 100
+      val tpTables = TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTableOnePoint.copy()))
+      ConsumerGroupCollector.CollectorState(
+        topicPartitionTables = tpTables,
+        lastSnapshot = Some(ConsumerGroupCollector.OffsetsSnapshot(
+          timestamp = lastTimestamp,
+          groups = List(groupId),
+          latestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = lastTimestamp)),
+          lastGroupOffsets = GroupOffsets(gtpSingleMember -> Point(offset = 180, time = lastTimestamp))
+        ))
+      )
     }
 
-    "last group offset metric" in {
-      metrics should contain(Metrics.LastGroupOffsetMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0))
+    "remove metric for consumer ids no longer being reported" in {
+      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, newState())
+      val testKit = BehaviorTestKit(behavior)
+
+      val newConsumerId = s"$consumerId-new"
+      val snapshot = ConsumerGroupCollector.OffsetsSnapshot(
+        timestamp = timestampNow,
+        groups = List(groupId),
+        latestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = 200)),
+        lastGroupOffsets = GroupOffsets(gtpSingleMember.copy(consumerId = newConsumerId) -> Point(offset = 180, time = 200))
+      )
+
+      testKit.run(snapshot)
+
+      val metrics = reporter.receiveAll()
+
+      metrics should contain(GroupPartitionRemoveMetricMessage(LastGroupOffsetMetric, clusterName, gtpSingleMember))
+      metrics should contain(GroupPartitionRemoveMetricMessage(OffsetLagMetric, clusterName, gtpSingleMember))
+      metrics should contain(GroupPartitionRemoveMetricMessage(TimeLagMetric, clusterName, gtpSingleMember))
     }
 
-    "offset lag metric" in {
-      metrics should contain(Metrics.OffsetLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 200))
+    "remove metrics for topic group partitions no longer being reported" in {
+      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, newState())
+      val testKit = BehaviorTestKit(behavior)
+
+      val newGroupId = s"$groupId-new"
+      val snapshot = ConsumerGroupCollector.OffsetsSnapshot(
+        timestamp = timestampNow,
+        groups = List(newGroupId),
+        latestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = 200)),
+        lastGroupOffsets = GroupOffsets(gtpSingleMember.copy(id = newGroupId) -> Point(offset = 180, time = 200))
+      )
+
+      testKit.run(snapshot)
+
+      val metrics = reporter.receiveAll()
+
+      metrics should contain(GroupPartitionRemoveMetricMessage(LastGroupOffsetMetric, clusterName, gtpSingleMember))
+      metrics should contain(GroupPartitionRemoveMetricMessage(OffsetLagMetric, clusterName, gtpSingleMember))
+      metrics should contain(GroupPartitionRemoveMetricMessage(TimeLagMetric, clusterName, gtpSingleMember))
+      metrics should contain(GroupRemoveMetricMessage(MaxGroupTimeLagMetric, clusterName, groupId))
+      metrics should contain(GroupRemoveMetricMessage(MaxGroupOffsetLagMetric, clusterName, groupId))
     }
 
-    "time lag metric" in {
-      metrics should contain(Metrics.TimeLagMetric(config.cluster.name, gtpSingleMember, consumerGroupMember0, value = 0.2))
-    }
+    "remove metrics for topic partitions no longer being reported" - {
+      // spy required to inspect internal state of behavior.
+      // see example: https://gist.github.com/patriknw/5f0c54f5748d25d7928389165098b89e#file-synctestingfsmmockitoexamplespec
+      val collectorBehavior = spy(new ConsumerGroupCollector.CollectorBehavior)
 
-    "max group offset lag metric" in {
-      metrics should contain(Metrics.MaxGroupOffsetLagMetric(config.cluster.name, consumerGroupSingleMember, value = 200))
-    }
+      val behavior = collectorBehavior.collector(config, client, reporter.ref, newState())
+      val testKit = BehaviorTestKit(behavior)
 
-    "max group time lag metric" in {
-      metrics should contain(Metrics.MaxGroupTimeLagMetric(config.cluster.name, consumerGroupSingleMember, value = 0.2))
+      val snapshot = ConsumerGroupCollector.OffsetsSnapshot(
+        timestamp = timestampNow,
+        groups = List(),
+        latestOffsets = PartitionOffsets(),
+        lastGroupOffsets = GroupOffsets()
+      )
+
+      testKit.run(snapshot)
+
+      val metrics = reporter.receiveAll()
+
+      "topic partition metric removed" in {
+        metrics should contain(TopicPartitionRemoveMetricMessage(LatestOffsetMetric, clusterName, topicPartition0))
+      }
+
+      "all group-related metrics removed" in {
+        metrics should contain(GroupPartitionRemoveMetricMessage(LastGroupOffsetMetric, clusterName, gtpSingleMember))
+        metrics should contain(GroupPartitionRemoveMetricMessage(OffsetLagMetric, clusterName, gtpSingleMember))
+        metrics should contain(GroupPartitionRemoveMetricMessage(TimeLagMetric, clusterName, gtpSingleMember))
+        metrics should contain(GroupRemoveMetricMessage(MaxGroupTimeLagMetric, clusterName, groupId))
+        metrics should contain(GroupRemoveMetricMessage(MaxGroupOffsetLagMetric, clusterName, groupId))
+      }
+
+      "topic partition in topic partition table removed" in {
+        // collector is called once during test setup and once for state transition after processing OffsetSnapshot msg
+        verify(collectorBehavior, times(2)).collector(
+          any[ConsumerGroupCollector.CollectorConfig],
+          any[KafkaClient.KafkaClientContract],
+          any[ActorRef[MetricsSink.Message]],
+          argThat[ConsumerGroupCollector.CollectorState](_.topicPartitionTables.tables.isEmpty)
+        )
+      }
+
     }
   }
 }

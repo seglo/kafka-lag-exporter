@@ -9,6 +9,7 @@ import java.util.Properties
 import java.util.concurrent.TimeUnit
 import java.{lang, util}
 
+import com.lightbend.kafkalagexporter.Domain.GroupOffsets
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.CommonClientConfigs
@@ -22,6 +23,7 @@ import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
+import scala.collection.immutable.Map
 
 object KafkaClient {
   val AdminClientConfigRetries = 0 // fail faster when there are transient connection errors, use supervision strategy for backoff
@@ -32,9 +34,8 @@ object KafkaClient {
     new KafkaClient(cluster, groupId, clientTimeout)(ec)
 
   trait KafkaClientContract {
-    def getGroups(): Future[List[Domain.ConsumerGroup]]
-    def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, LookupTable.Point]]
-    def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Try[Map[Domain.TopicPartition, LookupTable.Point]]
+    def getGroups(): Future[(List[String], List[Domain.GroupTopicPartition])]
+    def getGroupOffsets(now: Long, groups: List[String], groupTopicPartitions: List[Domain.GroupTopicPartition]): Future[Map[Domain.GroupTopicPartition, LookupTable.Point]]
     def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, LookupTable.Point]]
     def close(): Unit
   }
@@ -82,17 +83,17 @@ object KafkaClient {
   }
 
   // extension methods to convert between Offsets.TopicPartition and org.apache.kafka.common.TopicPartition
-  private implicit class OffsetsTopicPartitionOps(ktp: KafkaTopicPartition) {
+  private[kafkalagexporter] implicit class OffsetsTopicPartitionOps(ktp: KafkaTopicPartition) {
     def asDomain: Domain.TopicPartition = Domain.TopicPartition(ktp.topic(), ktp.partition())
   }
 
-  private implicit class KafkaTopicPartitionOps(tp: Domain.TopicPartition) {
+  private[kafkalagexporter] implicit class KafkaTopicPartitionOps(tp: Domain.TopicPartition) {
     def asKafka: KafkaTopicPartition = new KafkaTopicPartition(tp.topic, tp.partition)
   }
 }
 
-class KafkaClient private(cluster: KafkaCluster, groupId: String, clientTimeout: FiniteDuration)
-                         (implicit ec: ExecutionContext) extends KafkaClientContract {
+class KafkaClient private[kafkalagexporter](cluster: KafkaCluster, groupId: String, clientTimeout: FiniteDuration)
+                                           (implicit ec: ExecutionContext) extends KafkaClientContract {
   import KafkaClient._
 
   private implicit val _clientTimeout: Duration = clientTimeout.toJava
@@ -107,38 +108,30 @@ class KafkaClient private(cluster: KafkaCluster, groupId: String, clientTimeout:
   /**
     * Get a list of consumer groups
     */
-  def getGroups(): Future[List[Domain.ConsumerGroup]] = {
+  def getGroups(): Future[(List[String], List[Domain.GroupTopicPartition])] = {
     for {
       groups <- kafkaFuture(adminClient.listConsumerGroups(listGroupOptions).all())
       groupIds = groups.asScala.map(_.groupId()).toList
       groupDescriptions <- kafkaFuture(adminClient.describeConsumerGroups(groupIds.asJava, describeGroupOptions).all())
-    } yield groupDescriptions.asScala.map { case (id, desc) => createConsumerGroup(id, desc) }.toList
+    } yield {
+      val gtps = groupDescriptions.asScala.flatMap { case (id, desc) => groupTopicPartitions(id, desc) }.toList
+      (groupIds, gtps)
+    }
   }
 
-  private def createConsumerGroup(groupId: String, groupDescription: ConsumerGroupDescription): Domain.ConsumerGroup = {
-    val members = groupDescription.members().asScala.map { member =>
-      val partitions = member
-        .assignment()
-        .topicPartitions()
-        .asScala
-        .map(_.asDomain)
-        .toSet
-      Domain.ConsumerGroupMember(member.clientId(), member.consumerId(), member.host(), partitions)
-    }.toList
-    Domain.ConsumerGroup(groupId, groupDescription.isSimpleConsumerGroup, groupDescription.state.toString, members)
-  }
-
-
-  /**
-    * Get latest offsets for a set of consumer groups.
-    */
-  def getLatestOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Try[Map[Domain.TopicPartition, LookupTable.Point]] = {
-    val partitions = dedupeGroupPartitions(groups)
-    getLatestOffsets(now, partitions)
-  }
-
-  private def dedupeGroupPartitions(groups: List[Domain.ConsumerGroup]): Set[Domain.TopicPartition] = {
-    groups.flatMap(_.members.flatMap(_.partitions)).toSet
+  private[kafkalagexporter] def groupTopicPartitions(groupId: String, desc: ConsumerGroupDescription): List[Domain.GroupTopicPartition] = {
+    val groupTopicPartitions = for {
+      member <- desc.members().asScala
+      ktp <- member.assignment().topicPartitions().asScala
+    } yield Domain.GroupTopicPartition(
+      groupId,
+      member.clientId(),
+      member.consumerId(),
+      member.host(),
+      ktp.topic(),
+      ktp.partition()
+    )
+    groupTopicPartitions.toList
   }
 
   /**
@@ -154,22 +147,29 @@ class KafkaClient private(cluster: KafkaCluster, groupId: String, clientTimeout:
     * topic partition has no matched Consumer Group offset then a default offset of 0 is provided.
     * @return A series of Future's for Consumer Group offsets requests to Kafka.
     */
-  def getGroupOffsets(now: Long, groups: List[Domain.ConsumerGroup]): Future[Map[Domain.GroupTopicPartition, LookupTable.Point]] = {
-    def actualGroupOffsets(group: Domain.ConsumerGroup, offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata]): List[(Domain.GroupTopicPartition, LookupTable.Point)] = {
-      offsetMap.map { case (tp, offsets) =>
-        Domain.GroupTopicPartition(group, tp.asDomain) -> LookupTable.Point(offsets.offset(), now)
-      }.toList
-    }
-
+  def getGroupOffsets(now: Long, groups: List[String], gtps: List[Domain.GroupTopicPartition]): Future[GroupOffsets] = {
     Future.sequence {
       groups.map { group =>
         kafkaFuture(adminClient
-          .listConsumerGroupOffsets(group.id, listConsumerGroupsOptions)
+          .listConsumerGroupOffsets(group, listConsumerGroupsOptions)
           .partitionsToOffsetAndMetadata())
-          .map(offsetMap => actualGroupOffsets(group, offsetMap.asScala.toMap))
+          .map(offsetMap => actualGroupOffsets(now, gtps, offsetMap.asScala.toMap))
       }
     }.map(_.flatten.toMap)
   }
+
+  private[kafkalagexporter] def actualGroupOffsets(
+                                                    now: Long,
+                                                    gtps: List[Domain.GroupTopicPartition],
+                                                    offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata]): GroupOffsets = {
+    def getOffsetOrZero(offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata], gtp: Domain.GroupTopicPartition): Long =
+      offsetMap.get(gtp.tp.asKafka).map(_.offset()).getOrElse(0)
+
+    for {
+      gtp <- gtps
+      offset = getOffsetOrZero(offsetMap, gtp)
+    } yield gtp -> LookupTable.Point(offset, now)
+  }.toMap
 
   def close(): Unit = {
     adminClient.close(_clientTimeout.toMillis, TimeUnit.MILLISECONDS)

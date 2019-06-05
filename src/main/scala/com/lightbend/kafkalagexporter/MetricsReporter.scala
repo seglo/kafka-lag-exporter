@@ -6,7 +6,7 @@ package com.lightbend.kafkalagexporter
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{Behavior, PostStop}
-import com.lightbend.kafkalagexporter.MetricsSink.{Message, Metric, Stop}
+import com.lightbend.kafkalagexporter.MetricsSink._
 
 object MetricsReporter {
   def init(
@@ -15,15 +15,19 @@ object MetricsReporter {
   }
 
   def reporter(metricsSink: MetricsSink): Behavior[Message] = Behaviors.receive {
-    case (_, m: Metric) =>
+    case (_, m: MetricValue) =>
       metricsSink.report(m)
       Behaviors.same
-    case (context, _: Stop) =>
+    case (_, rm: RemoveMetric) =>
+      metricsSink.remove(rm)
+      Behaviors.same
+    case (context, Stop(sender)) =>
       Behaviors.stopped {
         Behaviors.receiveSignal {
           case (_, PostStop) =>
             metricsSink.stop()
             context.log.info("Gracefully stopped Prometheus metrics endpoint HTTP server")
+            sender ! KafkaClusterManager.Done
             Behaviors.same
         }
       }

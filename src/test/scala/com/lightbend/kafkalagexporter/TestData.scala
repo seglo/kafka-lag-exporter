@@ -7,17 +7,18 @@ package com.lightbend.kafkalagexporter
 import com.lightbend.kafkalagexporter.Domain._
 
 trait TestData {
-  val topicPartition0 = TopicPartition("test-topic", 0)
-  val topicPartition1 = TopicPartition("test-topic", 1)
-  val topicPartition2 = TopicPartition("test-topic", 2)
-  val consumerGroupMember0 = ConsumerGroupMember("testClientId", "testConsumerId", "/127.0.0.1", Set(topicPartition0))
-  val consumerGroupMember1 = ConsumerGroupMember("testClientId", "testConsumerId", "/127.0.0.2", Set(topicPartition1))
-  val consumerGroupMember2 = ConsumerGroupMember("testClientId", "testConsumerId", "/127.0.0.3", Set(topicPartition2))
+  val cluster = KafkaCluster("default", "brokers:9092")
   val groupId = "testGroupId"
-  val consumerGroupSingleMember = ConsumerGroup(groupId, isSimpleGroup = true, "Stable", List(consumerGroupMember0))
-  val consumerGroupThreeMember = ConsumerGroup(groupId, isSimpleGroup = true, "Stable", List(consumerGroupMember0, consumerGroupMember1, consumerGroupMember2))
-  val gtpSingleMember = GroupTopicPartition(consumerGroupSingleMember, topicPartition0)
-  val gtp0 = GroupTopicPartition(consumerGroupThreeMember, topicPartition0)
-  val gtp1 = GroupTopicPartition(consumerGroupThreeMember, topicPartition1)
-  val gtp2 = GroupTopicPartition(consumerGroupThreeMember, topicPartition2)
+  val clientId = "testClientId"
+  val consumerId = "testConsumerId"
+  val topic = "test-topic"
+  val topicPartition0 = TopicPartition(topic, 0)
+  val topicPartition1 = TopicPartition(topic, 1)
+  val topicPartition2 = TopicPartition(topic, 2)
+  val gtpSingleMember = GroupTopicPartition(groupId, clientId, consumerId, "/127.0.0.1", topicPartition0.topic, topicPartition0.partition)
+  val gtp0 = GroupTopicPartition(groupId, clientId, consumerId, "/127.0.0.1", topicPartition0.topic, topicPartition0.partition)
+  val gtp1 = GroupTopicPartition(groupId, clientId, consumerId, "/127.0.0.2", topicPartition1.topic, topicPartition1.partition)
+  val gtp2 = GroupTopicPartition(groupId, clientId, consumerId, "/127.0.0.3", topicPartition2.topic, topicPartition2.partition)
+  val lookupTableOnePoint = LookupTable.Table(20)
+  lookupTableOnePoint.addPoint(LookupTable.Point(100, 100))
 }
