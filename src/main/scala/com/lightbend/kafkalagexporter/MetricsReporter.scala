@@ -4,8 +4,8 @@
 
 package com.lightbend.kafkalagexporter
 
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{Behavior, PostStop}
 import com.lightbend.kafkalagexporter.MetricsSink._
 
 object MetricsReporter {

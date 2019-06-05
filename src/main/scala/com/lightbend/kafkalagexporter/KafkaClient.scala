@@ -172,7 +172,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster, groupId: Stri
   }.toMap
 
   def close(): Unit = {
-    adminClient.close(_clientTimeout.toMillis, TimeUnit.MILLISECONDS)
+    adminClient.close(_clientTimeout)
     consumer.close(_clientTimeout)
   }
 }
