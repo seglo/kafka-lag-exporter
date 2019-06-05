@@ -2,9 +2,9 @@ import sbt._
 
 object Version {
   val Scala      = "2.12.8"
-  val Akka       = "2.5.20"
-  val Prometheus = "0.5.0"
-  val Fabric8    = "4.1.0"
+  val Akka       = "2.5.23"
+  val Prometheus = "0.6.0"
+  val Fabric8    = "4.2.2"
 }
 
 object Dependencies {
@@ -21,7 +21,7 @@ object Dependencies {
   private val slf4jExclusionRule = ExclusionRule("org.slf4j")
 
   val LightbendConfig       = "com.typesafe"           %  "config"                    % "1.3.2"
-  val Kafka                 = "org.apache.kafka"       %% "kafka"                     % "2.1.0" excludeAll (jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
+  val Kafka                 = "org.apache.kafka"       %% "kafka"                     % "2.2.1" excludeAll (jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
   val AkkaTyped             = "com.typesafe.akka"      %% "akka-actor-typed"          % Version.Akka
   val AkkaSlf4j             = "com.typesafe.akka"      %% "akka-slf4j"                % Version.Akka
   val Logback               = "ch.qos.logback"         %  "logback-classic"           % "1.2.3"
