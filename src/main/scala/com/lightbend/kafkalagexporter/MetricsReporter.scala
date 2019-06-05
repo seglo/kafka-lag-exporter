@@ -22,14 +22,10 @@ object MetricsReporter {
       metricsSink.remove(rm)
       Behaviors.same
     case (context, Stop(sender)) =>
-      Behaviors.stopped {
-        Behaviors.receiveSignal {
-          case (_, PostStop) =>
-            metricsSink.stop()
-            context.log.info("Gracefully stopped Prometheus metrics endpoint HTTP server")
-            sender ! KafkaClusterManager.Done
-            Behaviors.same
-        }
+      Behaviors.stopped { () =>
+        metricsSink.stop()
+        context.log.info("Gracefully stopped Prometheus metrics endpoint HTTP server")
+        sender ! KafkaClusterManager.Done
       }
     case (context, m) =>
       context.log.error(s"Unhandled metric message: $m")

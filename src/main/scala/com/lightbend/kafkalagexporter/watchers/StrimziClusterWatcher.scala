@@ -24,13 +24,9 @@ object StrimziClusterWatcher {
 
   def watch(client: Watcher.Client): Behaviors.Receive[Watcher.Message] = Behaviors.receive {
     case (context, _: Watcher.Stop) =>
-      Behaviors.stopped {
-        Behaviors.receiveSignal {
-          case (_, PostStop) =>
-            client.close()
-            context.log.info("Gracefully stopped StrimziKafkaWatcher")
-            Behaviors.same
-        }
+      Behaviors.stopped { () =>
+        client.close()
+        context.log.info("Gracefully stopped StrimziKafkaWatcher")
       }
   }
 }
