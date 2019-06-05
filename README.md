@@ -252,11 +252,6 @@ docker run -p 8000:8000 \
 
 See full example in [`./examples/standalone`](./examples/standalone).
 
-```
-docker run -p 8000:8000 -e KAFKA_LAG_EXPORTER_CLUSTERS.0.name="dev" -e KAFKA_LAG_EXPORTER_CLUSTERS.0.bootstrap-brokers="testbroker1:9092" lightbend/kafka-lag-exporter:0.4.0
-```
-
-
 ## Estimate Consumer Group Time Lag
 
 One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag.  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.  
