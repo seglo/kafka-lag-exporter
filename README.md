@@ -182,79 +182,78 @@ kubectl logs {POD_ID} --namespace myproject -f
 
 ## Run Standalone
 
+To run the project in standalone mode you must first define a configuration `application.conf`. This configuration must
+contain at least connection info to your Kafka cluster (`kafka-lag-exporter.clusters`). All other configuration has 
+defaults defined in the project itself.  See [`reference.conf`](./src/main/resources/reference.conf) for defaults.
 ### Configuration
 
-Overriding default configuration with `application.conf`.  See [`reference.conf`](./src/main/resources/reference.conf) for defaults.
+General Configuration (`kafka-lag-exporter{}`)
+
+| Key                    | Default            | Description                                                                                                                           |
+|------------------------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `port`                 | `8000`             | The port to run the Prometheus endpoint on                                                                                            |
+| `poll-interval`        | `30 seconds`       | How often to poll Kafka for latest and group offsets                                                                                  |
+| `lookup-table-size`    | `60`               | The maximum window size of the look up table **per partition**                                                                        |
+| `client-group-id`      | `kafkalagexporter` | Consumer group id of kafka-lag-exporter's client connections                                                                          |
+| `kafka-client-timeout` | `10 seconds`       | Connection timeout when making API calls to Kafka                                                                                     |
+| `clusters`             | `[]`               | A statically defined list of Kafka connection details.  This list is optional if you choose to use the Strimzi auto-discovery feature |
+| `watchers`             | `{}`               | Settings for Kafka cluster "watchers" used for auto-discovery.                                                                        |
+
+Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
+
+| Key                 | Default     | Required | Description                                                        |
+|---------------------|-------------|----------|--------------------------------------------------------------------|
+| `name`              | `""`        | Yes      | A unique cluster name to for this Kafka connection detail object   |
+| `bootstrap-brokers` | `""`        | Yes      | Kafka bootstrap brokers.  Comma delimited list of broker hostnames |
+| `security-protocol` | `PLAINTEXT` | No       | The Kafka security protocol.  `PLAINTEXT` or `TLS`.                |
+| `sasl-mechanism`    | `""`        | No       | Kafka SASL mechanism                                               |
+| `sasl-jaas-config`  | `""`        | No       | Kafka JAAS configuration                                           |
+
+Watchers (`kafka-lag-exporters.watchers{}`)
+
+| Key                 | Default     | Description                              |
+|---------------------|-------------|------------------------------------------|
+| `strimzi`           | `false`     | Toggle for using Strimzi auto-discovery. |
+
+
+Ex) Expose metrics on port `9999`, double the default lookup table size, and setup a single non-TLS cluster connection object.
 
 ```
 kafka-lag-exporter {
-  # The port to run the Prometheus endpoint on
-  port = 8000
-  # How often to poll Kafka for latest and group offsets
-  poll-interval = 30 seconds
-  # The maximum window size of the look up table PER PARTITION
+  port = 9999
   lookup-table-size = 60
-  # Consumer group id of kafka-lag-exporter's client connections
-  client-group-id = "kafkalagexporter"
-  # Connect timeout when making connections to Kafka
-  kafka-client-timeout = 10 seconds
-  # Support for multiple clusters.  Optional if Strimzi watcher is used.
   clusters = [
     {
-      # A unique cluster name to differentiate multiple clusters
       name = "a-cluster"                                   
-      # Kafka bootstrap brokers.  Comma delimited list of broker hostnames
-      bootstrap-brokers = "a-1.cluster-a.xyzcorp.com:9092"
-      # Optional. Kafka security protocol
-      security-protocol = "PLAINTEXT"
-      # Optional. Kafka SASL mechanism
-      sasl-mechanism = ""
-      # Optional. Kafka JAAS configuration
-      sasl-jaas-config = ""
-    }
-  ]
-  # Kafka auto configuration watchers.
-  watchers = {
-    # Toggle Strimzi auto configuration
-    strimzi = "false"
-  }
-}
-```
-
-### Running Docker Image
-
-Define an `application.conf` with your configuration.
-
-Ex)
-
-```
-kafka-lag-exporter {
-  port = 8000
-  clusters = [
-    {
-      name = "a-cluster"
       bootstrap-brokers = "a-1.cluster-a.xyzcorp.com:9092,a-2.cluster-a.xyzcorp.com:9092,a-3.cluster-a.xyzcorp.com:9092"
     }
   ]
 }
 ```
 
-Run the Docker image.  Expose metrics endpoint on port `8000`.  Mount `application.conf` into the container.
+### Running Docker Image
+
+Define an `application.conf` and optionally a `logback.xml` with your configuration.
+
+Run the Docker image. Expose metrics endpoint on the host port `8000`. Mount a config dir with your `application.conf` 
+`logback.xml` into the container.
 
 Ex)
 
 ```
 docker run -p 8000:8000 \
-    -v $(pwd)/application.conf:/tmp/application.conf \
+    -v $DIR:/opt/docker/conf/ \
     lightbend/kafka-lag-exporter:0.4.0 \
-    /opt/docker/bin/kafka-lag-exporter -Dconfig.file=/tmp/application.conf
+    /opt/docker/bin/kafka-lag-exporter \
+    -Dconfig.file=/opt/docker/conf/application.conf \
+    -Dlogback.configurationFile=/opt/docker/conf/logback.xml
 ```
 
 See full example in [`./examples/standalone`](./examples/standalone).
 
 ## Estimate Consumer Group Time Lag
 
-One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag.  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.  
+One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag (wait time).  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.  
 
 For example, a topic with two consumer groups may have different lag characteristics.  Application A is a consumer which performs CPU intensive (and slow) business logic on each message it receives. It’s distributed across many consumer group members to handle the high load, but since its processing throughput is slower it takes longer to process each message per partition.   Meanwhile Application B is a consumer which performs a simple ETL operation to land streaming data in another system, such as an HDFS data lake.  It may have similar offset lag to Application A, but because it has a higher processing throughput its lag in time may be significantly less.
 
