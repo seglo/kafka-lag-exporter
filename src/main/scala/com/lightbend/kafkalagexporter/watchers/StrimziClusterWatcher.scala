@@ -5,9 +5,8 @@
 package com.lightbend.kafkalagexporter.watchers
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, PostStop}
-import com.lightbend.kafkalagexporter.KafkaCluster
-import com.lightbend.kafkalagexporter.KafkaClusterManager
+import akka.actor.typed.{ActorRef, Behavior}
+import com.lightbend.kafkalagexporter.{KafkaCluster, KafkaClusterManager}
 
 object StrimziClusterWatcher {
   val name: String = "strimzi"

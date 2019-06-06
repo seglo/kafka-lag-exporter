@@ -8,7 +8,7 @@ import java.time.Clock
 
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, PostStop, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
 
