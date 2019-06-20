@@ -2,6 +2,8 @@
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# If you want to connect to a Kafka host on your local machine you can use host networking mode with `--network="host"`.
+# Note that this will only work on Linux.
 docker run -p 8000:8000 \
     -v $DIR:/opt/docker/conf/ \
     lightbend/kafka-lag-exporter:0.4.0 \
