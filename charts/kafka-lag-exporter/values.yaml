@@ -10,9 +10,9 @@ clusters: {}
 #    saslJaasConfig: org.apache.kafka.common.security.plain.PlainLoginModule required username=\"foo\" password=\"bar\";
 
 ## The interval between refreshing metrics
-pollIntervalSeconds: 5
+pollIntervalSeconds: 30
 ## Size of the sliding window of offsets to keep in each partition's lookup table
-lookupTableSize: 20
+lookupTableSize: 60
 ## The Consumer Group `group.id` to use when connecting to Kafka
 clientGroupId: "kafkalagexporter"
 ## The log level of the ROOT logger

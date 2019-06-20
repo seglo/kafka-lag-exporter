@@ -447,6 +447,10 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.4.3
+
+* Update chart defaults to match app defaults.  Poll interval: 30s, Lookup table size: 60.
+
 0.4.2
 
 * Check for missing group topic partitions after collecting all group offsets. Regression bugfix. [#30](https://github.com/lightbend/kafka-lag-exporter/issues/30)
