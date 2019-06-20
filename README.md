@@ -50,6 +50,8 @@ For more information about Kafka Lag Exporter's features see Lightbend's blog po
 
 **Project Status:** *beta*
 
+**Author:** [Sean Glover](https://seanglover.com) ([@seg1o](https://twitter.com/seg1o))
+
 ## Metrics
 
 [Prometheus](https://prometheus.io/) is a standard way to represent metrics in a modern cross-platform manner. Kafka Lag 
@@ -414,6 +416,17 @@ Update values.yaml docker repository to docker.xyzcorp.com/foobar/kafka-lag-expo
 [success] Total time: 17 s, completed 1-May-2019 2:37:28 PM
 ``` 
 
+Deploy the local chart to K8s:
+
+```
+helm install ./charts/kafka-lag-exporter \
+  --name kafka-lag-exporter \
+  --namespace kafka-lag-exporter \
+  --set watchers.strimzi=true \
+  --set kafkaLagExporterLogLevel=DEBUG \
+  --set image.pullPolicy=Always
+```
+
 ## Release
 
 ### Pre-requisites
@@ -433,6 +446,11 @@ required.  Before running a release make sure the following pre-req's are met.
 4. Review the GitHub release draft and submit it.
 
 ## Change log
+
+0.4.2
+
+* Check for missing group topic partitions after collecting all group offsets. Regression bugfix. [#30](https://github.com/lightbend/kafka-lag-exporter/issues/30)
+* Make simple polling logging `INFO` log level. Added `DEBUG` logging to show all offsets collected per poll for troubleshooting.
 
 0.4.1
 
