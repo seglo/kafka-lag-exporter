@@ -38,6 +38,28 @@ object ConsumerGroupCollector {
       val evictedGtps = lastGroupOffsets.keySet.diff(other.lastGroupOffsets.keySet).toList
       (evictedTps, evictedGroups, evictedGtps)
     }
+
+    override def toString: String = {
+      val latestOffsetHeader = "  Topic                                                           Partition  Offset"
+      val latestOffsetsStr = latestOffsets.map {
+        case (TopicPartition(t, p), LookupTable.Point(offset, _)) => f"  $t%-64s$p%-11s$offset"
+      }
+      val lastGroupOffsetHeader = "  Group                                                           Topic                                                           Partition  Offset"
+      val lastGroupOffsetsStr = lastGroupOffsets.map {
+        case (GroupTopicPartition(id, _, _, _, t, p), LookupTable.Point(offset, _)) => f"  $id%-64s$t%-64s$p%-11s$offset"
+      }
+
+      s"""
+         |Timestamp: $timestamp
+         |Groups: ${groups.mkString(",")}
+         |Latest Offsets:
+         |$latestOffsetHeader
+         |${latestOffsetsStr.mkString("\n")}
+         |Last Group Offsets:
+         |$lastGroupOffsetHeader
+         |${lastGroupOffsetsStr.mkString("\n")}
+       """.stripMargin
+    }
   }
 
   final case class CollectorConfig(
@@ -98,7 +120,7 @@ object ConsumerGroupCollector {
           } yield OffsetsSnapshot(now, groups, latestOffsets, groupOffsets)
         }
 
-        context.log.debug("Collecting offsets")
+        context.log.info("Collecting offsets")
 
         val f = for {
           (groups, groupTopicPartitions) <- client.getGroups()
@@ -114,22 +136,24 @@ object ConsumerGroupCollector {
 
         Behaviors.same
       case (context, snapshot: OffsetsSnapshot) =>
+        context.log.debug("Received Offsets Snapshot:\n{}", snapshot)
+
         val (evictedTps, evictedGroups, evictedGtps) = state
           .lastSnapshot
           .map(_.diff(snapshot))
           .getOrElse((Nil, Nil, Nil))
 
-        context.log.debug("Updating lookup tables")
+        context.log.info("Updating lookup tables")
         refreshLookupTable(state, snapshot, evictedTps)
 
-        context.log.debug("Reporting offsets")
+        context.log.info("Reporting offsets")
         reportLatestOffsetMetrics(config, reporter, state.topicPartitionTables)
         reportConsumerGroupMetrics(config, reporter, snapshot, state.topicPartitionTables)
 
-        context.log.debug("Clearing evicted metrics")
+        context.log.info("Clearing evicted metrics")
         reportEvictedMetrics(config, reporter, evictedTps, evictedGroups, evictedGtps)
 
-        context.log.debug("Polling in {}", config.pollInterval)
+        context.log.info("Polling in {}", config.pollInterval)
         val newState = state.copy(
           lastSnapshot = Some(snapshot),
           scheduledCollect = context.scheduleOnce(config.pollInterval, context.self, Collect)
