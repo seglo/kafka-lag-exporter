@@ -124,7 +124,7 @@ file of the accompanying Helm Chart.
 You can install the chart from the local filesystem.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.2/kafka-lag-exporter-0.4.2.tgz
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.3/kafka-lag-exporter-0.4.3.tgz
 ```
 
 #### Examples
@@ -133,7 +133,7 @@ Install with the [Strimzi](https://strimzi.io/) Kafka discovery feature.
 See [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher) for more details.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.2/kafka-lag-exporter-0.4.2.tgz \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.3/kafka-lag-exporter-0.4.3.tgz \
   --name kafka-lag-exporter \
   --namespace kafka-lag-exporter \
   --set watchers.strimzi=true
@@ -142,7 +142,7 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
 Install with statically defined cluster at the CLI.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.2/kafka-lag-exporter-0.4.2.tgz \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.3/kafka-lag-exporter-0.4.3.tgz \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set clusters\[0\].name=my-cluster \
@@ -152,7 +152,7 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
 Run a debug install (`DEBUG` logging, debug helm chart install, force docker pull policy to `Always`).
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.2/kafka-lag-exporter-0.4.2.tgz \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.3/kafka-lag-exporter-0.4.3.tgz \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set image.pullPolicy=Always \
@@ -419,7 +419,7 @@ Update values.yaml docker repository to docker.xyzcorp.com/foobar/kafka-lag-expo
 Deploy the local chart to K8s:
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.2/kafka-lag-exporter-0.4.2.tgz \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.4.3/kafka-lag-exporter-0.4.3.tgz \
   --name kafka-lag-exporter \
   --namespace kafka-lag-exporter \
   --set watchers.strimzi=true \
