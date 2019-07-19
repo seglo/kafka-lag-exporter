@@ -361,7 +361,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(25, kafka_consumergroup_group_lag_seconds{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"})",
+          "expr": "topk(25, kafka_consumergroup_group_lag{namespace=\"$namespace\",cluster_name=\"$cluster_name\",group=~\"$consumer_group\"})",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
