@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kafka-lag-exporter.fullname" . }}-configmap
+  labels:
+    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
+    helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  application.conf: |
+    kafka-lag-exporter {
+      port = {{ .Values.service.port }}
+      poll-interval = {{ .Values.pollIntervalSeconds }} seconds
+      lookup-table-size = {{ .Values.lookupTableSize }}
+      client-group-id = {{ .Values.clientGroupId }}
+      kafka-client-timeout = {{ .Values.kafkaClientTimeoutSeconds }} seconds
+      clusters = [
+        {{- range $cluster := .Values.clusters }}
+        {
+          name = {{ $cluster.name }}
+          bootstrap-brokers = {{ $cluster.bootstrapBrokers }}
+          config = [
+#            {{- range $property := $cluster }}
+#            $property.key = $property.value
+#            {{- end }}
+          ]
+        }
+        {{- end }}
+      ]
+      watchers = {
+        strimzi = "{{ .Values.watchers.strimzi }}"
+      }
+    }
+
+    akka {
+      loggers = ["akka.event.slf4j.Slf4jLogger"]
+      loglevel = "{{ .Values.akkaLogLevel }}"
+      logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
+    }
+  logback.xml: |
+    <configuration>
+        <variable name="ROOT_LOG_LEVEL" value="{{ .Values.rootLogLevel }}" />
+        <variable name="KAFKA_LAG_EXPORTER_LOG_LEVEL" value="{{ .Values.kafkaLagExporterLogLevel }}" />
+        <variable name="KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL" value="{{ .Values.kafkaLogLevel }}" />
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg %ex%n</pattern>
+            </encoder>
+        </appender>
+        <logger name="org.apache.kafka" level="${KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL}"/>
+        <logger name="com.lightbend.kafkalagexporter" level="${KAFKA_LAG_EXPORTER_LOG_LEVEL}"/>
+        <root level="${ROOT_LOG_LEVEL}">
+            <appender-ref ref="STDOUT" />
+        </root>
+    </configuration>

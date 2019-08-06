@@ -10,5 +10,5 @@ Get the application URL by running these commands:
   echo http://$SERVICE_IP:{{ .Values.service.port }}
 {{- else if contains "ClusterIP" .Values.service.type }}
   echo "Visit http://127.0.0.1:8080 to use your application"
-  kubectl port-forward service/{{ include "kafka-lag-exporter.name" . }}-service 8080:{{ .Values.service.port }} --namespace {{ .Release.Namespace }}
+  kubectl port-forward service/{{ include "kafka-lag-exporter.name" . }}-service 8000:{{ .Values.service.port }} --namespace {{ .Release.Namespace }}
 {{- end }}
