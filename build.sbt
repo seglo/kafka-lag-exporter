@@ -47,7 +47,9 @@ lazy val kafkaLagExporter =
         Cmd("RUN",            "chgrp -R 0 /opt && chmod -R g=u /opt"),
         Cmd("WORKDIR",        "/opt/docker"),
         Cmd("USER",           "1001"),
-        ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter"),
+        ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter",
+                                "-Dconfig.file=/opt/docker/conf/application.conf",
+                                "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"),
       ),
       updateHelmChart := {
         import scala.sys.process._

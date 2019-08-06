@@ -1,7 +1,7 @@
-## Statically define 1 or more cluster
+## Statically define one or more cluster
 clusters: {}
 ## Ex)
-# clusters:
+#clusters:
 #  - name: "default"
 #    bootstrapBrokers: "my-cluster-kafka-bootstrap:9092"
 #    # optional values for TLS/SASL enabled clusters
@@ -15,12 +15,6 @@ pollIntervalSeconds: 30
 lookupTableSize: 60
 ## The Consumer Group `group.id` to use when connecting to Kafka
 clientGroupId: "kafkalagexporter"
-## The log level of the ROOT logger
-rootLogLevel: INFO
-## The log level of Kafka Lag Exporter
-kafkaLagExporterLogLevel: INFO
-## The log level of `org.apache.kafka` logger
-kafkaLogLevel: INFO
 ## The timeout when communicating with Kafka clusters
 kafkaClientTimeoutSeconds: 10
 ## Watchers will automatically discover and forget Kafka clusters
@@ -28,6 +22,15 @@ watchers:
   ## The Strimzi Cluster Watcher automatically watches for `kafka.strimzi.io` group, `Kafka` kind resources and will
   ## configure the Kafka Lag Exporter appropriately.
   strimzi: false
+
+## The log level of the ROOT logger
+rootLogLevel: INFO
+## The log level of Kafka Lag Exporter
+kafkaLagExporterLogLevel: INFO
+## The log level of `org.apache.kafka` logger
+kafkaLogLevel: INFO
+## The log level of Akka
+akkaLogLevel: DEBUG
 
 ## You probably won't need to change anything below this line.
 image:
