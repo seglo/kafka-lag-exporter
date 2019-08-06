@@ -13,18 +13,23 @@ data:
       port = {{ .Values.service.port }}
       poll-interval = {{ .Values.pollIntervalSeconds }} seconds
       lookup-table-size = {{ .Values.lookupTableSize }}
-      client-group-id = {{ .Values.clientGroupId }}
+      client-group-id = "{{ .Values.clientGroupId }}"
       kafka-client-timeout = {{ .Values.kafkaClientTimeoutSeconds }} seconds
       clusters = [
         {{- range $cluster := .Values.clusters }}
         {
-          name = {{ $cluster.name }}
-          bootstrap-brokers = {{ $cluster.bootstrapBrokers }}
-          config = [
-#            {{- range $property := $cluster }}
-#            $property.key = $property.value
-#            {{- end }}
-          ]
+          name = "{{ $cluster.name }}"
+          bootstrap-brokers = "{{ $cluster.bootstrapBrokers }}"
+          consumer-properties = {
+            {{- range $key, $val := $cluster.consumerProperties }}
+            {{ $key }} = "{{ $val }}"
+            {{- end }}
+          }
+          admin-client-properties = {
+            {{- range $key, $val := $cluster.adminClientProperties }}
+            {{ $key }} = "{{ $val }}"
+            {{- end }}
+          }
         }
         {{- end }}
       ]

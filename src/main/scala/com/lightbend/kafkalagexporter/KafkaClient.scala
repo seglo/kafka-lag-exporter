@@ -12,18 +12,16 @@ import java.{lang, util}
 import com.lightbend.kafkalagexporter.Domain.GroupOffsets
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.admin._
-import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndMetadata}
-import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.{KafkaFuture, TopicPartition => KafkaTopicPartition}
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.Map
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
-import scala.collection.immutable.Map
 
 object KafkaClient {
   val AdminClientConfigRetries = 0 // fail faster when there are transient connection errors, use supervision strategy for backoff
@@ -55,10 +53,8 @@ object KafkaClient {
   private def createAdminClient(cluster: KafkaCluster, clientTimeout: FiniteDuration): AdminClient = {
     val props = new Properties()
     // AdminClient config: https://kafka.apache.org/documentation/#adminclientconfigs
+    props.putAll(cluster.adminClientProperties.asJava)
     props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, cluster.bootstrapBrokers)
-    props.put(AdminClientConfig.SECURITY_PROTOCOL_CONFIG, cluster.securityProtocol)
-    props.put(SaslConfigs.SASL_MECHANISM, cluster.saslMechanism)
-    props.put(SaslConfigs.SASL_JAAS_CONFIG, cluster.saslJaasConfig)
     props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, clientTimeout.toMillis.toString)
     props.put(AdminClientConfig.RETRIES_CONFIG, AdminClientConfigRetries.toString)
     props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, CommonClientConfigRetryBackoffMs.toString)
@@ -68,10 +64,9 @@ object KafkaClient {
   private def createConsumerClient(cluster: KafkaCluster, groupId: String, clientTimeout: FiniteDuration): KafkaConsumer[Byte, Byte] = {
     val props = new Properties()
     val deserializer = (new ByteArrayDeserializer).getClass.getName
+    // https://kafka.apache.org/documentation/#consumerconfigs
+    props.putAll(cluster.consumerProperties.asJava)
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, cluster.bootstrapBrokers)
-    props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, cluster.securityProtocol)
-    props.put(SaslConfigs.SASL_MECHANISM, cluster.saslMechanism)
-    props.put(SaslConfigs.SASL_JAAS_CONFIG, cluster.saslJaasConfig)
     props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId)
     props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, ConsumerConfigAutoCommit.toString)
     //props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000")
