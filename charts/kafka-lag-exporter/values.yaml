@@ -3,11 +3,17 @@ clusters: {}
 ## Ex)
 #clusters:
 #  - name: "default"
-#    bootstrapBrokers: "my-cluster-kafka-bootstrap:9092"
-#    # optional values for TLS/SASL enabled clusters
-#    securityProtocol: SASL_SSL
-#    saslMechanism: PLAIN
-#    saslJaasConfig: org.apache.kafka.common.security.plain.PlainLoginModule required username=\"foo\" password=\"bar\";
+#    bootstrapBrokers: "simple-strimzi-kafka-bootstrap.strimzi.svc.cluster.local:9092"
+#    # Properties defined by org.apache.kafka.clients.consumer.ConsumerConfig
+#    # can be defined in this configuration section.
+#    # https://kafka.apache.org/documentation/#consumerconfigs
+#    consumerProperties: {
+#      client.id: consumer-client-id
+#    }
+#    # https://kafka.apache.org/documentation/#adminclientconfigs
+#    adminClientProperties: {
+#      client.id: admin-client-id
+#    }
 
 ## The interval between refreshing metrics
 pollIntervalSeconds: 30

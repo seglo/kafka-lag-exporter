@@ -32,6 +32,9 @@ object ConsumerGroupCollector {
                                      latestOffsets: PartitionOffsets,
                                      lastGroupOffsets: GroupOffsets
                                   ) extends Message {
+    private val TpoFormat = "  %-64s%-11s%s"
+    private val GtpFormat = "  %-64s%-64s%-11s%s"
+
     def diff(other: OffsetsSnapshot): (List[TopicPartition], List[String], List[GroupTopicPartition]) = {
       val evictedTps = latestOffsets.keySet.diff(other.latestOffsets.keySet).toList
       val evictedGroups = groups.diff(other.groups)
@@ -40,13 +43,13 @@ object ConsumerGroupCollector {
     }
 
     override def toString: String = {
-      val latestOffsetHeader = "  Topic                                                           Partition  Offset"
+      val latestOffsetHeader = TpoFormat.format("Topic", "Partition", "Offset")
       val latestOffsetsStr = latestOffsets.map {
-        case (TopicPartition(t, p), LookupTable.Point(offset, _)) => f"  $t%-64s$p%-11s$offset"
+        case (TopicPartition(t, p), LookupTable.Point(offset, _)) => TpoFormat.format(t,p,offset)
       }
-      val lastGroupOffsetHeader = "  Group                                                           Topic                                                           Partition  Offset"
+      val lastGroupOffsetHeader = GtpFormat.format("Group", "Topic", "Partition", "Offset")
       val lastGroupOffsetsStr = lastGroupOffsets.map {
-        case (GroupTopicPartition(id, _, _, _, t, p), LookupTable.Point(offset, _)) => f"  $id%-64s$t%-64s$p%-11s$offset"
+        case (GroupTopicPartition(id, _, _, _, t, p), LookupTable.Point(offset, _)) => GtpFormat.format(id, t, p, offset)
       }
 
       s"""

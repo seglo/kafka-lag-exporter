@@ -203,13 +203,12 @@ General Configuration (`kafka-lag-exporter{}`)
 
 Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 
-| Key                 | Default     | Required | Description                                                        |
-|---------------------|-------------|----------|--------------------------------------------------------------------|
-| `name`              | `""`        | Yes      | A unique cluster name to for this Kafka connection detail object   |
-| `bootstrap-brokers` | `""`        | Yes      | Kafka bootstrap brokers.  Comma delimited list of broker hostnames |
-| `security-protocol` | `PLAINTEXT` | No       | The Kafka security protocol.  `PLAINTEXT` or `TLS`.                |
-| `sasl-mechanism`    | `""`        | No       | Kafka SASL mechanism                                               |
-| `sasl-jaas-config`  | `""`        | No       | Kafka JAAS configuration                                           |
+| Key                       | Default     | Required | Description                                                                                                                                                                                        |
+|---------------------------|-------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `name`                    | `""`        | Yes      | A unique cluster name to for this Kafka connection detail object                                                                                                                                   |
+| `bootstrap-brokers`       | `""`        | Yes      | Kafka bootstrap brokers.  Comma delimited list of broker hostnames                                                                                                                                 |
+| `consumer-properties`     | `{}`        | No       | A map of key value pairs used to configure the `KafkaConsumer`. See the [Consumer Config](https://kafka.apache.org/documentation/#consumerconfigs) section of the Kafka documentation for options. |
+| `admin-client-properties` | `{}`        | No       | A map of key value pairs used to configure the `AdminClient`. See the [Admit Config](https://kafka.apache.org/documentation/#adminclientconfigs) section of the Kafka documentation for options.   |
 
 Watchers (`kafka-lag-exporters.watchers{}`)
 
@@ -218,16 +217,23 @@ Watchers (`kafka-lag-exporters.watchers{}`)
 | `strimzi`           | `false`     | Toggle for using Strimzi auto-discovery. |
 
 
-Ex) Expose metrics on port `9999`, double the default lookup table size, and setup a single non-TLS cluster connection object.
+Ex) Expose metrics on port `9999`, double the default lookup table size, and define `client.id`'s for the `KafkaConsumer`
+and `AdminClient` used by the project.
 
 ```
 kafka-lag-exporter {
   port = 9999
-  lookup-table-size = 60
+  lookup-table-size = 120
   clusters = [
     {
       name = "a-cluster"                                   
       bootstrap-brokers = "a-1.cluster-a.xyzcorp.com:9092,a-2.cluster-a.xyzcorp.com:9092,a-3.cluster-a.xyzcorp.com:9092"
+      consumer-properties = {
+        client.id = "consumer-client-id"
+      }
+      admin-client-properties = {
+        client.id = "admin-client-id"
+      }
     }
   ]
 }
