@@ -425,7 +425,7 @@ Update values.yaml docker repository to docker.xyzcorp.com/foobar/kafka-lag-expo
 Deploy the local chart to K8s:
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.0/kafka-lag-exporter-0.5.0.tgz \
+helm install ./charts/kafka-lag-exporter \
   --name kafka-lag-exporter \
   --namespace kafka-lag-exporter \
   --set watchers.strimzi=true \
