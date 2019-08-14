@@ -39,7 +39,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     val testKit = BehaviorTestKit(behavior)
 
     val newLatestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = timestampNow))
-    val newLastGroupOffsets = GroupOffsets(gtpSingleMember -> Point(offset = 180, time = timestampNow))
+    val newLastGroupOffsets = GroupOffsets(gtpSingleMember -> Some(Point(offset = 180, time = timestampNow)))
 
     testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))
 
@@ -97,9 +97,9 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       topicPartition2 -> Point(offset = 200, time = 200)
     )
     val newLastGroupOffsets = GroupOffsets(
-      gtp0 -> Point(offset = 180, time = 200),
-      gtp1 -> Point(offset = 100, time = 200),
-      gtp2 -> Point(offset = 180, time = 200),
+      gtp0 -> Some(Point(offset = 180, time = 200)),
+      gtp1 -> Some(Point(offset = 100, time = 200)),
+      gtp2 -> Some(Point(offset = 180, time = 200)),
     )
 
     testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))
@@ -115,6 +115,64 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     }
   }
 
+  "ConsumerGroupCollector should report group offset, lag, and time lag as NaN when no group offsets found" - {
+    val reporter = TestInbox[MetricsSink.Message]()
+
+    val lookupTable = Table(20)
+    lookupTable.addPoint(Point(100, 100))
+
+    val state = ConsumerGroupCollector.CollectorState(
+      topicPartitionTables = TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable))
+    )
+
+    val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+    val testKit = BehaviorTestKit(behavior)
+
+    val newLatestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = timestampNow))
+    val newLastGroupOffsets = GroupOffsets(gtpSingleMember -> None)
+
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newLatestOffsets, newLastGroupOffsets))
+
+    val metrics = reporter.receiveAll()
+
+    // using `collectFirst` to pattern match metric messages because `Double.NaN != Double.NaN`. instead we match all
+    // parameters then use `isNaN` to determine if value is NaN
+    "last group offset metric" in {
+      metrics.collectFirst {
+        case GroupPartitionValueMessage(`LastGroupOffsetMetric`, config.cluster.name, `gtpSingleMember`, value) if value.isNaN => true
+      }.nonEmpty shouldBe true
+    }
+
+    "offset lag metric" in {
+      metrics.collectFirst {
+        case GroupPartitionValueMessage(`OffsetLagMetric`, config.cluster.name, `gtpSingleMember`, value) if value.isNaN => true
+      }.nonEmpty shouldBe true
+    }
+
+    "time lag metric" in {
+      metrics.collectFirst {
+        case GroupPartitionValueMessage(`TimeLagMetric`, config.cluster.name, `gtpSingleMember`, value) if value.isNaN => true
+      }.nonEmpty shouldBe true
+    }
+
+    "max group offset lag metric" in {
+      metrics.collectFirst {
+        case GroupValueMessage(`MaxGroupOffsetLagMetric`, config.cluster.name, `groupId`, value) if value.isNaN => true
+      }.nonEmpty shouldBe true
+    }
+
+    "max group time lag metric" in {
+      metrics.collectFirst {
+        case GroupValueMessage(`MaxGroupTimeLagMetric`, config.cluster.name, `groupId`, value) if value.isNaN => true
+      }.nonEmpty shouldBe true
+    }
+
+    "latest offset metric" in {
+      metrics should contain(
+        Metrics.TopicPartitionValueMessage(LatestOffsetMetric, config.cluster.name, topicPartition0, value = 200))
+    }
+  }
+
   "ConsumerGroupCollector should evict data when group metadata changes" - {
     val reporter = TestInbox[MetricsSink.Message]()
 
@@ -127,7 +185,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
           timestamp = lastTimestamp,
           groups = List(groupId),
           latestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = lastTimestamp)),
-          lastGroupOffsets = GroupOffsets(gtpSingleMember -> Point(offset = 180, time = lastTimestamp))
+          lastGroupOffsets = GroupOffsets(gtpSingleMember -> Some(Point(offset = 180, time = lastTimestamp)))
         ))
       )
     }
@@ -141,7 +199,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
         timestamp = timestampNow,
         groups = List(groupId),
         latestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = 200)),
-        lastGroupOffsets = GroupOffsets(gtpSingleMember.copy(consumerId = newConsumerId) -> Point(offset = 180, time = 200))
+        lastGroupOffsets = GroupOffsets(gtpSingleMember.copy(consumerId = newConsumerId) -> Some(Point(offset = 180, time = 200)))
       )
 
       testKit.run(snapshot)
@@ -162,7 +220,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
         timestamp = timestampNow,
         groups = List(newGroupId),
         latestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 200, time = 200)),
-        lastGroupOffsets = GroupOffsets(gtpSingleMember.copy(id = newGroupId) -> Point(offset = 180, time = 200))
+        lastGroupOffsets = GroupOffsets(gtpSingleMember.copy(id = newGroupId) -> Some(Point(offset = 180, time = 200)))
       )
 
       testKit.run(snapshot)
