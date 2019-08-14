@@ -7,13 +7,15 @@ clusters: {}
 #    # Properties defined by org.apache.kafka.clients.consumer.ConsumerConfig
 #    # can be defined in this configuration section.
 #    # https://kafka.apache.org/documentation/#consumerconfigs
-#    consumerProperties: {
-#      client.id: consumer-client-id
-#    }
+#    consumerProperties:
+#      security.protocol: SSL
+#      ssl.truststore.location: /path/to/my.truststore.jks
+#      ssl.trustore.password: mypwd
 #    # https://kafka.apache.org/documentation/#adminclientconfigs
-#    adminClientProperties: {
-#      client.id: admin-client-id
-#    }
+#    adminClientProperties:
+#      security.protocol: SSL
+#      ssl.truststore.location: /path/to/my.truststore.jks
+#      ssl.trustore.password: mypwd
 
 ## The interval between refreshing metrics
 pollIntervalSeconds: 30
