@@ -22,7 +22,7 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
   "KafkaClient" - {
     implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
-    "getGroupOffsets returns offsets of 0 for missing partitions and doesn't overwrite results for shared topic partitions" in {
+    "getGroupOffsets returns None offsets for missing partitions and doesn't overwrite results for shared topic partitions" in {
       val groupId0 = "testGroupId0"
       val groupId1 = "testGroupId1"
 
@@ -55,27 +55,27 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
       val groupOffsets = client.getGroupOffsets(0, groups, gtps).futureValue
 
       groupOffsets shouldEqual GroupOffsets(
-        gtp0_0 -> LookupTable.Point(1, 0),
-        gtp1_0 -> LookupTable.Point(0, 0), // missing partition
-        gtp2_0 -> LookupTable.Point(0, 0), // missing partition
-        gtp0_1 -> LookupTable.Point(1, 0)
+        gtp0_0 -> Some(LookupTable.Point(1, 0)),
+        gtp1_0 -> None, // missing partition
+        gtp2_0 -> None, // missing partition
+        gtp0_1 -> Some(LookupTable.Point(1, 0))
       )
     }
 
-    "getOffsetOrZero returns offsets of 0 for missing partitions" in {
+    "getOffsetOrZero returns offsets of None (Option[Point]) for missing partitions" in {
       implicit val ec = ExecutionContext.global
       val client = new KafkaClient(cluster, groupId, FiniteDuration(0, "ms"))
 
       // create offsetMap with missing partition 2
       val offsetMap = GroupOffsets(
-        gtp0 -> LookupTable.Point(0, 0),
-        gtp1 -> LookupTable.Point(0, 0)
+        gtp0 -> Some(LookupTable.Point(0, 0)),
+        gtp1 -> Some(LookupTable.Point(0, 0))
       )
 
-      val groupOffsets = client.getOffsetOrZero(0, List(gtp0, gtp1, gtp2), offsetMap)
+      val groupOffsets = client.getOffsetOrZero(List(gtp0, gtp1, gtp2), offsetMap)
 
       groupOffsets.size shouldEqual 3
-      groupOffsets(gtp2) shouldEqual LookupTable.Point(0, 0)
+      groupOffsets(gtp2) shouldEqual None
     }
   }
 }

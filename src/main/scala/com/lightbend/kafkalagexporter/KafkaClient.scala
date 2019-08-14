@@ -9,7 +9,7 @@ import java.util.Properties
 import java.util.concurrent.TimeUnit
 import java.{lang, util}
 
-import com.lightbend.kafkalagexporter.Domain.GroupOffsets
+import com.lightbend.kafkalagexporter.Domain.{GroupOffsets, PartitionOffsets}
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndMetadata}
@@ -33,8 +33,8 @@ object KafkaClient {
 
   trait KafkaClientContract {
     def getGroups(): Future[(List[String], List[Domain.GroupTopicPartition])]
-    def getGroupOffsets(now: Long, groups: List[String], groupTopicPartitions: List[Domain.GroupTopicPartition]): Future[Map[Domain.GroupTopicPartition, LookupTable.Point]]
-    def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, LookupTable.Point]]
+    def getGroupOffsets(now: Long, groups: List[String], groupTopicPartitions: List[Domain.GroupTopicPartition]): Future[GroupOffsets]
+    def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets]
     def close(): Unit
   }
 
@@ -134,7 +134,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
   /**
     * Get latest offsets for a set of topic partitions.
     */
-  def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[Map[Domain.TopicPartition, LookupTable.Point]] = Try {
+  def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets] = Try {
     val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava, _clientTimeout)
     topicPartitions.map(tp => tp -> LookupTable.Point(offsets.get(tp.asKafka).toLong,now)).toMap
   }
@@ -154,7 +154,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
 
     groupOffsetsF
       .map(_.flatten.toMap)
-      .map(go => getOffsetOrZero(now, gtps, go))
+      .map(go => getOffsetOrZero(gtps, go))
   }
 
 
@@ -171,10 +171,10 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
   /**
     * Backfill any group topic partitions with no offset as 0
     */
-  private[kafkalagexporter] def getOffsetOrZero(now: Long,
+  private[kafkalagexporter] def getOffsetOrZero(
                       gtps: List[Domain.GroupTopicPartition],
                       groupOffsets: GroupOffsets): GroupOffsets =
-    gtps.map(gtp => gtp -> groupOffsets.getOrElse(gtp, LookupTable.Point(0, now))).toMap
+    gtps.map(gtp => gtp -> groupOffsets.getOrElse(gtp, None)).toMap
 
   /**
     * Transform Kafka response into `GroupOffsets`
@@ -185,7 +185,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
     (for {
       gtp <- gtps
       offset <- offsetMap.get(gtp.tp.asKafka).map(_.offset())
-    } yield gtp -> LookupTable.Point(offset, now)).toMap
+    } yield gtp -> Some(LookupTable.Point(offset, now))).toMap
 
   def close(): Unit = {
     adminClient.close(_clientTimeout)

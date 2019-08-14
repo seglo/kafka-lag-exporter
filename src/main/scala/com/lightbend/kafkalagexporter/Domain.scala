@@ -19,11 +19,11 @@ object Domain {
     lazy val tp: TopicPartition = TopicPartition(topic, partition)
   }
 
-  type GroupOffsets = Map[GroupTopicPartition, LookupTable.Point]
+  type GroupOffsets = Map[GroupTopicPartition, Option[LookupTable.Point]]
 
   object GroupOffsets {
-    def apply(): GroupOffsets = Map.empty[GroupTopicPartition, LookupTable.Point]
-    def apply(tuples: (GroupTopicPartition, LookupTable.Point)*): GroupOffsets = Map(tuples: _*)
+    def apply(): GroupOffsets = Map.empty[GroupTopicPartition, Option[LookupTable.Point]]
+    def apply(tuples: (GroupTopicPartition, Option[LookupTable.Point])*): GroupOffsets = Map(tuples: _*)
   }
 
   type PartitionOffsets = Map[TopicPartition, LookupTable.Point]

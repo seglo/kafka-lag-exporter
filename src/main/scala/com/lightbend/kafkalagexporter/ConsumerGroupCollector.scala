@@ -49,7 +49,8 @@ object ConsumerGroupCollector {
       }
       val lastGroupOffsetHeader = GtpFormat.format("Group", "Topic", "Partition", "Offset")
       val lastGroupOffsetsStr = lastGroupOffsets.map {
-        case (GroupTopicPartition(id, _, _, _, t, p), LookupTable.Point(offset, _)) => GtpFormat.format(id, t, p, offset)
+        case (GroupTopicPartition(id, _, _, _, t, p), Some(LookupTable.Point(offset, _))) => GtpFormat.format(id, t, p, offset)
+        case (GroupTopicPartition(id, _, _, _, t, p), None) => GtpFormat.format(id, t, p, "-")
       }
 
       s"""
@@ -78,7 +79,7 @@ object ConsumerGroupCollector {
                                    scheduledCollect: Cancellable = Cancellable.alreadyCancelled
                                  )
 
-  private final case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Long, timeLag: Double)
+  private final case class GroupPartitionLag(gtp: GroupTopicPartition, offsetLag: Double, timeLag: Double)
 
   def init(config: CollectorConfig,
            clientCreator: KafkaCluster => KafkaClientContract,
@@ -193,15 +194,23 @@ object ConsumerGroupCollector {
         (gtp, groupPoint) <- offsetsSnapshot.lastGroupOffsets
         mostRecentPoint <- tables(gtp.tp).mostRecentPoint().toOption
       } yield {
-        val timeLag = tables(gtp.tp).lookup(groupPoint.offset) match {
-          case Prediction(pxTime) => (groupPoint.time.toDouble - pxTime) / 1000
-          case LagIsZero => 0d
-          case TooFewPoints => Double.NaN
+        val (groupOffset, offsetLag, timeLag) = groupPoint match {
+          case Some(point) =>
+            val groupOffset = point.offset.toDouble
+            val timeLag = tables(gtp.tp).lookup(point.offset) match {
+              case Prediction(pxTime) => (point.time.toDouble - pxTime) / 1000
+              case LagIsZero          => 0d
+              case TooFewPoints       => Double.NaN
+            }
+
+            val offsetLagCalc = mostRecentPoint.offset - point.offset
+            val offsetLag = if (offsetLagCalc < 0) 0d else offsetLagCalc
+
+            (groupOffset, offsetLag, timeLag)
+          case None => (Double.NaN, Double.NaN, Double.NaN)
         }
 
-        val offsetLag = mostRecentPoint.offset - groupPoint.offset
-
-        reporter ! Metrics.GroupPartitionValueMessage(Metrics.LastGroupOffsetMetric, config.cluster.name, gtp, groupPoint.offset)
+        reporter ! Metrics.GroupPartitionValueMessage(Metrics.LastGroupOffsetMetric, config.cluster.name, gtp, groupOffset)
         reporter ! Metrics.GroupPartitionValueMessage(Metrics.OffsetLagMetric, config.cluster.name, gtp, offsetLag)
         reporter ! Metrics.GroupPartitionValueMessage(Metrics.TimeLagMetric, config.cluster.name, gtp, timeLag)
 
