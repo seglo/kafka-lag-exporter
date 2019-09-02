@@ -453,6 +453,10 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.5.1
+
+* Bugfix: Get commit offset for correct group topic partitions [#56](https://github.com/lightbend/kafka-lag-exporter/pull/56)
+
 0.5.0
 
 * Bugfix: Report NaN for group offset, lag, and time lag when no group offset returned. [#50](https://github.com/lightbend/kafka-lag-exporter/pull/50)

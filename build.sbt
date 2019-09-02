@@ -70,11 +70,12 @@ lazy val kafkaLagExporter =
         commitReleaseVersion,
         updateReadmeRelease,                    // Update the README.md with this version
         commitReadmeVersion,                    // Commit the README.md
+        commitChartThisVersion,                 // Commit the Helm Chart
         tagRelease,
         githubReleaseDraft,                     // Create a GitHub release draft
         setNextVersion,
         updateHelmChartNextVersion,             // Update the Helm Chart with the next snapshot version
-        commitProjectArtifactsNextVersion,      // Commit the Helm Chart
+        commitChartNextVersion,                 // Commit the Helm Chart
         commitNextVersion,
         pushChanges
       )
@@ -143,16 +144,18 @@ lazy val updateReadmeRelease = ReleaseStep(action = st => {
 })
 
 lazy val commitReadmeVersion = ReleaseStep(action = st => {
+  val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
   val vcs = Project.extract(st).get(releaseVcs).getOrElse(sys.error("Aborting release. Working directory is not a repository of a recognized VCS."))
   val readme = (vcs.baseDir / "README.md").getCanonicalFile
   val base = vcs.baseDir.getCanonicalFile
   val relativeReadme = IO.relativize(base, readme).getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(readme, base))
   vcs.add(relativeReadme).!!
-  vcs.commit("Update version in README", sign = false, signOff = false).!
+  vcs.commit(s"Update version in README for $releaseVersion", sign = false, signOff = false).!
   st
 })
 
-lazy val commitProjectArtifactsNextVersion = ReleaseStep(action = st => {
+lazy val commitChartNextVersion = ReleaseStep(action = st => {
+  val (_, nextVersion) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
   val vcs = Project.extract(st).get(releaseVcs).getOrElse(sys.error("Aborting release. Working directory is not a repository of a recognized VCS."))
   val chartYaml = (vcs.baseDir / "charts/kafka-lag-exporter/Chart.yaml").getCanonicalFile
   val valuesYaml = (vcs.baseDir / "charts/kafka-lag-exporter/values.yaml").getCanonicalFile
@@ -161,7 +164,21 @@ lazy val commitProjectArtifactsNextVersion = ReleaseStep(action = st => {
   val relativeValuesYaml = IO.relativize(base, valuesYaml).getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(valuesYaml, base))
   vcs.add(relativeChartYaml).!!
   vcs.add(relativeValuesYaml).!!
-  vcs.commit("Update versions in chart", sign = false, signOff = false).!
+  vcs.commit(s"Update versions in chart for $nextVersion", sign = false, signOff = false).!
+  st
+})
+
+lazy val commitChartThisVersion = ReleaseStep(action = st => {
+  val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
+  val vcs = Project.extract(st).get(releaseVcs).getOrElse(sys.error("Aborting release. Working directory is not a repository of a recognized VCS."))
+  val chartYaml = (vcs.baseDir / "charts/kafka-lag-exporter/Chart.yaml").getCanonicalFile
+  val valuesYaml = (vcs.baseDir / "charts/kafka-lag-exporter/values.yaml").getCanonicalFile
+  val base = vcs.baseDir.getCanonicalFile
+  val relativeChartYaml = IO.relativize(base, chartYaml).getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(chartYaml, base))
+  val relativeValuesYaml = IO.relativize(base, valuesYaml).getOrElse("Version file [%s] is outside of this VCS repository with base directory [%s]!" format(valuesYaml, base))
+  vcs.add(relativeChartYaml).!!
+  vcs.add(relativeValuesYaml).!!
+  vcs.commit(s"Update versions in chart for $releaseVersion", sign = false, signOff = false).!
   st
 })
 
