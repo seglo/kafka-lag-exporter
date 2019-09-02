@@ -141,35 +141,36 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
 
   /**
     * Get last committed Consumer Group offsets for all group topic partitions given a list of consumer groups.  When a
-    * topic partition has no matched Consumer Group offset then a default offset of 0 is provided.
+    * topic partition has no matched Consumer Group offset then a default of None is provided.
     * @return A series of Future's for Consumer Group offsets requests to Kafka.
     */
-  def getGroupOffsets(now: Long, groups: List[String], gtps: List[Domain.GroupTopicPartition]): Future[GroupOffsets] = {
+  def getGroupOffsets(now: Long, groups: List[String], allGtps: List[Domain.GroupTopicPartition]): Future[GroupOffsets] = {
     val groupOffsetsF: Future[List[GroupOffsets]] = Future.sequence {
       groups.map { group =>
-        kafkaFuture(getListConsumerGroupOffsets(group))
+        val gtps = allGtps.filter(_.id == group)
+        getListConsumerGroupOffsets(group)
           .map(offsetMap => getGroupOffsets(now, gtps, offsetMap.asScala.toMap))
       }
     }
 
     groupOffsetsF
       .map(_.flatten.toMap)
-      .map(go => getOffsetOrZero(gtps, go))
+      .map(go => getOffsetOrZero(allGtps, go))
   }
-
 
   /**
     * Call to `AdminClient` to get group offset info.  This is only its own method so it can be mocked out in a test
     * because it's not possible to instantiate or mock the `ListConsumerGroupOffsetsResult` type for some reason.
     */
-  private[kafkalagexporter] def getListConsumerGroupOffsets(group: String): KafkaFuture[util.Map[KafkaTopicPartition, OffsetAndMetadata]] = {
-    adminClient
-      .listConsumerGroupOffsets(group, listConsumerGroupsOptions)
-      .partitionsToOffsetAndMetadata()
-  }
+  private[kafkalagexporter] def getListConsumerGroupOffsets(group: String): Future[util.Map[KafkaTopicPartition, OffsetAndMetadata]] =
+    kafkaFuture {
+        adminClient
+          .listConsumerGroupOffsets(group, listConsumerGroupsOptions)
+          .partitionsToOffsetAndMetadata()
+      }
 
   /**
-    * Backfill any group topic partitions with no offset as 0
+    * Backfill any group topic partitions with no offset as None
     */
   private[kafkalagexporter] def getOffsetOrZero(
                       gtps: List[Domain.GroupTopicPartition],
