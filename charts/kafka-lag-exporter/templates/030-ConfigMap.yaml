@@ -22,12 +22,12 @@ data:
           bootstrap-brokers = "{{ $cluster.bootstrapBrokers }}"
           consumer-properties = {
             {{- range $key, $val := $cluster.consumerProperties }}
-            {{ $key }} = "{{ $val }}"
+            {{ $key }} = {{ quote $val }}
             {{- end }}
           }
           admin-client-properties = {
             {{- range $key, $val := $cluster.adminClientProperties }}
-            {{ $key }} = "{{ $val }}"
+            {{ $key }} = {{ quote $val }}
             {{- end }}
           }
         }
