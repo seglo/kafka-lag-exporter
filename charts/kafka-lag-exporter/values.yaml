@@ -16,6 +16,9 @@ clusters: {}
 #      security.protocol: SSL
 #      ssl.truststore.location: /path/to/my.truststore.jks
 #      ssl.trustore.password: mypwd
+#    labels:
+#      location: ny
+#      zone: "us-east"
 
 ## The interval between refreshing metrics
 pollIntervalSeconds: 30

@@ -12,6 +12,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.util.Try
 
 object AppConfig {
   def apply(config: Config): AppConfig = {
@@ -32,12 +33,21 @@ object AppConfig {
           parseKafkaClientsProperties(clusterConfig.getConfig("admin-client-properties"))
         else
           Map.empty[String, String]
+      val labels =
+        Try {
+          val labels = clusterConfig.getConfig("labels")
+          labels.entrySet().asScala.map(
+            entry => (entry.getKey, entry.getValue.unwrapped().toString)
+          ).toMap
+        }.getOrElse(Map.empty[String, String])
+
 
       KafkaCluster(
         clusterConfig.getString("name"),
         clusterConfig.getString("bootstrap-brokers"),
         consumerProperties,
-        adminClientProperties
+        adminClientProperties,
+        labels
       )
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
@@ -73,7 +83,8 @@ object AppConfig {
 
 final case class KafkaCluster(name: String, bootstrapBrokers: String,
                               consumerProperties: Map[String, String] = Map.empty,
-                              adminClientProperties: Map[String, String] = Map.empty) {
+                              adminClientProperties: Map[String, String] = Map.empty,
+                              labels: Map[String, String] = Map.empty) {
   override def toString(): String = {
     s"""
        |  Cluster name: $name
@@ -99,6 +110,12 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
        |Watchers:
        |  Strimzi: $strimziWatcher
      """.stripMargin
+  }
+
+  def globalLabelsForCluster(clusterName: String): Map[String, String] = {
+    clusters.find(_.name == clusterName).map {
+      cluster => cluster.labels
+    }.getOrElse(Map.empty[String, String])
   }
 }
 

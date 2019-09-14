@@ -97,7 +97,7 @@ The latest offset available for topic partition.  Kafka Lag Exporter will calcul
 
 ### Labels
 
-Each metric may include the following labels when reported.
+Each metric may include the following labels when reported. If you define the labels property for Configuration of a cluster then those labels will also be included.
 
 * `cluster_name` - Either the statically defined Kafka cluster name, or the metadata.name of the Strimzi Kafka cluster that was discovered with the Strimzi auto discovery feature.
 * `topic` - The Kafka topic.
@@ -209,6 +209,7 @@ Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 | `bootstrap-brokers`       | `""`        | Yes      | Kafka bootstrap brokers.  Comma delimited list of broker hostnames                                                                                                                                 |
 | `consumer-properties`     | `{}`        | No       | A map of key value pairs used to configure the `KafkaConsumer`. See the [Consumer Config](https://kafka.apache.org/documentation/#consumerconfigs) section of the Kafka documentation for options. |
 | `admin-client-properties` | `{}`        | No       | A map of key value pairs used to configure the `AdminClient`. See the [Admin Config](https://kafka.apache.org/documentation/#adminclientconfigs) section of the Kafka documentation for options.   |
+| `labels`                  | `{}`        | No       | A map of key value pairs will be set as additional custom labels per cluster for all the metrics in prometheus.  |
 
 Watchers (`kafka-lag-exporters.watchers{}`)
 
@@ -233,6 +234,10 @@ kafka-lag-exporter {
       }
       admin-client-properties = {
         client.id = "admin-client-id"
+      }
+      labels = {
+        location = "ny"
+        zone = "us-east"
       }
     }
   ]
