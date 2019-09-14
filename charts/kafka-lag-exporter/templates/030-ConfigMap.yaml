@@ -30,6 +30,11 @@ data:
             {{ $key }} = {{ quote $val }}
             {{- end }}
           }
+          labels = {
+            {{- range $key, $val := $cluster.labels }}
+            {{ $key }} = {{ quote $val }}
+            {{- end }}
+          }
         }
         {{- end }}
       ]

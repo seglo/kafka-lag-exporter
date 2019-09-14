@@ -14,16 +14,20 @@ object MetricsSink {
   final case class GaugeDefinition(name: String, help: String, labels: List[String])
   type MetricDefinitions = List[GaugeDefinition]
 
+  trait clusterMetric extends Metric{
+    def clusterName: String
+  }
+
   trait Metric {
     def labels: List[String]
     def definition: GaugeDefinition
   }
 
-  trait MetricValue extends Metric {
+  trait MetricValue extends clusterMetric {
     def value: Double
   }
 
-  trait RemoveMetric extends Metric
+  trait RemoveMetric extends clusterMetric
 }
 
 trait MetricsSink {
