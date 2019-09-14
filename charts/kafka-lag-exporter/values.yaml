@@ -30,6 +30,9 @@ watchers:
   ## The Strimzi Cluster Watcher automatically watches for `kafka.strimzi.io` group, `Kafka` kind resources and will
   ## configure the Kafka Lag Exporter appropriately.
   strimzi: false
+## You can use regex to control the metrics exposed by Prometheus endpoint.
+## For example, if you only wish to expose the max lag metrics, use ^kafka_consumergroup_group_max_lag.*
+prometheusMetricWhitelist: .*
 
 ## The log level of the ROOT logger
 rootLogLevel: INFO

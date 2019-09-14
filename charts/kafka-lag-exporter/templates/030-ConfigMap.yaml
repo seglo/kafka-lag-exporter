@@ -36,6 +36,7 @@ data:
       watchers = {
         strimzi = "{{ .Values.watchers.strimzi }}"
       }
+      prometheus-metric-whitelist = "{{ .Values.prometheusMetricWhitelist }}"
     }
 
     akka {

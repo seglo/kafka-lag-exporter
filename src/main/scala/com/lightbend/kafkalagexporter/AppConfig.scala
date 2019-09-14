@@ -41,7 +41,8 @@ object AppConfig {
       )
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
-    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher)
+    val metricWhitelist = c.getString("prometheus-metric-whitelist")
+    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist)
   }
 
   // Copied from Alpakka Kafka
@@ -82,7 +83,7 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
   }
 }
 final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, port: Int, clientGroupId: String,
-                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean) {
+                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean, metricWhitelist: String) {
   override def toString(): String = {
     val clusterString =
       if (clusters.isEmpty)
@@ -92,6 +93,7 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
        |Poll interval: $pollInterval
        |Lookup table size: $lookupTableSize
        |Prometheus metrics endpoint port: $port
+       |Prometheus metrics whitelist: $metricWhitelist
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
        |Statically defined Clusters:
