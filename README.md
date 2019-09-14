@@ -97,7 +97,7 @@ The latest offset available for topic partition.  Kafka Lag Exporter will calcul
 
 ### Labels
 
-Each metric will include all the labels defined in the clusters and may include the following labels when reported.
+Each metric may include the following labels when reported. If you define the labels property for Configuration of a cluster then those labels will also be included.
 
 * `cluster_name` - Either the statically defined Kafka cluster name, or the metadata.name of the Strimzi Kafka cluster that was discovered with the Strimzi auto discovery feature.
 * `topic` - The Kafka topic.

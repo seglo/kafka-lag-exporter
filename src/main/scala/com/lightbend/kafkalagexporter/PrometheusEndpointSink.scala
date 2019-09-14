@@ -26,7 +26,7 @@ class PrometheusEndpointSink private(appConfig: AppConfig, definitions: MetricDe
 
   private val metrics: Map[String, Map[GaugeDefinition, Gauge]] = {
     appConfig.clusters.map { cluster =>
-      val globalLabelNamesForCluster = appConfig.globalLabelsForCluster(cluster.name).map(_._1).toSeq
+      val globalLabelNamesForCluster = appConfig.globalLabelsForCluster(cluster.name).keys.toSeq
       cluster.name -> definitions.map(definition =>
         definition -> Gauge.build()
           .name(definition.name)
@@ -39,13 +39,15 @@ class PrometheusEndpointSink private(appConfig: AppConfig, definitions: MetricDe
 
   override def report(m: MetricValue): Unit = {
     val metric = getMetricsForClusterName(m.definition, m.clusterName)
-    val globalLabelValuesForCluster = appConfig.globalLabelsForCluster(m.clusterName).map(_._2).toSeq
+    val globalLabelValuesForCluster = appConfig.globalLabelsForCluster(m.clusterName).values.toSeq
     metric.labels(globalLabelValuesForCluster ++ m.labels: _*).set(m.value)
   }
 
 
   override def remove(m: RemoveMetric): Unit = {
-    metrics.foreach(_._2.foreach(_._2.remove(m.labels: _*)))
+    metrics.foreach { case (_, gaugeDefinitionsForCluster) =>
+      gaugeDefinitionsForCluster.get(m.definition).foreach(_.remove(m.labels: _*))
+    }
   }
 
   override def stop(): Unit = {
