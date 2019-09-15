@@ -8,6 +8,8 @@ import java.util.concurrent.Executors
 
 import akka.actor.typed.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.exporter.HTTPServer
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
@@ -29,7 +31,9 @@ object MainApp extends App {
 
     val clientCreator = (cluster: KafkaCluster) =>
       KafkaClient(cluster, appConfig.clientGroupId, appConfig.clientTimeout)(kafkaClientEc)
-    val endpointCreator = () => PrometheusEndpointSink(appConfig, Metrics.definitions)
+    val server = new HTTPServer(appConfig.port)
+    val endpointCreator = () => PrometheusEndpointSink(Metrics.definitions, appConfig.metricWhitelist,
+      appConfig.clustersGlobalLabels(), server, CollectorRegistry.defaultRegistry)
 
     ActorSystem(
       KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafka-lag-exporter")

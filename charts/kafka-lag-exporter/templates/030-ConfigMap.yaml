@@ -41,6 +41,13 @@ data:
       watchers = {
         strimzi = "{{ .Values.watchers.strimzi }}"
       }
+      metric-whitelist = [
+        {{- $lastIndex := sub (len .Values.metricWhitelist) 1}}
+        {{- range $i, $whitelist := .Values.metricWhitelist }}
+        {{ quote $whitelist }}{{- if ne $i $lastIndex -}}, {{ end }}
+        {{- end }}
+      ]
+
     }
 
     akka {

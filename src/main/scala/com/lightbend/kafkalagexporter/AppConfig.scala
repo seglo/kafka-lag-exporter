@@ -6,6 +6,7 @@ package com.lightbend.kafkalagexporter
 
 import java.util
 
+import com.lightbend.kafkalagexporter.PrometheusEndpointSink.ClusterGlobalLabels
 import com.typesafe.config.{Config, ConfigObject}
 
 import scala.annotation.tailrec
@@ -51,7 +52,8 @@ object AppConfig {
       )
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
-    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher)
+    val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
+    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist)
   }
 
   // Copied from Alpakka Kafka
@@ -93,7 +95,7 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
   }
 }
 final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, port: Int, clientGroupId: String,
-                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean) {
+                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean, metricWhitelist: List[String]) {
   override def toString(): String = {
     val clusterString =
       if (clusters.isEmpty)
@@ -103,6 +105,7 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
        |Poll interval: $pollInterval
        |Lookup table size: $lookupTableSize
        |Prometheus metrics endpoint port: $port
+       |Prometheus metrics whitelist: [${metricWhitelist.mkString(", ")}]
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
        |Statically defined Clusters:
@@ -112,10 +115,10 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
      """.stripMargin
   }
 
-  def globalLabelsForCluster(clusterName: String): Map[String, String] = {
-    clusters.find(_.name == clusterName).map {
-      cluster => cluster.labels
-    }.getOrElse(Map.empty[String, String])
+  def clustersGlobalLabels(): ClusterGlobalLabels = {
+    clusters.map { cluster =>
+      cluster.name -> cluster.labels
+    }.toMap
   }
 }
 
