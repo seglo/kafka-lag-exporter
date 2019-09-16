@@ -49,9 +49,13 @@ class PrometheusEndpointSink private(definitions: MetricDefinitions, metricWhite
 
   override def remove(m: RemoveMetric): Unit = {
     if(metricWhitelist.exists(m.definition.name.matches)) {
-      metrics.foreach { case (_, gaugeDefinitionsForCluster) =>
-        val globalLabelValuesForCluster = clusterGlobalLabels.getOrElse(m.clusterName, Map.empty)
-        gaugeDefinitionsForCluster.get(m.definition).foreach(_.remove(globalLabelValuesForCluster.values.toSeq ++ m.labels: _*))
+      for(
+        clusterMetrics <- metrics.get(m.clusterName);
+        globalLabels <- clusterGlobalLabels.get(m.clusterName);
+        gauge <- clusterMetrics.get(m.definition)
+      ) {
+        val metricLabels = globalLabels.values.toList ++ m.labels
+        gauge.remove(metricLabels: _*)
       }
     }
   }
