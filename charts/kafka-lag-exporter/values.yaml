@@ -33,6 +33,11 @@ watchers:
   ## The Strimzi Cluster Watcher automatically watches for `kafka.strimzi.io` group, `Kafka` kind resources and will
   ## configure the Kafka Lag Exporter appropriately.
   strimzi: false
+## Applicable only in non-Strimzi installation. If true, a service account will be created and bind to the deployment.
+## Otherwise, the default service account for the namespace will be used.
+serviceAccount:
+  create: false
+
 ## You can use regex to control the metrics exposed by Prometheus endpoint.
 ## Any metric that matches one of the regex in the whitelist will be exposed.
 ## For example, if you only wish to expose the max lag metrics, use either:
