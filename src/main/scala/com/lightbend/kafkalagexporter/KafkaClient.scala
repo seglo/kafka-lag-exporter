@@ -119,7 +119,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
   private[kafkalagexporter] def groupTopicPartitions(groupId: String, desc: ConsumerGroupDescription): List[Domain.GroupTopicPartition] = {
     val groupTopicPartitions = for {
       member <- desc.members().asScala
-      ktp <- member.assignment().topicPartitions().asScala
+      ktp <- member.assignment().topicPartitions().asScala if cluster.topicWhitelist.exists(r => ktp.topic().matches(r))
     } yield Domain.GroupTopicPartition(
       groupId,
       member.clientId(),
