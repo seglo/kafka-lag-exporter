@@ -42,10 +42,12 @@ object AppConfig {
           ).toMap
         }.getOrElse(Map.empty[String, String])
 
+      val topicWhitelist = c.getStringList("topic-whitelist").asScala.toList
 
       KafkaCluster(
         clusterConfig.getString("name"),
         clusterConfig.getString("bootstrap-brokers"),
+        topicWhitelist,
         consumerProperties,
         adminClientProperties,
         labels
@@ -83,7 +85,7 @@ object AppConfig {
   }
 }
 
-final case class KafkaCluster(name: String, bootstrapBrokers: String,
+final case class KafkaCluster(name: String, bootstrapBrokers: String, topicWhitelist: List[String] = List(".*"),
                               consumerProperties: Map[String, String] = Map.empty,
                               adminClientProperties: Map[String, String] = Map.empty,
                               labels: Map[String, String] = Map.empty) {
@@ -91,6 +93,7 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
     s"""
        |  Cluster name: $name
        |  Cluster Kafka bootstrap brokers: $bootstrapBrokers
+       |  Topic whitelist: [${topicWhitelist.mkString(", ")}]
      """.stripMargin
   }
 }
@@ -121,4 +124,3 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
     }.toMap
   }
 }
-

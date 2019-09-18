@@ -47,6 +47,19 @@ watchers:
 metricWhitelist:
   - .*
 
+## You can use regex to control the set of topics monitored.
+## For example, if you only wish to expose only certain topics, use either:
+## topicWhitelist:
+##   - ^topic.+
+##
+## Or
+##
+## topicWhitelist:
+##   - topic1
+##   - topic2
+topicWhitelist:
+  - .*
+
 ## The log level of the ROOT logger
 rootLogLevel: INFO
 ## The log level of Kafka Lag Exporter

@@ -8,8 +8,13 @@ import java.util.Optional
 
 import com.lightbend.kafkalagexporter.Domain.GroupOffsets
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaTopicPartitionOps
+
+import org.apache.kafka.clients.admin.{ ConsumerGroupDescription, MemberAssignment, MemberDescription }
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.common.{ ConsumerGroupState, TopicPartition => TP }
+
 import org.mockito.MockitoSugar
+
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -103,6 +108,53 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
 
       groupOffsets.size shouldEqual 3
       groupOffsets(gtp2) shouldEqual None
+    }
+
+    "groupTopicPartition will default to fetching all topics" in {
+      val tmpHost = "brokers"
+      val client = new KafkaClient(cluster, groupId, FiniteDuration(0, "ms"))
+      val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+      val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
+
+      val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
+
+      client.groupTopicPartitions(groupId, description) should contain theSameElementsAs List(gtp0, gtp1, gtp2, gt2p0).map(gtp => gtp.copy(host = tmpHost))
+    }
+
+    "groupTopicPartition will only fetch whitelisted topic when whitelist contains a single topic" in {
+      val tmpHost = "brokers"
+      val tmpCluster = cluster.copy(topicWhitelist = List(topic2))
+      val client = new KafkaClient(tmpCluster, groupId, FiniteDuration(0, "ms"))
+      val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+      val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
+
+      val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
+
+      client.groupTopicPartitions(groupId, description) should contain theSameElementsAs List(gt2p0).map(gtp => gtp.copy(host = tmpHost))
+    }
+
+    "groupTopicPartition will only fetch whitelisted topics when whitelist is a regex against multiple topics" in {
+      val tmpHost = "brokers"
+      val tmpCluster = cluster.copy(topicWhitelist = List("test.+"))
+      val client = new KafkaClient(tmpCluster, groupId, FiniteDuration(0, "ms"))
+      val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+      val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
+
+      val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
+
+      client.groupTopicPartitions(groupId, description) should contain theSameElementsAs List(gtp0, gtp1, gtp2, gt2p0).map(gtp => gtp.copy(host = tmpHost))
+    }
+
+    "groupTopicPartition will not return any topics if the whitelist is empty" in {
+      val tmpHost = "brokers"
+      val tmpCluster = cluster.copy(topicWhitelist = List.empty)
+      val client = new KafkaClient(tmpCluster, groupId, FiniteDuration(0, "ms"))
+      val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+      val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
+
+      val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
+
+      client.groupTopicPartitions(groupId, description) shouldBe empty
     }
   }
 }
