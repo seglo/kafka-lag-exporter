@@ -39,13 +39,13 @@
 
 ## Introduction
 
-Kafka Lag Exporter makes it easy to view the latency (residence time) of your [Apache Kafka](https://kafka.apache.org/) 
-consumer groups. It can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/) 
-clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) 
-monitoring stack. Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html) 
+Kafka Lag Exporter makes it easy to view the latency (residence time) of your [Apache Kafka](https://kafka.apache.org/)
+consumer groups. It can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/)
+clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/)
+monitoring stack. Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html)
 application written in [Scala](https://www.scala-lang.org/).
 
-For more information about Kafka Lag Exporter's features see Lightbend's blog post: 
+For more information about Kafka Lag Exporter's features see Lightbend's blog post:
 [Monitor Kafka Consumer Group Latency with Kafka Lag Exporter](https://www.lightbend.com/blog/monitor-kafka-consumer-group-latency-with-kafka-lag-exporter).
 
 **Project Status:** *beta*
@@ -54,9 +54,9 @@ For more information about Kafka Lag Exporter's features see Lightbend's blog po
 
 ## Metrics
 
-[Prometheus](https://prometheus.io/) is a standard way to represent metrics in a modern cross-platform manner. Kafka Lag 
-Exporter exposes several metrics as an HTTP endpoint that can be readily scraped by Prometheus. When installed using 
-Helm and when enabling the Kubernetes pod self-discovery features within Prometheus server, Prometheus server will 
+[Prometheus](https://prometheus.io/) is a standard way to represent metrics in a modern cross-platform manner. Kafka Lag
+Exporter exposes several metrics as an HTTP endpoint that can be readily scraped by Prometheus. When installed using
+Helm and when enabling the Kubernetes pod self-discovery features within Prometheus server, Prometheus server will
 automatically detect the HTTP endpoint and scrape its data.
 
 **`kafka_consumergroup_group_offset`**
@@ -185,7 +185,7 @@ kubectl logs {POD_ID} --namespace myproject -f
 ## Run Standalone
 
 To run the project in standalone mode you must first define a configuration `application.conf`. This configuration must
-contain at least connection info to your Kafka cluster (`kafka-lag-exporter.clusters`). All other configuration has 
+contain at least connection info to your Kafka cluster (`kafka-lag-exporter.clusters`). All other configuration has
 defaults defined in the project itself.  See [`reference.conf`](./src/main/resources/reference.conf) for defaults.
 ### Configuration
 
@@ -201,6 +201,7 @@ General Configuration (`kafka-lag-exporter{}`)
 | `clusters`                    | `[]`               | A statically defined list of Kafka connection details.  This list is optional if you choose to use the Strimzi auto-discovery feature |
 | `watchers`                    | `{}`               | Settings for Kafka cluster "watchers" used for auto-discovery.                                                                        |
 | `metric-whitelist`            | `[".*"]`           | Regex of metrics to be exposed via Prometheus endpoint. Eg. `[".*_max_lag.*", "kafka_partition_latest_offset"]`                       |
+| `topic-whitelist`             | `[".*"]`           | Regex of topics monitored, e.g. `["input-.+", "output-.+"]`                                                                           |
 
 Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 
@@ -228,7 +229,7 @@ kafka-lag-exporter {
   lookup-table-size = 120
   clusters = [
     {
-      name = "a-cluster"                                   
+      name = "a-cluster"
       bootstrap-brokers = "a-1.cluster-a.xyzcorp.com:9092,a-2.cluster-a.xyzcorp.com:9092,a-3.cluster-a.xyzcorp.com:9092"
       consumer-properties = {
         client.id = "consumer-client-id"
@@ -249,7 +250,7 @@ kafka-lag-exporter {
 
 Define an `application.conf` and optionally a `logback.xml` with your configuration.
 
-Run the Docker image. Expose metrics endpoint on the host port `8000`. Mount a config dir with your `application.conf` 
+Run the Docker image. Expose metrics endpoint on the host port `8000`. Mount a config dir with your `application.conf`
 `logback.xml` into the container.
 
 Ex)
@@ -267,7 +268,7 @@ See full example in [`./examples/standalone`](./examples/standalone).
 
 ## Estimate Consumer Group Time Lag
 
-One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag (wait time).  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.  
+One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag (wait time).  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.
 
 For example, a topic with two consumer groups may have different lag characteristics.  Application A is a consumer which performs CPU intensive (and slow) business logic on each message it receives. It’s distributed across many consumer group members to handle the high load, but since its processing throughput is slower it takes longer to process each message per partition.   Meanwhile Application B is a consumer which performs a simple ETL operation to land streaming data in another system, such as an HDFS data lake.  It may have similar offset lag to Application A, but because it has a higher processing throughput its lag in time may be significantly less.
 
@@ -325,10 +326,10 @@ This dashboard has 4 rows that are described below.
   * Consumer Group Max Offset Lag
   * Consumer Group Offset Lag Top Partitions
 ![Consumer Group Max Time Lag](./grafana/consumer_group_max_time_lag.png)
-2. **Max Consumer Group Time Lag Over Offset Lag** - One panel for each consumer group that shows the max lag 
+2. **Max Consumer Group Time Lag Over Offset Lag** - One panel for each consumer group that shows the max lag
 in time on the left Y axis and max lag in offsets on the right Y axis. Ex)
 ![Max Consumer Group Time Lag Over Offset Lag Example](./grafana/max_consumer_group_time_lag_over_offset_lag.png)
-3. **Max Consumer Group Time Lag Over Summed Offsets** - One panel for each consumer group that shows the max lag in time on the left Y 
+3. **Max Consumer Group Time Lag Over Summed Offsets** - One panel for each consumer group that shows the max lag in time on the left Y
 axis.  The right Y axis has the sum of latest and last consumed offsets for all group partitions. Ex)
 ![Max Consumer Group Time Lag Over Summed Offsets](./grafana/max_consumer_group_time_lag_over_summed_offsets.png)
 4. **Kafka Lag Exporter JVM Metrics** - JVM metrics for the Kafka Lag Exporter itself.
@@ -394,7 +395,7 @@ docker-compose up
 
 ### Building your own Helm Chart
 
-If you want to build your own Helm Chart and accompanying docker images you can override the Docker repository and 
+If you want to build your own Helm Chart and accompanying docker images you can override the Docker repository and
 username with environment variables.
 
 `DOCKER_REPOSITORY` - A custom Docker repository, such as a private company's docker repository (defaults to DockerHub)
@@ -426,7 +427,7 @@ Update values.yaml docker repository to docker.xyzcorp.com/foobar/kafka-lag-expo
 [info] Successfully tagged docker.xyzcorp.com/foobar/kafka-lag-exporter:0.4.0-SNAPSHOT
 [info] Built image docker.xyzcorp.com/foobar/kafka-lag-exporter with tags [0.4.0-SNAPSHOT]
 [success] Total time: 17 s, completed 1-May-2019 2:37:28 PM
-``` 
+```
 
 Deploy the local chart to K8s:
 
@@ -443,12 +444,12 @@ helm install ./charts/kafka-lag-exporter \
 
 ### Pre-requisites
 
-The release process is orchestrated by the [`sbt-release`](https://github.com/sbt/sbt-release).  Privileged access is 
+The release process is orchestrated by the [`sbt-release`](https://github.com/sbt/sbt-release).  Privileged access is
 required.  Before running a release make sure the following pre-req's are met.
 
 * Authenticated with Docker Hub with the `docker` command.
 * Authenticated with GitHub
-* `~/.netrc` file setup with GitHub credentials/token 
+* `~/.netrc` file setup with GitHub credentials/token
 
 ### Release steps
 
@@ -529,4 +530,3 @@ group partition
 0.1.0
 
 * Initial release
-

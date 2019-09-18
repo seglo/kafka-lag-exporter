@@ -47,7 +47,12 @@ data:
         {{ quote $whitelist }}{{- if ne $i $lastIndex -}}, {{ end }}
         {{- end }}
       ]
-
+      topic-whitelist = [
+        {{- $lastIndex := sub (len .Values.topicWhitelist) 1}}
+        {{- range $i, $whitelist := .Values.topicWhitelist }}
+        {{ quote $whitelist }}{{- if ne $i $lastIndex -}}, {{ end }}
+        {{- end }}
+      ]
     }
 
     akka {
