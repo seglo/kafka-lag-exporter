@@ -149,6 +149,17 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
   --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap:9092
 ```
 
+Install with statically defined cluster at the CLI, but with a non-default service account assigned to the deployment.
+
+```
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.1/kafka-lag-exporter-0.5.1.tgz \
+  --name kafka-lag-exporter \
+  --namespace myproject \
+  --set clusters\[0\].name=my-cluster \
+  --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap:9092
+  --set serviceAccount.create=true
+```
+
 Run a debug install (`DEBUG` logging, debug helm chart install, force docker pull policy to `Always`).
 
 ```
