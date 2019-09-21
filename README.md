@@ -95,6 +95,13 @@ Labels: `cluster_name, topic, partition`
 
 The latest offset available for topic partition.  Kafka Lag Exporter will calculate a set of partitions for all consumer groups available and then poll for the last produced offset.  The last produced offset is used in the calculation of other metrics provided, so it is exported for informational purposes.  For example, the accompanying Grafana dashboard makes use of it to visualize the last produced offset and the last consumed offset in certain panels.
 
+**`kafka_partition_earliest_offset`**
+
+Labels: `cluster_name, topic, partition`
+
+The earliest offset available for topic partition.  Kafka Lag Exporter will calculate a set of partitions for all consumer groups available and then poll for the earliest available offset.  The earliest available offset is used in the calculation of other metrics provided, so it is exported for informational purposes.  For example, the accompanying Grafana dashboard makes use of it to visualize the offset-based volume of a partition in certain panels.
+
+
 ### Labels
 
 Each metric may include the following labels when reported. If you define the labels property for Configuration of a cluster then those labels will also be included.
@@ -458,6 +465,10 @@ required.  Before running a release make sure the following pre-req's are met.
 4. Review the GitHub release draft and submit it.
 
 ## Change log
+
+0.5.2
+
+* Added kafka_partition_earliest_offset metric for determining the volume of offsets stored in Kafka.
 
 0.5.1
 
