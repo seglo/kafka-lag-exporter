@@ -38,6 +38,7 @@ object KafkaClient {
   trait KafkaClientContract {
     def getGroups(): Future[(List[String], List[Domain.GroupTopicPartition])]
     def getGroupOffsets(now: Long, groups: List[String], groupTopicPartitions: List[Domain.GroupTopicPartition]): Future[GroupOffsets]
+    def getEarliestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets]
     def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets]
     def close(): Unit
   }
@@ -168,6 +169,14 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
       ktp.partition()
     )
     groupTopicPartitions.toList
+  }
+
+  /**
+    * Get earliest offsets for a set of topic partitions.
+    */
+  def getEarliestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets] = Try {
+    val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.beginningOffsets(topicPartitions.map(_.asKafka).asJava, _clientTimeout)
+    topicPartitions.map(tp => tp -> LookupTable.Point(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 
   /**
