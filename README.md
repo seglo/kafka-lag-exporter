@@ -212,7 +212,6 @@ General Configuration (`kafka-lag-exporter{}`)
 | `clusters`                    | `[]`               | A statically defined list of Kafka connection details.  This list is optional if you choose to use the Strimzi auto-discovery feature |
 | `watchers`                    | `{}`               | Settings for Kafka cluster "watchers" used for auto-discovery.                                                                        |
 | `metric-whitelist`            | `[".*"]`           | Regex of metrics to be exposed via Prometheus endpoint. Eg. `[".*_max_lag.*", "kafka_partition_latest_offset"]`                       |
-| `topic-whitelist`             | `[".*"]`           | Regex of topics monitored, e.g. `["input-.+", "output-.+"]`                                                                           |
 
 Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 
@@ -220,9 +219,11 @@ Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 |---------------------------|-------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `name`                    | `""`        | Yes      | A unique cluster name to for this Kafka connection detail object                                                                                                                                   |
 | `bootstrap-brokers`       | `""`        | Yes      | Kafka bootstrap brokers.  Comma delimited list of broker hostnames                                                                                                                                 |
+| `group-whitelist`         | `[".*"]`    | No       | A list of Regex of consumer groups monitored. For example, if you only wish to expose only certain groups with `input` and `output` prefixes, use `["^input-.+", "^output-.+"]`.                   |
+| `topic-whitelist`         | `[".*"]`      No       | A list of Regex of topics monitored. For example, if you only wish to expose only certain topics, use either `["^topic.+"]` or `["topic1", "topic2"]`.                                             |
 | `consumer-properties`     | `{}`        | No       | A map of key value pairs used to configure the `KafkaConsumer`. See the [Consumer Config](https://kafka.apache.org/documentation/#consumerconfigs) section of the Kafka documentation for options. |
 | `admin-client-properties` | `{}`        | No       | A map of key value pairs used to configure the `AdminClient`. See the [Admin Config](https://kafka.apache.org/documentation/#adminclientconfigs) section of the Kafka documentation for options.   |
-| `labels`                  | `{}`        | No       | A map of key value pairs will be set as additional custom labels per cluster for all the metrics in prometheus.  |
+| `labels`                  | `{}`        | No       | A map of key value pairs will be set as additional custom labels per cluster for all the metrics in prometheus.                                                                                    |
 
 Watchers (`kafka-lag-exporters.watchers{}`)
 
@@ -242,6 +243,9 @@ kafka-lag-exporter {
     {
       name = "a-cluster"
       bootstrap-brokers = "a-1.cluster-a.xyzcorp.com:9092,a-2.cluster-a.xyzcorp.com:9092,a-3.cluster-a.xyzcorp.com:9092"
+      topic-whitelist = [
+        "widgets-.+"
+      ]
       consumer-properties = {
         client.id = "consumer-client-id"
       }

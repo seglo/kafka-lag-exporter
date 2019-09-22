@@ -16,6 +16,8 @@ class AppConfigSpec extends FreeSpec with Matchers {
                                          |    {
                                          |       name = "clusterA"
                                          |       bootstrap-brokers = "b-1.cluster-a.xyzcorp.com:9092,b-2.cluster-a.xyzcorp.com:9092"
+                                         |       group-whitelist = ["group-a", "group-b"]
+                                         |       topic-whitelist = ["topic-a", "topic-b"]
                                          |       consumer-properties = {
                                          |         client.id = "consumer-client-id"
                                          |       }
@@ -46,6 +48,8 @@ class AppConfigSpec extends FreeSpec with Matchers {
       appConfig.clusters.length shouldBe 3
       appConfig.clusters(0).name shouldBe "clusterA"
       appConfig.clusters(0).bootstrapBrokers shouldBe "b-1.cluster-a.xyzcorp.com:9092,b-2.cluster-a.xyzcorp.com:9092"
+      appConfig.clusters(0).groupWhitelist shouldBe List("group-a", "group-b")
+      appConfig.clusters(0).topicWhitelist shouldBe List("topic-a", "topic-b")
       appConfig.clusters(0).consumerProperties("client.id") shouldBe "consumer-client-id"
       appConfig.clusters(0).adminClientProperties("client.id") shouldBe "admin-client-id"
       appConfig.clusters(0).labels("environment") shouldBe "integration"

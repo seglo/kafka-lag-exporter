@@ -20,6 +20,22 @@ data:
         {
           name = "{{ $cluster.name }}"
           bootstrap-brokers = "{{ $cluster.bootstrapBrokers }}"
+          {{- if $cluster.groupWhitelist }}
+          group-whitelist = [
+            {{- $lastIndex := sub (len $cluster.groupWhitelist) 1}}
+            {{- range $i, $whitelist := $cluster.groupWhitelist }}
+            {{ quote $whitelist }}{{- if ne $i $lastIndex -}}, {{ end }}
+            {{- end }}
+          ]
+          {{- end }}
+          {{- if $cluster.topicWhitelist }}
+          topic-whitelist = [
+            {{- $lastIndex := sub (len $cluster.groupWhitelist) 1}}
+            {{- range $i, $whitelist := $cluster.groupWhitelist }}
+            {{ quote $whitelist }}{{- if ne $i $lastIndex -}}, {{ end }}
+            {{- end }}
+          ]
+          {{- end }}
           consumer-properties = {
             {{- range $key, $val := $cluster.consumerProperties }}
             {{ $key }} = {{ quote $val }}
@@ -44,12 +60,6 @@ data:
       metric-whitelist = [
         {{- $lastIndex := sub (len .Values.metricWhitelist) 1}}
         {{- range $i, $whitelist := .Values.metricWhitelist }}
-        {{ quote $whitelist }}{{- if ne $i $lastIndex -}}, {{ end }}
-        {{- end }}
-      ]
-      topic-whitelist = [
-        {{- $lastIndex := sub (len .Values.topicWhitelist) 1}}
-        {{- range $i, $whitelist := .Values.topicWhitelist }}
         {{ quote $whitelist }}{{- if ne $i $lastIndex -}}, {{ end }}
         {{- end }}
       ]
