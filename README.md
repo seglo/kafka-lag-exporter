@@ -475,6 +475,16 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.5.2
+
+* Implement consumer group whitelist [#75](https://github.com/lightbend/kafka-lag-exporter/pull/75)
+* Allow whitelisting Kafka topics [#65](https://github.com/lightbend/kafka-lag-exporter/pull/65) ([@NeQuissimus](https://github.com/NeQuissimus))
+* Omit service account generation when not using strimzi [#64](https://github.com/lightbend/kafka-lag-exporter/pull/64) ([@khorshuheng](https://github.com/khorshuheng))
+* Adding support to control which prometheus metrics to expose [#62](https://github.com/lightbend/kafka-lag-exporter/pull/62) ([@khorshuheng](https://github.com/khorshuheng))
+* Adds custom labels for every cluster [#61](https://github.com/lightbend/kafka-lag-exporter/pull/61) ([@anbarasantr](https://github.com/anbarasantr))
+* Adding support for custom annotations on pods [#59](https://github.com/lightbend/kafka-lag-exporter/pull/59) ([@WarpRat](https://github.com/WarpRat))
+* Allow Helm to quote Kafka client property values when necessary [#58](https://github.com/lightbend/kafka-lag-exporter/pull/58)
+
 0.5.1
 
 * Bugfix: Get commit offset for correct group topic partitions [#56](https://github.com/lightbend/kafka-lag-exporter/pull/56)
