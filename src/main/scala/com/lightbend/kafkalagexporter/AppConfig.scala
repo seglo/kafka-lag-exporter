@@ -42,11 +42,18 @@ object AppConfig {
           ).toMap
         }.getOrElse(Map.empty[String, String])
 
-      val topicWhitelist = c.getStringList("topic-whitelist").asScala.toList
+      val groupWhitelist = if (clusterConfig.hasPath("group-whitelist"))
+        clusterConfig.getStringList("group-whitelist").asScala.toList
+      else KafkaCluster.GroupWhitelistDefault
+
+      val topicWhitelist = if (clusterConfig.hasPath("topic-whitelist"))
+        clusterConfig.getStringList("topic-whitelist").asScala.toList
+      else KafkaCluster.TopicWhitelistDefault
 
       KafkaCluster(
         clusterConfig.getString("name"),
         clusterConfig.getString("bootstrap-brokers"),
+        groupWhitelist,
         topicWhitelist,
         consumerProperties,
         adminClientProperties,
@@ -85,7 +92,14 @@ object AppConfig {
   }
 }
 
-final case class KafkaCluster(name: String, bootstrapBrokers: String, topicWhitelist: List[String] = List(".*"),
+object KafkaCluster {
+  val GroupWhitelistDefault = List(".*")
+  val TopicWhitelistDefault = List(".*")
+}
+
+final case class KafkaCluster(name: String, bootstrapBrokers: String,
+                              groupWhitelist: List[String] = KafkaCluster.GroupWhitelistDefault,
+                              topicWhitelist: List[String] = KafkaCluster.TopicWhitelistDefault,
                               consumerProperties: Map[String, String] = Map.empty,
                               adminClientProperties: Map[String, String] = Map.empty,
                               labels: Map[String, String] = Map.empty) {
@@ -93,6 +107,7 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String, topicWhite
     s"""
        |  Cluster name: $name
        |  Cluster Kafka bootstrap brokers: $bootstrapBrokers
+       |  Consumer group whitelist: [${groupWhitelist.mkString(", ")}]
        |  Topic whitelist: [${topicWhitelist.mkString(", ")}]
      """.stripMargin
   }

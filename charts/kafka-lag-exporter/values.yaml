@@ -4,6 +4,10 @@ clusters: {}
 #clusters:
 #  - name: "default"
 #    bootstrapBrokers: "simple-strimzi-kafka-bootstrap.strimzi.svc.cluster.local:9092"
+#    topicWhitelist:
+#    - "^xyz-corp-topics\..+"
+#    groupWhitelist:
+#    - "^analytics-app-.+"
 #    # Properties defined by org.apache.kafka.clients.consumer.ConsumerConfig
 #    # can be defined in this configuration section.
 #    # https://kafka.apache.org/documentation/#consumerconfigs
@@ -50,19 +54,6 @@ serviceAccount:
 ##   - kafka_consumergroup_group_max_lag
 ##   - kafka_consumergroup_group_max_lag_seconds
 metricWhitelist:
-  - .*
-
-## You can use regex to control the set of topics monitored.
-## For example, if you only wish to expose only certain topics, use either:
-## topicWhitelist:
-##   - ^topic.+
-##
-## Or
-##
-## topicWhitelist:
-##   - topic1
-##   - topic2
-topicWhitelist:
   - .*
 
 ## The log level of the ROOT logger
