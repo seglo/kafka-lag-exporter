@@ -472,6 +472,11 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.5.3
+
+* Bugfix: Fix Helm Chart: Whitespace in Deployment.yaml [#77](https://github.com/lightbend/kafka-lag-exporter/pull/77) ([@abhishekjiitr](https://github.com/abhishekjiitr))
+* Bugfix: Revert cluster labels (see discussion in [#78](https://github.com/lightbend/kafka-lag-exporter/pull/78)) [#79](https://github.com/lightbend/kafka-lag-exporter/pull/79)
+
 0.5.2
 
 * Implement consumer group whitelist [#75](https://github.com/lightbend/kafka-lag-exporter/pull/75)
