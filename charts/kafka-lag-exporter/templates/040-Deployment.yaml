@@ -23,7 +23,7 @@ spec:
         app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      {{- if or .Values.watchers.strimzi .Values.serviceAccount.create -}}
+      {{- if or .Values.watchers.strimzi .Values.serviceAccount.create }}
       serviceAccountName: {{ include "kafka-lag-exporter.fullname" . }}-serviceaccount
       {{- end }}
       containers:
