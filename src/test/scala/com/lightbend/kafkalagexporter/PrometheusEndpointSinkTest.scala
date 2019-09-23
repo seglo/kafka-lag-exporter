@@ -48,8 +48,13 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
     "append global labels to metric labels" in { fixture =>
       val groupLabel = Map(
         "cluster" -> Map(
-          "environment" ->"dev",
+          "environment" -> "dev",
           "org" -> "organization",
+        ),
+        "cluster2" -> Map(
+          "environment" -> "prod",
+          "org" -> "organization2",
+          "location" -> "canada"
         )
       )
       val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry)
