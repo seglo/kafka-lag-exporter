@@ -45,38 +45,60 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
         Set("kafka_consumergroup_group_max_lag", "kafka_consumergroup_group_max_lag_seconds")
     }
 
-//    "append global labels to metric labels" in { fixture =>
-//      val groupLabel = Map(
-//        "cluster" -> Map(
-//          "environment" ->"dev",
-//          "org" -> "organization",
-//        )
-//      )
-//      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry)
-//      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
-//
-//      val metricSamples = fixture.registry.metricFamilySamples().asScala.toList
-//      val maxGroupTimeLagMetricSamples = metricSamples.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
-//
-//      maxGroupTimeLagMetricSamples should have length 1
-//      val labels = maxGroupTimeLagMetricSamples.flatMap(_.labelNames.asScala)
-//      val labelValues = maxGroupTimeLagMetricSamples.flatMap(_.labelValues.asScala)
-//      (labels zip labelValues).toMap should contain theSameElementsAs
-//        Map(
-//          "environment" ->"dev",
-//          "org" -> "organization",
-//          "cluster_name" -> "cluster",
-//          "group" -> "group",
-//        )
-//
-//      sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group"))
-//
-//      val metricSamplesAfterRemoval = fixture.registry.metricFamilySamples().asScala.toList
-//      val maxGroupTimeLagMetricSamplesAfterRemoval = metricSamplesAfterRemoval.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
-//
-//
-//      maxGroupTimeLagMetricSamplesAfterRemoval should have length 0
-//    }
+    "append global labels to metric labels" in { fixture =>
+      val groupLabel = Map(
+        "cluster" -> Map(
+          "environment" -> "dev",
+          "org" -> "organization",
+          "location" -> ""
+        ),
+        "cluster2" -> Map(
+          "environment" -> "prod",
+          "org" -> "organization2",
+          "location" -> "canada"
+        )
+      )
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry)
+      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
+      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster2", "group", 1))
+
+
+      val metricSamples = fixture.registry.metricFamilySamples().asScala.toList
+      val maxGroupTimeLagMetricSamples = metricSamples.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
+
+      maxGroupTimeLagMetricSamples should have length 2
+      val labelsNames1 = maxGroupTimeLagMetricSamples(0).labelNames.asScala
+      val labelValues1 = maxGroupTimeLagMetricSamples(0).labelValues.asScala
+
+      (labelsNames1 zip labelValues1).toMap should contain theSameElementsAs
+        Map(
+          "environment" ->"dev",
+          "org" -> "organization",
+          "cluster_name" -> "cluster",
+          "location" -> "",
+          "group" -> "group",
+        )
+
+      val labelsNames2 = maxGroupTimeLagMetricSamples(1).labelNames.asScala
+      val labelValues2 = maxGroupTimeLagMetricSamples(1).labelValues.asScala
+
+      (labelsNames2 zip labelValues2).toMap should contain theSameElementsAs
+        Map(
+          "environment" ->"prod",
+          "org" -> "organization2",
+          "cluster_name" -> "cluster2",
+          "location" -> "canada",
+          "group" -> "group",
+        )
+
+      sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group"))
+      sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster2", "group"))
+
+      val metricSamplesAfterRemoval = fixture.registry.metricFamilySamples().asScala.toList
+      val maxGroupTimeLagMetricSamplesAfterRemoval = metricSamplesAfterRemoval.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
+
+      maxGroupTimeLagMetricSamplesAfterRemoval should have length 0
+    }
 
     "report only metrics which match the regex" in { fixture =>
       val sink = PrometheusEndpointSink(Metrics.definitions, List("kafka_consumergroup_group_max_lag"), Map("cluster" -> Map.empty),

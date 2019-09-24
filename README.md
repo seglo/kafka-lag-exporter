@@ -97,7 +97,8 @@ The latest offset available for topic partition.  Kafka Lag Exporter will calcul
 
 ### Labels
 
-Each metric may include the following labels when reported.
+Each metric may include the following labels when reported. If you define the labels property for Configuration of a cluster then those labels will also be included. 
+If certain labels are not defined in any of the clusters but present in other cluster, it will be just blank.
 
 * `cluster_name` - Either the statically defined Kafka cluster name, or the metadata.name of the Strimzi Kafka cluster that was discovered with the Strimzi auto discovery feature.
 * `topic` - The Kafka topic.
@@ -224,7 +225,7 @@ Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 | `topic-whitelist`         | `[".*"]`      No       | A list of Regex of topics monitored. For example, if you only wish to expose only certain topics, use either `["^topic.+"]` or `["topic1", "topic2"]`.                                             |
 | `consumer-properties`     | `{}`        | No       | A map of key value pairs used to configure the `KafkaConsumer`. See the [Consumer Config](https://kafka.apache.org/documentation/#consumerconfigs) section of the Kafka documentation for options. |
 | `admin-client-properties` | `{}`        | No       | A map of key value pairs used to configure the `AdminClient`. See the [Admin Config](https://kafka.apache.org/documentation/#adminclientconfigs) section of the Kafka documentation for options.   |
-| ~~`labels`~~              | `{}`        | No       | Disabled until there's a resolution in [#78](https://github.com/lightbend/kafka-lag-exporter/pull/78) ~~A map of key value pairs will be set as additional custom labels per cluster for all the metrics in prometheus.~~ |
+| `labels`                  | `{}`        | No       | A map of key value pairs will be set as additional custom labels per cluster for all the metrics in prometheus.                                                                                    |
 
 Watchers (`kafka-lag-exporters.watchers{}`)
 
@@ -252,6 +253,10 @@ kafka-lag-exporter {
       }
       admin-client-properties = {
         client.id = "admin-client-id"
+      }
+      labels = {
+        location = "ny"
+        zone = "us-east"
       }
     }
   ]
