@@ -472,6 +472,10 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.5.4
+
+* Bugfix: Accidentally released with local repo.
+
 0.5.3
 
 * Bugfix: Fix Helm Chart: Whitespace in Deployment.yaml [#77](https://github.com/lightbend/kafka-lag-exporter/pull/77) ([@abhishekjiitr](https://github.com/abhishekjiitr))
