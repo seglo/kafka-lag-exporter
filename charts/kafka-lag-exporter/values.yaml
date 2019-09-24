@@ -64,7 +64,7 @@ akkaLogLevel: DEBUG
 
 ## You probably won't need to change anything below this line.
 image:
-  repository: localhost:32000/seglo/kafka-lag-exporter
+  repository: lightbend/kafka-lag-exporter
   tag: 0.5.4-SNAPSHOT
   pullPolicy: Always
 service:
