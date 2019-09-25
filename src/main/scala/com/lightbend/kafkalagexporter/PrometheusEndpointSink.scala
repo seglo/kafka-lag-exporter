@@ -29,21 +29,24 @@ class PrometheusEndpointSink private(definitions: MetricDefinitions, metricWhite
                                      server: HTTPServer, registry: CollectorRegistry) extends MetricsSink {
   DefaultExports.initialize()
 
+  private[kafkalagexporter] val globalLabelNames: List[String] = {
+    clusterGlobalLabels.values.flatMap(_.keys).toList.distinct
+  }
+
   private val metrics: Metrics = {
     definitions.filter(d => metricWhitelist.exists(d.name.matches)).map { d =>
       d -> Gauge.build()
         .name(d.name)
         .help(d.help)
-        .labelNames(globalLabelNames() ++ d.labels: _*)
+        .labelNames(globalLabelNames ++ d.labels: _*)
         .register(registry)
     }.toMap
   }
 
-
   override def report(m: MetricValue): Unit = {
     if (metricWhitelist.exists(m.definition.name.matches)) {
       val metric = metrics.getOrElse(m.definition, throw new IllegalArgumentException(s"No metric with definition ${m.definition.name} registered"))
-      metric.labels(getGlobalLabelNames(m.clusterName) ++ m.labels: _*).set(m.value)
+      metric.labels(getGlobalLabelValuesOrDefault(m.clusterName) ++ m.labels: _*).set(m.value)
     }
   }
 
@@ -52,7 +55,7 @@ class PrometheusEndpointSink private(definitions: MetricDefinitions, metricWhite
       for {
         gauge <- metrics.get(m.definition)
       } {
-        val metricLabels = getGlobalLabelNames(m.clusterName) ++ m.labels
+        val metricLabels = getGlobalLabelValuesOrDefault(m.clusterName) ++ m.labels
         gauge.remove(metricLabels: _*)
       }
     }
@@ -67,12 +70,9 @@ class PrometheusEndpointSink private(definitions: MetricDefinitions, metricWhite
     server.stop()
   }
 
-  def globalLabelNames(): List[String] = {
-    clusterGlobalLabels.values.flatMap(_.keys).toList.distinct
-  }
 
-  def getGlobalLabelNames(clusterName: ClusterName): List[String] = {
+  def getGlobalLabelValuesOrDefault(clusterName: ClusterName): List[String] = {
     val globalLabelValuesForCluster = clusterGlobalLabels.getOrElse(clusterName, Map.empty)
-    globalLabelNames().map(l => globalLabelValuesForCluster.getOrElse(l, ""))
+    globalLabelNames.map(l => globalLabelValuesForCluster.getOrElse(l, ""))
   }
 }

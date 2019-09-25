@@ -173,21 +173,21 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
         "clusterC" -> Map.empty[String, String]
       )
       val sink = PrometheusEndpointSink(Metrics.definitions, List(""), clustersGlobalValuesMap, fixture.server, fixture.registry).asInstanceOf[PrometheusEndpointSink]
-      sink.globalLabelNames() shouldEqual List("environment", "location")
-      sink.getGlobalLabelNames("clusterA") shouldEqual List("integration", "ny")
-      sink.getGlobalLabelNames("clusterB") shouldEqual List("production", "")
-      sink.getGlobalLabelNames("clusterC") shouldEqual List("", "")
-      sink.getGlobalLabelNames("strimzi-cluster") shouldEqual List("", "")
+      sink.globalLabelNames shouldEqual List("environment", "location")
+      sink.getGlobalLabelValuesOrDefault("clusterA") shouldEqual List("integration", "ny")
+      sink.getGlobalLabelValuesOrDefault("clusterB") shouldEqual List("production", "")
+      sink.getGlobalLabelValuesOrDefault("clusterC") shouldEqual List("", "")
+      sink.getGlobalLabelValuesOrDefault("strimzi-cluster") shouldEqual List("", "")
     }
 
     "should add blank value for the cluster label for the cluster label is not specified for the cluster" in { fixture =>
       val clustersGlobalValuesMap = Map.empty[String, Map[String, String]]
       val sink = PrometheusEndpointSink(Metrics.definitions, List(""), clustersGlobalValuesMap, fixture.server, fixture.registry).asInstanceOf[PrometheusEndpointSink]
-      sink.globalLabelNames() shouldEqual List.empty
-      sink.getGlobalLabelNames("clusterA") shouldEqual List.empty
-      sink.getGlobalLabelNames("clusterB") shouldEqual List.empty
-      sink.getGlobalLabelNames("clusterC") shouldEqual List.empty
-      sink.getGlobalLabelNames("strimzi-cluster") shouldEqual List.empty
+      sink.globalLabelNames shouldEqual List.empty
+      sink.getGlobalLabelValuesOrDefault("clusterA") shouldEqual List.empty
+      sink.getGlobalLabelValuesOrDefault("clusterB") shouldEqual List.empty
+      sink.getGlobalLabelValuesOrDefault("clusterC") shouldEqual List.empty
+      sink.getGlobalLabelValuesOrDefault("strimzi-cluster") shouldEqual List.empty
     }
   }
 
