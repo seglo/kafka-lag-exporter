@@ -8,38 +8,39 @@ import org.scalatest.{FreeSpec, Matchers}
 
 class AppConfigSpec extends FreeSpec with Matchers {
 
-  val configString = s"""
-                        |kafka-lag-exporter {
-                        |  clusters = [
-                        |    {
-                        |       name = "clusterA"
-                        |       bootstrap-brokers = "b-1.cluster-a.xyzcorp.com:9092,b-2.cluster-a.xyzcorp.com:9092"
-                        |       group-whitelist = ["group-a", "group-b"]
-                        |       topic-whitelist = ["topic-a", "topic-b"]
-                        |       consumer-properties = {
-                        |         client.id = "consumer-client-id"
-                        |       }
-                        |       admin-client-properties = {
-                        |         client.id = "admin-client-id"
-                        |       }
-                        |       labels = {
-                        |         environment= "integration"
-                        |         location = "ny"
-                        |       }
-                        |    }
-                        |    {
-                        |       name = "clusterB"
-                        |       bootstrap-brokers = "b-1.cluster-b.xyzcorp.com:9092,b-2.cluster-b.xyzcorp.com:9092"
-                        |       labels = {
-                        |         environment= "production"
-                        |       }
-                        |    }
-                        |    {
-                        |       name = "clusterC"
-                        |       bootstrap-brokers = "c-1.cluster-b.xyzcorp.com:9092,c-2.cluster-b.xyzcorp.com:9092"
-                        |    }
-                        |  ]
-                        |}""".stripMargin
+  val configString =
+    s"""
+       |kafka-lag-exporter {
+       |  clusters = [
+       |    {
+       |       name = "clusterA"
+       |       bootstrap-brokers = "b-1.cluster-a.xyzcorp.com:9092,b-2.cluster-a.xyzcorp.com:9092"
+       |       group-whitelist = ["group-a", "group-b"]
+       |       topic-whitelist = ["topic-a", "topic-b"]
+       |       consumer-properties = {
+       |         client.id = "consumer-client-id"
+       |       }
+       |       admin-client-properties = {
+       |         client.id = "admin-client-id"
+       |       }
+       |       labels = {
+       |         environment= "integration"
+       |         location = "ny"
+       |       }
+       |    }
+       |    {
+       |       name = "clusterB"
+       |       bootstrap-brokers = "b-1.cluster-b.xyzcorp.com:9092,b-2.cluster-b.xyzcorp.com:9092"
+       |       labels = {
+       |         environment= "production"
+       |       }
+       |    }
+       |    {
+       |       name = "clusterC"
+       |       bootstrap-brokers = "c-1.cluster-b.xyzcorp.com:9092,c-2.cluster-b.xyzcorp.com:9092"
+       |    }
+       |  ]
+       |}""".stripMargin
 
   "AppConfig" - {
     "should parse static clusters" in {
@@ -72,8 +73,8 @@ class AppConfigSpec extends FreeSpec with Matchers {
       appConfig.clustersGlobalLabels() should contain theSameElementsAs
         Map(
           "clusterA" -> Map("environment" -> "integration", "location" -> "ny"),
-          "clusterB" -> Map("environment" -> "production", "location" -> ""),
-          "clusterC" -> Map("environment" -> "", "location" -> "")
+          "clusterB" -> Map("environment" -> "production"),
+          "clusterC" -> Map.empty
         )
     }
 

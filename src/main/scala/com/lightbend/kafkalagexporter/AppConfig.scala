@@ -134,11 +134,8 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
   }
 
   def clustersGlobalLabels(): ClusterGlobalLabels = {
-    val allDistinctLabelKeys = clusters.flatMap(_.labels.keys).distinct
     clusters.map { cluster =>
-      cluster.name -> allDistinctLabelKeys.map { label =>
-        label -> cluster.labels.getOrElse(label, "")
-      }.toMap
+      cluster.name -> cluster.labels
     }.toMap
   }
 }
