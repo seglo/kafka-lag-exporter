@@ -5,6 +5,7 @@
 package com.lightbend.kafkalagexporter
 
 import com.lightbend.kafkalagexporter.MetricsSink._
+import com.lightbend.kafkalagexporter.PrometheusEndpointSink.{ClusterGlobalLabels, ClusterName, Metrics}
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
 import io.prometheus.client.{CollectorRegistry, Gauge}
@@ -15,45 +16,48 @@ object PrometheusEndpointSink {
   type ClusterName = String
   type GlobalLabels = Map[String, String]
   type ClusterGlobalLabels = Map[ClusterName, GlobalLabels]
+  type Metrics = Map[GaugeDefinition, Gauge]
 
   def apply(definitions: MetricDefinitions, metricWhitelist: List[String], clusterGlobalLabels: ClusterGlobalLabels,
             server: HTTPServer, registry: CollectorRegistry): MetricsSink = {
-    Try(new PrometheusEndpointSink(definitions, metricWhitelist, server, registry))
+    Try(new PrometheusEndpointSink(definitions, metricWhitelist, clusterGlobalLabels, server, registry))
       .fold(t => throw new Exception("Could not create Prometheus Endpoint", t), sink => sink)
   }
 }
 
-class PrometheusEndpointSink private(definitions: MetricDefinitions, metricWhitelist: List[String],
+class PrometheusEndpointSink private(definitions: MetricDefinitions, metricWhitelist: List[String], clusterGlobalLabels: ClusterGlobalLabels,
                                      server: HTTPServer, registry: CollectorRegistry) extends MetricsSink {
-
   DefaultExports.initialize()
 
-  private val metrics: Map[GaugeDefinition, Gauge] = register()
+  private[kafkalagexporter] val globalLabelNames: List[String] = {
+    clusterGlobalLabels.values.flatMap(_.keys).toList.distinct
+  }
 
-  private def register(): Map[GaugeDefinition, Gauge] = {
-    definitions
-      .filter(d => metricWhitelist.exists(d.name.matches))
-      .map { d =>
-        d -> Gauge
-          .build()
-          .name(d.name)
-          .help(d.help)
-          .labelNames(d.labels: _*)
-          .register(registry)
-      }
-      .toMap
+  private val metrics: Metrics = {
+    definitions.filter(d => metricWhitelist.exists(d.name.matches)).map { d =>
+      d -> Gauge.build()
+        .name(d.name)
+        .help(d.help)
+        .labelNames(globalLabelNames ++ d.labels: _*)
+        .register(registry)
+    }.toMap
   }
 
   override def report(m: MetricValue): Unit = {
-    if(metricWhitelist.exists(m.definition.name.matches)) {
+    if (metricWhitelist.exists(m.definition.name.matches)) {
       val metric = metrics.getOrElse(m.definition, throw new IllegalArgumentException(s"No metric with definition ${m.definition.name} registered"))
-      metric.labels(m.labels: _*).set(m.value)
+      metric.labels(getGlobalLabelValuesOrDefault(m.clusterName) ++ m.labels: _*).set(m.value)
     }
   }
 
   override def remove(m: RemoveMetric): Unit = {
-    if(metricWhitelist.exists(m.definition.name.matches)) {
-      metrics.get(m.definition).foreach(_.remove(m.labels: _*))
+    if (metricWhitelist.exists(m.definition.name.matches)) {
+      for {
+        gauge <- metrics.get(m.definition)
+      } {
+        val metricLabels = getGlobalLabelValuesOrDefault(m.clusterName) ++ m.labels
+        gauge.remove(metricLabels: _*)
+      }
     }
   }
 
@@ -64,5 +68,11 @@ class PrometheusEndpointSink private(definitions: MetricDefinitions, metricWhite
      */
     registry.clear()
     server.stop()
+  }
+
+
+  def getGlobalLabelValuesOrDefault(clusterName: ClusterName): List[String] = {
+    val globalLabelValuesForCluster = clusterGlobalLabels.getOrElse(clusterName, Map.empty)
+    globalLabelNames.map(l => globalLabelValuesForCluster.getOrElse(l, ""))
   }
 }

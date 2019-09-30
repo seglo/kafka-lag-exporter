@@ -45,38 +45,103 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
         Set("kafka_consumergroup_group_max_lag", "kafka_consumergroup_group_max_lag_seconds")
     }
 
-//    "append global labels to metric labels" in { fixture =>
-//      val groupLabel = Map(
-//        "cluster" -> Map(
-//          "environment" ->"dev",
-//          "org" -> "organization",
-//        )
-//      )
-//      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry)
-//      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
-//
-//      val metricSamples = fixture.registry.metricFamilySamples().asScala.toList
-//      val maxGroupTimeLagMetricSamples = metricSamples.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
-//
-//      maxGroupTimeLagMetricSamples should have length 1
-//      val labels = maxGroupTimeLagMetricSamples.flatMap(_.labelNames.asScala)
-//      val labelValues = maxGroupTimeLagMetricSamples.flatMap(_.labelValues.asScala)
-//      (labels zip labelValues).toMap should contain theSameElementsAs
-//        Map(
-//          "environment" ->"dev",
-//          "org" -> "organization",
-//          "cluster_name" -> "cluster",
-//          "group" -> "group",
-//        )
-//
-//      sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group"))
-//
-//      val metricSamplesAfterRemoval = fixture.registry.metricFamilySamples().asScala.toList
-//      val maxGroupTimeLagMetricSamplesAfterRemoval = metricSamplesAfterRemoval.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
-//
-//
-//      maxGroupTimeLagMetricSamplesAfterRemoval should have length 0
-//    }
+    "append global labels to metric labels" in { fixture =>
+      val groupLabel = Map(
+        "cluster" -> Map(
+          "environment" -> "dev",
+          "org" -> "organization",
+        ),
+        "cluster2" -> Map(
+          "environment" -> "prod",
+          "org" -> "organization2",
+          "location" -> "canada"
+        ),
+        "cluster3" -> Map.empty[String, String]
+      )
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry)
+      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
+      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster2", "group", 1))
+      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster3", "group", 1))
+
+
+      val metricSamples = fixture.registry.metricFamilySamples().asScala.toList
+      val maxGroupTimeLagMetricSamples = metricSamples.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
+
+      maxGroupTimeLagMetricSamples should have length 3
+      val labelsNames1 = maxGroupTimeLagMetricSamples(0).labelNames.asScala
+      val labelValues1 = maxGroupTimeLagMetricSamples(0).labelValues.asScala
+
+      (labelsNames1 zip labelValues1).toMap should contain theSameElementsAs
+        Map(
+          "environment" -> "",
+          "org" -> "",
+          "cluster_name" -> "cluster3",
+          "location" -> "",
+          "group" -> "group",
+        )
+
+      val labelsNames2 = maxGroupTimeLagMetricSamples(1).labelNames.asScala
+      val labelValues2 = maxGroupTimeLagMetricSamples(1).labelValues.asScala
+
+      (labelsNames2 zip labelValues2).toMap should contain theSameElementsAs
+        Map(
+          "environment" -> "dev",
+          "org" -> "organization",
+          "cluster_name" -> "cluster",
+          "location" -> "",
+          "group" -> "group",
+        )
+
+      val labelsNames3 = maxGroupTimeLagMetricSamples(2).labelNames.asScala
+      val labelValues3 = maxGroupTimeLagMetricSamples(2).labelValues.asScala
+
+      (labelsNames3 zip labelValues3).toMap should contain theSameElementsAs
+        Map(
+          "environment" -> "prod",
+          "org" -> "organization2",
+          "cluster_name" -> "cluster2",
+          "location" -> "canada",
+          "group" -> "group",
+        )
+
+
+      sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group"))
+      sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster2", "group"))
+      sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster3", "group"))
+
+      val metricSamplesAfterRemoval = fixture.registry.metricFamilySamples().asScala.toList
+      val maxGroupTimeLagMetricSamplesAfterRemoval = metricSamplesAfterRemoval.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
+
+      maxGroupTimeLagMetricSamplesAfterRemoval should have length 0
+    }
+
+    "should not append global labels to metric labels when global label is not specified for any cluster" in { fixture =>
+      val groupLabel = Map(
+        "cluster" -> Map.empty[String, String]
+      )
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry)
+      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
+
+      val metricSamples = fixture.registry.metricFamilySamples().asScala.toList
+      val maxGroupTimeLagMetricSamples = metricSamples.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
+
+      maxGroupTimeLagMetricSamples should have length 1
+      val labelsNames1 = maxGroupTimeLagMetricSamples(0).labelNames.asScala
+      val labelValues1 = maxGroupTimeLagMetricSamples(0).labelValues.asScala
+
+      (labelsNames1 zip labelValues1).toMap should contain theSameElementsAs
+        Map(
+          "cluster_name" -> "cluster",
+          "group" -> "group",
+        )
+
+      sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group"))
+
+      val metricSamplesAfterRemoval = fixture.registry.metricFamilySamples().asScala.toList
+      val maxGroupTimeLagMetricSamplesAfterRemoval = metricSamplesAfterRemoval.filter(_.name.equals(Metrics.MaxGroupTimeLagMetric.name)).flatMap(_.samples.asScala)
+
+      maxGroupTimeLagMetricSamplesAfterRemoval should have length 0
+    }
 
     "report only metrics which match the regex" in { fixture =>
       val sink = PrometheusEndpointSink(Metrics.definitions, List("kafka_consumergroup_group_max_lag"), Map("cluster" -> Map.empty),
@@ -85,7 +150,7 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
       val labels = Array[String]("cluster_name", "group")
       val labelVals = Array[String]("cluster", "group")
-      fixture.registry.getSampleValue("kafka_consumergroup_group_max_lag", labels, labelVals) should be (100)
+      fixture.registry.getSampleValue("kafka_consumergroup_group_max_lag", labels, labelVals) should be(100)
       val metricSamples = fixture.registry.metricFamilySamples().asScala.toSet
       metricSamples.map(_.name) should not contain "kafka_consumergroup_group_max_lag_seconds"
     }
@@ -98,9 +163,32 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
       sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group"))
       val labels = Array[String]("cluster_name", "group")
       val labelVals = Array[String]("cluster", "group")
-      fixture.registry.getSampleValue("kafka_consumergroup_group_max_lag", labels, labelVals) should be (null)
+      fixture.registry.getSampleValue("kafka_consumergroup_group_max_lag", labels, labelVals) should be(null)
     }
 
+    "should get the correct global label names and values for the given cluster" in { fixture =>
+      val clustersGlobalValuesMap = Map(
+        "clusterA" -> Map("environment" -> "integration", "location" -> "ny"),
+        "clusterB" -> Map("environment" -> "production"),
+        "clusterC" -> Map.empty[String, String]
+      )
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(""), clustersGlobalValuesMap, fixture.server, fixture.registry).asInstanceOf[PrometheusEndpointSink]
+      sink.globalLabelNames shouldEqual List("environment", "location")
+      sink.getGlobalLabelValuesOrDefault("clusterA") shouldEqual List("integration", "ny")
+      sink.getGlobalLabelValuesOrDefault("clusterB") shouldEqual List("production", "")
+      sink.getGlobalLabelValuesOrDefault("clusterC") shouldEqual List("", "")
+      sink.getGlobalLabelValuesOrDefault("strimzi-cluster") shouldEqual List("", "")
+    }
+
+    "should add blank value for the cluster label for the cluster label is not specified for the cluster" in { fixture =>
+      val clustersGlobalValuesMap = Map.empty[String, Map[String, String]]
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(""), clustersGlobalValuesMap, fixture.server, fixture.registry).asInstanceOf[PrometheusEndpointSink]
+      sink.globalLabelNames shouldEqual List.empty
+      sink.getGlobalLabelValuesOrDefault("clusterA") shouldEqual List.empty
+      sink.getGlobalLabelValuesOrDefault("clusterB") shouldEqual List.empty
+      sink.getGlobalLabelValuesOrDefault("clusterC") shouldEqual List.empty
+      sink.getGlobalLabelValuesOrDefault("strimzi-cluster") shouldEqual List.empty
+    }
   }
 
 }
