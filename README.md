@@ -97,8 +97,8 @@ The latest offset available for topic partition.  Kafka Lag Exporter will calcul
 
 ### Labels
 
-Each metric may include the following labels when reported. If you define the labels property for Configuration of a cluster then those labels will also be included. 
-If certain labels are not defined in any of the clusters but present in other cluster, it will be just blank.
+Each metric may include the following labels when reported. If you define the `labels` property for configuration of a cluster then those labels will also be included. 
+The superset of all `labels` defined for all cluster configurations are used for each metric. This is due to a restriction in the Java Prometheus client library that only allows us to define one set of labels per metric. Therefore, if the label names across cluster configurations are not consistent then the missing labels for each cluster will appear as blank values (`""`) in the reported metric. An alternative to defining labels in Kafka Lag Exporter is to define [relabeling rules](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config) in your Prometheus server configuration.
 
 * `cluster_name` - Either the statically defined Kafka cluster name, or the metadata.name of the Strimzi Kafka cluster that was discovered with the Strimzi auto discovery feature.
 * `topic` - The Kafka topic.
