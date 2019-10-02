@@ -38,6 +38,7 @@ object KafkaClient {
   trait KafkaClientContract {
     def getGroups(): Future[(List[String], List[Domain.GroupTopicPartition])]
     def getGroupOffsets(now: Long, groups: List[String], groupTopicPartitions: List[Domain.GroupTopicPartition]): Future[GroupOffsets]
+    def getEarliestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets]
     def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets]
     def close(): Unit
   }
@@ -118,6 +119,7 @@ object KafkaClient {
   }
 
   trait ConsumerKafkaClientContract {
+    def beginningOffsets(partitions: util.Collection[KafkaTopicPartition]): util.Map[KafkaTopicPartition, java.lang.Long]
     def endOffsets(partitions: util.Collection[KafkaTopicPartition]): util.Map[KafkaTopicPartition, java.lang.Long]
     def close(): Unit
   }
@@ -125,6 +127,8 @@ object KafkaClient {
   class ConsumerKafkaClient private[kafkalagexporter](consumer: KafkaConsumer[Byte,Byte], clientTimeout: FiniteDuration) extends ConsumerKafkaClientContract {
     private val _clientTimeout: Duration = clientTimeout.toJava
 
+    def beginningOffsets(partitions: util.Collection[KafkaTopicPartition]): util.Map[KafkaTopicPartition, java.lang.Long] =
+      consumer.beginningOffsets(partitions, _clientTimeout)
     def endOffsets(partitions: util.Collection[KafkaTopicPartition]): util.Map[KafkaTopicPartition, java.lang.Long] =
       consumer.endOffsets(partitions, _clientTimeout)
     def close(): Unit = consumer.close(_clientTimeout)
@@ -168,6 +172,14 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
       ktp.partition()
     )
     groupTopicPartitions.toList
+  }
+
+  /**
+    * Get earliest offsets for a set of topic partitions.
+    */
+  def getEarliestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets] = Try {
+    val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.beginningOffsets(topicPartitions.map(_.asKafka).asJava)
+    topicPartitions.map(tp => tp -> LookupTable.Point(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 
   /**
