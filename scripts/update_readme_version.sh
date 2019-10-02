@@ -13,5 +13,5 @@ echo helm install $RELEASE_URL
 sed -i -r "s/helm install http\S*/helm install ${RELEASE_URL_ESCAPED}/g" $DIR/../README.md
 
 echo Update README.md Running Docker Image version to:
-echo lightbend/kafka-lag-exporter:0.5.0
+echo lightbend/kafka-lag-exporter:0.5.5
 sed -i -r "s/lightbend\/kafka-lag-exporter:\S*/lightbend\/kafka-lag-exporter:${VERSION}/g" $DIR/../README.md
