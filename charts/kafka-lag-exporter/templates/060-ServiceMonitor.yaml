@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "kafka-lag-exporter.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
+    helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  jobLabel: jobLabel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
+      helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  endpoints:
+  - port: http
+    interval: 30
