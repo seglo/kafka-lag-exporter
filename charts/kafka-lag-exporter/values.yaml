@@ -83,3 +83,7 @@ resources: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+prometheus:
+  serviceMonitor:
+    enabled: false
