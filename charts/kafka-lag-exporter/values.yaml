@@ -87,3 +87,4 @@ affinity: {}
 prometheus:
   serviceMonitor:
     enabled: false
+    interval: 30
