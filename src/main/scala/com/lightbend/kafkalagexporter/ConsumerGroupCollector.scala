@@ -29,6 +29,7 @@ object ConsumerGroupCollector {
   final case class OffsetsSnapshot(
                                      timestamp: Long,
                                      groups: List[String],
+                                     earliestOffsets: PartitionOffsets,
                                      latestOffsets: PartitionOffsets,
                                      lastGroupOffsets: GroupOffsets
                                   ) extends Message {
@@ -43,6 +44,10 @@ object ConsumerGroupCollector {
     }
 
     override def toString: String = {
+      val earliestOffsetHeader = TpoFormat.format("Topic", "Partition", "Earliest")
+      val earliestOffsetsStr = earliestOffsets.map {
+        case (TopicPartition(t, p), LookupTable.Point(offset, _)) => TpoFormat.format(t,p,offset)
+      }
       val latestOffsetHeader = TpoFormat.format("Topic", "Partition", "Offset")
       val latestOffsetsStr = latestOffsets.map {
         case (TopicPartition(t, p), LookupTable.Point(offset, _)) => TpoFormat.format(t,p,offset)
@@ -56,6 +61,9 @@ object ConsumerGroupCollector {
       s"""
          |Timestamp: $timestamp
          |Groups: ${groups.mkString(",")}
+         |Earliest Offsets:
+         |$earliestOffsetHeader
+         |${earliestOffsetsStr.mkString("\n")}
          |Latest Offsets:
          |$latestOffsetHeader
          |${latestOffsetsStr.mkString("\n")}
@@ -89,7 +97,8 @@ object ConsumerGroupCollector {
 
       context.self ! Collect
 
-      val collectorState = CollectorState(topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize))
+      val collectorState = CollectorState(
+           topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize))
       collector(config, clientCreator(config.cluster), reporter, collectorState)
     }
   }.onFailure(SupervisorStrategy.restartWithBackoff(1 seconds, 10 seconds, 0.2))
@@ -116,12 +125,14 @@ object ConsumerGroupCollector {
           val distinctPartitions = groupTopicPartitions.map(_.tp).toSet
 
           val groupOffsetsFuture = client.getGroupOffsets(now, groups, groupTopicPartitions)
+          val earliestOffsetsTry = client.getEarliestOffsets(now, distinctPartitions)
           val latestOffsetsTry = client.getLatestOffsets(now, distinctPartitions)
 
           for {
             groupOffsets <- groupOffsetsFuture
+            Success(earliestOffsets) <- Future.successful(earliestOffsetsTry)
             Success(latestOffsets) <- Future.successful(latestOffsetsTry)
-          } yield OffsetsSnapshot(now, groups, latestOffsets, groupOffsets)
+          } yield OffsetsSnapshot(now, groups, earliestOffsets, latestOffsets, groupOffsets)
         }
 
         context.log.info("Collecting offsets")
@@ -151,6 +162,7 @@ object ConsumerGroupCollector {
         refreshLookupTable(state, snapshot, evictedTps)
 
         context.log.info("Reporting offsets")
+        reportEarliestOffsetMetrics(config, reporter, snapshot)
         reportLatestOffsetMetrics(config, reporter, state.topicPartitionTables)
         reportConsumerGroupMetrics(config, reporter, snapshot, state.topicPartitionTables)
 
@@ -223,6 +235,16 @@ object ConsumerGroupCollector {
 
         reporter ! Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, config.cluster.name, group, maxOffsetLag.offsetLag)
         reporter ! Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, config.cluster.name, group, maxTimeLag.timeLag)
+      }
+    }
+
+    private def reportEarliestOffsetMetrics(
+                                           config: CollectorConfig,
+                                           reporter: ActorRef[MetricsSink.Message],
+                                           offsetsSnapshot: OffsetsSnapshot
+                                         ): Unit = {
+      for {(tp, topicPoint) <- offsetsSnapshot.earliestOffsets} yield {
+        reporter ! Metrics.TopicPartitionValueMessage(Metrics.EarliestOffsetMetric, config.cluster.name, tp, topicPoint.offset)
       }
     }
 
