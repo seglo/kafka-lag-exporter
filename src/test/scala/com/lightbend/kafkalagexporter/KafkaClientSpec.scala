@@ -126,6 +126,17 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
         client.groupTopicPartitions(groupId, description) should contain theSameElementsAs List(gt2p0).map(gtp => gtp.copy(host = tmpHost))
       }
 
+      "will only fetch non blacklisted topics" in {
+        val tmpCluster: KafkaCluster = cluster.copy(topicWhitelist = List(topic, topic2), topicBlacklist = List(topic))
+        val (_,_,client) = getClient(tmpCluster)
+        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+        val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
+
+        val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
+
+        client.groupTopicPartitions(groupId, description) should contain theSameElementsAs List(gt2p0).map(gtp => gtp.copy(host = tmpHost))
+      }
+
       "will only fetch whitelisted topics when whitelist is a regex against multiple topics" in {
         val tmpCluster = cluster.copy(topicWhitelist = List("test.+"))
         val (_,_,client) = getClient(tmpCluster)
@@ -135,6 +146,17 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
         val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
 
         client.groupTopicPartitions(groupId, description) should contain theSameElementsAs List(gtp0, gtp1, gtp2, gt2p0).map(gtp => gtp.copy(host = tmpHost))
+      }
+
+      "will exclude topics that match with blacklist regex" in {
+        val tmpCluster = cluster.copy(topicWhitelist = List("test.+"), topicBlacklist = List(".+topic-2"))
+        val (_,_,client) = getClient(tmpCluster)
+        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+        val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
+
+        val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
+
+        client.groupTopicPartitions(groupId, description) should contain theSameElementsAs List(gtp0, gtp1, gtp2).map(gtp => gtp.copy(host = tmpHost))
       }
 
       "will not return any topics if the whitelist is empty" in {
