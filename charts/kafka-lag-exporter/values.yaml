@@ -83,6 +83,8 @@ resources: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+podAnnotations: {}
+  # foo: bar
 
 prometheus:
   serviceMonitor:
