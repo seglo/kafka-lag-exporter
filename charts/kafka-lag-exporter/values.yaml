@@ -72,6 +72,12 @@ image:
   # If digest is set it will be used instead of tag to specify the image
   # digest: sha256:0f6387aa011e6eb7952ea211ac139bf8613ad3ef6954a1a5d910676d293bd610
   pullPolicy: Always
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsUser: 1001
+  runAsNonRoot: true
+  capabilities:
+    drop: ["all"]
 service:
   type: ClusterIP
   port: 8000
