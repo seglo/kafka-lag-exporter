@@ -69,6 +69,8 @@ akkaLogLevel: DEBUG
 image:
   repository: lightbend/kafka-lag-exporter
   tag: 0.5.5-SNAPSHOT
+  # If digest is set it will be used instead of tag to specify the image
+  # digest: sha256:0f6387aa011e6eb7952ea211ac139bf8613ad3ef6954a1a5d910676d293bd610
   pullPolicy: Always
 service:
   type: ClusterIP
