@@ -46,6 +46,12 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /opt/docker/conf/
+          {{- range .Values.extraConfigmapMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              subPath: {{ .subPath }}
+              readOnly: {{ .readOnly }}
+          {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- with .Values.nodeSelector }}
@@ -64,3 +70,8 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "kafka-lag-exporter.fullname" . }}-configmap
+      {{- range .Values.extraConfigmapMounts }}
+        - name: {{ .name }}
+          configMap:
+            name: {{ .configMap }}
+      {{- end }}
