@@ -89,6 +89,8 @@ extraConfigmapMounts: []
   #   mountPath: /etc/pki/ca-trust/extracted/java/cacerts
   #   subPath: ca-bundle.jks
   #   readOnly: true
+podAnnotations: {}
+  # foo: bar
 
 prometheus:
   serviceMonitor:
