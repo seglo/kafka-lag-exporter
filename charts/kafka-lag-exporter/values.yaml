@@ -83,6 +83,12 @@ resources: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+extraConfigmapMounts: []
+  # - name: cacerts
+  #   configMap: cacerts-configmap
+  #   mountPath: /etc/pki/ca-trust/extracted/java/cacerts
+  #   subPath: ca-bundle.jks
+  #   readOnly: true
 podAnnotations: {}
   # foo: bar
 
