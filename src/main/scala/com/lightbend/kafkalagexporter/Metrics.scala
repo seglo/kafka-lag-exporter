@@ -125,9 +125,9 @@ object Metrics {
 
   val groupTopicLabels = List("cluster_name", "group", "topic")
 
-  val SumTopicOffsetLagMetric = GaugeDefinition(
-    "kafka_consumergroup_group_topic_lag",
-    "Group offset lag across topic partitions",
+  val SumGroupTopicOffsetLagMetric = GaugeDefinition(
+    "kafka_consumergroup_group_topic_sum_lag",
+    "Sum of group offset lag across topic partitions",
     groupTopicLabels
   )
 
@@ -140,6 +140,6 @@ object Metrics {
     OffsetLagMetric,
     TimeLagMetric,
     SumGroupOffsetLagMetric,
-    SumTopicOffsetLagMetric
+    SumGroupTopicOffsetLagMetric
   )
 }

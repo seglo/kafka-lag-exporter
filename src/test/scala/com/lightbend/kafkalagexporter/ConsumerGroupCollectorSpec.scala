@@ -84,7 +84,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     }
 
     "sum topic offset lag metric" in {
-      metrics should contain(GroupTopicValueMessage(SumTopicOffsetLagMetric, config.cluster.name, groupId, topic, value = 20))
+      metrics should contain(GroupTopicValueMessage(SumGroupTopicOffsetLagMetric, config.cluster.name, groupId, topic, value = 20))
     }
   }
 
@@ -180,8 +180,8 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     }
 
     "sum of offset lag by topic metric" in {
-      metrics should contain(GroupTopicValueMessage(SumTopicOffsetLagMetric, clusterName, groupId, topic, value = 240))
-      metrics should contain(GroupTopicValueMessage(SumTopicOffsetLagMetric, clusterName, groupId, topic2, value = 60))
+      metrics should contain(GroupTopicValueMessage(SumGroupTopicOffsetLagMetric, clusterName, groupId, topic, value = 240))
+      metrics should contain(GroupTopicValueMessage(SumGroupTopicOffsetLagMetric, clusterName, groupId, topic2, value = 60))
     }
   }
 
@@ -250,7 +250,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     "topic offset lag metric" in {
       metrics.collectFirst {
-        case GroupTopicValueMessage(`SumTopicOffsetLagMetric`, config.cluster.name, `groupId`, `topic`, value) if value.isNaN => true
+        case GroupTopicValueMessage(`SumGroupTopicOffsetLagMetric`, config.cluster.name, `groupId`, `topic`, value) if value.isNaN => true
       }.nonEmpty shouldBe true
     }
   }
@@ -317,7 +317,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       metrics should contain(GroupPartitionRemoveMetricMessage(TimeLagMetric, clusterName, gtpSingleMember))
       metrics should contain(GroupRemoveMetricMessage(MaxGroupTimeLagMetric, clusterName, groupId))
       metrics should contain(GroupRemoveMetricMessage(MaxGroupOffsetLagMetric, clusterName, groupId))
-      metrics should contain(GroupTopicRemoveMetricMessage(SumTopicOffsetLagMetric, clusterName, groupId, topic))
+      metrics should contain(GroupTopicRemoveMetricMessage(SumGroupTopicOffsetLagMetric, clusterName, groupId, topic))
     }
 
     "remove metrics for topic partitions no longer being reported" - {
@@ -351,7 +351,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
         metrics should contain(GroupRemoveMetricMessage(MaxGroupTimeLagMetric, clusterName, groupId))
         metrics should contain(GroupRemoveMetricMessage(MaxGroupOffsetLagMetric, clusterName, groupId))
         metrics should contain(GroupRemoveMetricMessage(SumGroupOffsetLagMetric, clusterName, groupId))
-        metrics should contain(GroupTopicRemoveMetricMessage(SumTopicOffsetLagMetric, clusterName, groupId, topic))
+        metrics should contain(GroupTopicRemoveMetricMessage(SumGroupTopicOffsetLagMetric, clusterName, groupId, topic))
       }
 
       "topic partition in topic partition table removed" in {

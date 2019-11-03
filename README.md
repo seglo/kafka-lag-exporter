@@ -95,7 +95,7 @@ Labels: `cluster_name, group`
 
 The sum of the difference between the last produced offset and the last consumed offset of all partitions for this group.
 
-**`kafka_consumergroup_group_topic_lag`**
+**`kafka_consumergroup_group_topic_sum_lag`**
 
 Labels: `cluster_name, group, topic`
 

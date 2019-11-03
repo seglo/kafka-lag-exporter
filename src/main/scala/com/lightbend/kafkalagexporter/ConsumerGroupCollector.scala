@@ -242,7 +242,7 @@ object ConsumerGroupCollector {
         for((topic, topicValues) <- groupValues.groupBy(_.gtp.topic)) {
           val topicOffsetLag = topicValues.map(_.offsetLag).sum
 
-          reporter ! Metrics.GroupTopicValueMessage(Metrics.SumTopicOffsetLagMetric, config.cluster.name, group, topic, topicOffsetLag)
+          reporter ! Metrics.GroupTopicValueMessage(Metrics.SumGroupTopicOffsetLagMetric, config.cluster.name, group, topic, topicOffsetLag)
         }
       }
     }
@@ -289,7 +289,7 @@ object ConsumerGroupCollector {
       for {
         (group, gtps) <- gtps.groupBy(_.id)
         topic <- gtps.map(_.topic).distinct
-      } reporter ! Metrics.GroupTopicRemoveMetricMessage(Metrics.SumTopicOffsetLagMetric, config.cluster.name, group, topic)
+      } reporter ! Metrics.GroupTopicRemoveMetricMessage(Metrics.SumGroupTopicOffsetLagMetric, config.cluster.name, group, topic)
     }
   }
 }
