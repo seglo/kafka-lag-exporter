@@ -28,13 +28,21 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
+          {{- if .Values.image.digest }}
+          image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env: []
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          {{- if .Values.securityContext }}
+          securityContext:
+{{ toYaml .Values.securityContext | indent 12 }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /
