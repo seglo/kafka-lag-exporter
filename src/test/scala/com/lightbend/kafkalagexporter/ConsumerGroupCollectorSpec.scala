@@ -46,7 +46,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     val metrics = reporter.receiveAll()
 
-    "report 7 metrics" in { metrics.length shouldBe 7 }
+    "report 9 metrics" in { metrics.length shouldBe 9 }
 
     "earliest offset metric" in {
       metrics should contain(
@@ -77,6 +77,14 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     "max group time lag metric" in {
       metrics should contain(GroupValueMessage(MaxGroupTimeLagMetric, config.cluster.name, groupId, value = 0.02))
+    }
+
+    "sum group offset lag metric" in {
+      metrics should contain(GroupValueMessage(SumGroupOffsetLagMetric, config.cluster.name, groupId, value = 20))
+    }
+
+    "sum topic offset lag metric" in {
+      metrics should contain(GroupTopicValueMessage(SumGroupTopicOffsetLagMetric, config.cluster.name, groupId, topic, value = 20))
     }
   }
 
@@ -123,6 +131,57 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     "max group time lag metric" in {
       metrics should contain(GroupValueMessage(MaxGroupTimeLagMetric, clusterName, groupId, value = 0.1))
+    }
+  }
+
+  "ConsumerGroupCollector should sum the group offset lag metrics and send" - {
+    val reporter = TestInbox[MetricsSink.Message]()
+
+    val lookupTable = Table(20)
+    lookupTable.addPoint(Point(100, 100))
+
+    val state = ConsumerGroupCollector.CollectorState(
+      topicPartitionTables = TopicPartitionTable(config.lookupTableSize, Map(
+        topicPartition0 -> lookupTable.copy(),
+        topicPartition1 -> lookupTable.copy(),
+        topicPartition2 -> lookupTable.copy(),
+        topic2Partition0 -> lookupTable.copy()
+      )),
+    )
+
+    val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+    val testKit = BehaviorTestKit(behavior)
+
+    val newEarliestOffsets = PartitionOffsets(
+      topicPartition0 -> Point(offset = 0, time = 100),
+      topicPartition1 -> Point(offset = 0, time = 100),
+      topicPartition2 -> Point(offset = 0, time = 100),
+      topic2Partition0 -> Point(offset = 0, time = 100)
+    )
+    val newLatestOffsets = PartitionOffsets(
+      topicPartition0 -> Point(offset = 100, time = 200),
+      topicPartition1 -> Point(offset = 100, time = 200),
+      topicPartition2 -> Point(offset = 100, time = 200),
+      topic2Partition0 -> Point(offset = 100, time = 200)
+    )
+    val newLastGroupOffsets = GroupOffsets(
+      gtp0 -> Some(Point(offset = 10, time = 200)),
+      gtp1 -> Some(Point(offset = 20, time = 200)),
+      gtp2 -> Some(Point(offset = 30, time = 200)),
+      gt2p0 -> Some(Point(offset = 40, time = 200))
+    )
+
+    testKit.run(ConsumerGroupCollector.OffsetsSnapshot(timestamp = timestampNow, List(groupId), newEarliestOffsets, newLatestOffsets, newLastGroupOffsets))
+
+    val metrics = reporter.receiveAll()
+
+    "sum of offset lag metric" in {
+      metrics should contain(GroupValueMessage(SumGroupOffsetLagMetric, clusterName, groupId, value = 300))
+    }
+
+    "sum of offset lag by topic metric" in {
+      metrics should contain(GroupTopicValueMessage(SumGroupTopicOffsetLagMetric, clusterName, groupId, topic, value = 240))
+      metrics should contain(GroupTopicValueMessage(SumGroupTopicOffsetLagMetric, clusterName, groupId, topic2, value = 60))
     }
   }
 
@@ -188,6 +247,12 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       metrics should contain(
         Metrics.TopicPartitionValueMessage(LatestOffsetMetric, config.cluster.name, topicPartition0, value = 200))
     }
+
+    "topic offset lag metric" in {
+      metrics.collectFirst {
+        case GroupTopicValueMessage(`SumGroupTopicOffsetLagMetric`, config.cluster.name, `groupId`, `topic`, value) if value.isNaN => true
+      }.nonEmpty shouldBe true
+    }
   }
 
   "ConsumerGroupCollector should evict data when group metadata changes" - {
@@ -252,6 +317,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       metrics should contain(GroupPartitionRemoveMetricMessage(TimeLagMetric, clusterName, gtpSingleMember))
       metrics should contain(GroupRemoveMetricMessage(MaxGroupTimeLagMetric, clusterName, groupId))
       metrics should contain(GroupRemoveMetricMessage(MaxGroupOffsetLagMetric, clusterName, groupId))
+      metrics should contain(GroupTopicRemoveMetricMessage(SumGroupTopicOffsetLagMetric, clusterName, groupId, topic))
     }
 
     "remove metrics for topic partitions no longer being reported" - {
@@ -284,6 +350,8 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
         metrics should contain(GroupPartitionRemoveMetricMessage(TimeLagMetric, clusterName, gtpSingleMember))
         metrics should contain(GroupRemoveMetricMessage(MaxGroupTimeLagMetric, clusterName, groupId))
         metrics should contain(GroupRemoveMetricMessage(MaxGroupOffsetLagMetric, clusterName, groupId))
+        metrics should contain(GroupRemoveMetricMessage(SumGroupOffsetLagMetric, clusterName, groupId))
+        metrics should contain(GroupTopicRemoveMetricMessage(SumGroupTopicOffsetLagMetric, clusterName, groupId, topic))
       }
 
       "topic partition in topic partition table removed" in {

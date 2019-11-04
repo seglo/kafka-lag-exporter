@@ -229,12 +229,21 @@ object ConsumerGroupCollector {
         GroupPartitionLag(gtp, offsetLag, timeLag)
       }
 
-      for((group, values) <- groupLag.groupBy(_.gtp.id)) {
-        val maxOffsetLag = values.maxBy(_.offsetLag)
-        val maxTimeLag = values.maxBy(_.timeLag)
+      for((group, groupValues) <- groupLag.groupBy(_.gtp.id)) {
+        val maxOffsetLag = groupValues.maxBy(_.offsetLag)
+        val maxTimeLag = groupValues.maxBy(_.timeLag)
 
         reporter ! Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, config.cluster.name, group, maxOffsetLag.offsetLag)
         reporter ! Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, config.cluster.name, group, maxTimeLag.timeLag)
+
+        val sumOffsetLag = groupValues.map(_.offsetLag).sum
+        reporter ! Metrics.GroupValueMessage(Metrics.SumGroupOffsetLagMetric, config.cluster.name, group, sumOffsetLag)
+
+        for((topic, topicValues) <- groupValues.groupBy(_.gtp.topic)) {
+          val topicOffsetLag = topicValues.map(_.offsetLag).sum
+
+          reporter ! Metrics.GroupTopicValueMessage(Metrics.SumGroupTopicOffsetLagMetric, config.cluster.name, group, topic, topicOffsetLag)
+        }
       }
     }
 
@@ -269,12 +278,18 @@ object ConsumerGroupCollector {
       groups.foreach { group =>
         reporter ! Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupOffsetLagMetric, config.cluster.name, group)
         reporter ! Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, config.cluster.name, group)
+        reporter ! Metrics.GroupRemoveMetricMessage(Metrics.SumGroupOffsetLagMetric, config.cluster.name, group)
       }
       gtps.foreach { gtp =>
         reporter ! Metrics.GroupPartitionRemoveMetricMessage(Metrics.LastGroupOffsetMetric, config.cluster.name, gtp)
         reporter ! Metrics.GroupPartitionRemoveMetricMessage(Metrics.OffsetLagMetric, config.cluster.name, gtp)
         reporter ! Metrics.GroupPartitionRemoveMetricMessage(Metrics.TimeLagMetric, config.cluster.name, gtp)
       }
+
+      for {
+        (group, gtps) <- gtps.groupBy(_.id)
+        topic <- gtps.map(_.topic).distinct
+      } reporter ! Metrics.GroupTopicRemoveMetricMessage(Metrics.SumGroupTopicOffsetLagMetric, config.cluster.name, group, topic)
     }
   }
 }

@@ -89,6 +89,18 @@ Labels: `cluster_name, group, is_simple_consumer`
 
 The highest (maximum) lag in time for a given consumer group.
 
+**`kafka_consumergroup_group_sum_lag`**
+
+Labels: `cluster_name, group`
+
+The sum of the difference between the last produced offset and the last consumed offset of all partitions for this group.
+
+**`kafka_consumergroup_group_topic_sum_lag`**
+
+Labels: `cluster_name, group, topic`
+
+The sum of the difference between the last produced offset and the last consumed offset of all partitions in this topic for this group.
+
 **`kafka_partition_latest_offset`**
 
 Labels: `cluster_name, topic, partition`
@@ -100,7 +112,6 @@ The latest offset available for topic partition.  Kafka Lag Exporter will calcul
 Labels: `cluster_name, topic, partition`
 
 The earliest offset available for topic partition.  Kafka Lag Exporter will calculate a set of partitions for all consumer groups available and then poll for the earliest available offset.  The earliest available offset is used in the calculation of other metrics provided, so it is exported for informational purposes.  For example, the accompanying Grafana dashboard makes use of it to visualize the offset-based volume of a partition in certain panels.
-
 
 ### Labels
 

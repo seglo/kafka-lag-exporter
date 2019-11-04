@@ -13,8 +13,7 @@ object Metrics {
     def topicPartition: Domain.TopicPartition
     override def labels: List[String] =
       List(
-        clusterName,
-        topicPartition.topic,
+        clusterName, topicPartition.topic,
         topicPartition.partition.toString
       )
   }
@@ -54,6 +53,22 @@ object Metrics {
   final case class GroupPartitionValueMessage(definition: GaugeDefinition, clusterName: String, gtp: Domain.GroupTopicPartition, value: Double) extends GroupPartitionMessage with MetricValue
   final case class GroupPartitionRemoveMetricMessage(definition: GaugeDefinition, clusterName: String, gtp: Domain.GroupTopicPartition) extends GroupPartitionMessage with RemoveMetric
 
+  sealed trait GroupTopicMessage extends Message with Metric {
+    def definition: GaugeDefinition
+    def clusterName: String
+    def group: String
+    def topic: String
+    override def labels: List[String] =
+      List(
+        clusterName,
+        group,
+        topic
+      )
+  }
+
+  final case class GroupTopicValueMessage(definition: GaugeDefinition, clusterName: String, group: String, topic: String, value: Double) extends GroupTopicMessage with MetricValue
+  final case class GroupTopicRemoveMetricMessage(definition: GaugeDefinition, clusterName: String, group: String, topic: String) extends GroupTopicMessage with RemoveMetric
+
   val topicPartitionLabels = List("cluster_name", "topic", "partition")
 
   val LatestOffsetMetric = GaugeDefinition(
@@ -82,6 +97,12 @@ object Metrics {
     groupLabels
   )
 
+  val SumGroupOffsetLagMetric = GaugeDefinition(
+    "kafka_consumergroup_group_sum_lag",
+    "Sum of group offset lag",
+    groupLabels
+  )
+
   val groupPartitionLabels = List("cluster_name", "group", "topic", "partition", "member_host", "consumer_id", "client_id")
 
   val LastGroupOffsetMetric = GaugeDefinition(
@@ -102,6 +123,14 @@ object Metrics {
     groupPartitionLabels
   )
 
+  val groupTopicLabels = List("cluster_name", "group", "topic")
+
+  val SumGroupTopicOffsetLagMetric = GaugeDefinition(
+    "kafka_consumergroup_group_topic_sum_lag",
+    "Sum of group offset lag across topic partitions",
+    groupTopicLabels
+  )
+
   val definitions = List(
     LatestOffsetMetric,
     EarliestOffsetMetric,
@@ -109,6 +138,8 @@ object Metrics {
     MaxGroupTimeLagMetric,
     LastGroupOffsetMetric,
     OffsetLagMetric,
-    TimeLagMetric
+    TimeLagMetric,
+    SumGroupOffsetLagMetric,
+    SumGroupTopicOffsetLagMetric
   )
 }
