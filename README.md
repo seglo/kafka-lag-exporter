@@ -498,14 +498,14 @@ required.  Before running a release make sure the following pre-req's are met.
 
 0.5.5
 
-* Add kafka topic blacklist [#90](ttps://github.com/lightbend/kafka-lag-exporter/pull/90) ([@terjesannum](https://github.com/drrzmr))
-* Add metric to represent a consumer group's total offset lag per topic [#93](ttps://github.com/lightbend/kafka-lag-exporter/pull/93) ([@terjesannum](https://github.com/dylanmei))
-* Support specifying image digest and container securityContext [#95](ttps://github.com/lightbend/kafka-lag-exporter/pull/95) ([@terjesannum](https://github.com/terjesannum))
-* Allow mounting extra configmaps in pod [#94](ttps://github.com/lightbend/kafka-lag-exporter/pull/94) ([@terjesannum](https://github.com/terjesannum))
-* Bugfix: Fixed pod annotations support in helm chart [#91](ttps://github.com/lightbend/kafka-lag-exporter/pull/91) ([@terjesannum](https://github.com/terjesannum))
-* Bugfix: Global label values [#82](ttps://github.com/lightbend/kafka-lag-exporter/pull/82) ([@anbarasantr](https://github.com/anbarasantr))
+* Add kafka topic blacklist [#90](https://github.com/lightbend/kafka-lag-exporter/pull/90) ([@drrzmr](https://github.com/drrzmr))
+* Add metric to represent a consumer group's total offset lag per topic [#93](https://github.com/lightbend/kafka-lag-exporter/pull/93) ([@dylanmei](https://github.com/dylanmei))
+* Support specifying image digest and container securityContext [#95](https://github.com/lightbend/kafka-lag-exporter/pull/95) ([@terjesannum](https://github.com/terjesannum))
+* Allow mounting extra configmaps in pod [#94](https://github.com/lightbend/kafka-lag-exporter/pull/94) ([@terjesannum](https://github.com/terjesannum))
+* Bugfix: Fixed pod annotations support in helm chart [#91](https://github.com/lightbend/kafka-lag-exporter/pull/91) ([@terjesannum](https://github.com/terjesannum))
+* Bugfix: Global label values [#82](https://github.com/lightbend/kafka-lag-exporter/pull/82) ([@anbarasantr](https://github.com/anbarasantr))
 * Prometheus Operator Service Operator support [#85](ttps://github.com/lightbend/kafka-lag-exporter/pull/85) ([@abhishekjiitr](https://github.com/abhishekjiitr))
-* Added kafka_partition_earliest_offset metric for determining the volume of offsets stored in Kafka. [#86](ttps://github.com/lightbend/kafka-lag-exporter/pull/86) ([@graphex](https://github.com/graphex))
+* Added kafka_partition_earliest_offset metric for determining the volume of offsets stored in Kafka. [#86](https://github.com/lightbend/kafka-lag-exporter/pull/86) ([@graphex](https://github.com/graphex))
 
 0.5.4
 
