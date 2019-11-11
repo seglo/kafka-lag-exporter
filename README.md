@@ -143,7 +143,7 @@ file of the accompanying Helm Chart.
 You can install the chart from the local filesystem.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.4/kafka-lag-exporter-0.5.4.tgz
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.5/kafka-lag-exporter-0.5.5.tgz
 ```
 
 #### Examples
@@ -152,7 +152,7 @@ Install with the [Strimzi](https://strimzi.io/) Kafka discovery feature.
 See [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher) for more details.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.4/kafka-lag-exporter-0.5.4.tgz \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.5/kafka-lag-exporter-0.5.5.tgz \
   --name kafka-lag-exporter \
   --namespace kafka-lag-exporter \
   --set watchers.strimzi=true
@@ -161,7 +161,7 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
 Install with statically defined cluster at the CLI.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.4/kafka-lag-exporter-0.5.4.tgz \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.5/kafka-lag-exporter-0.5.5.tgz \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set clusters\[0\].name=my-cluster \
@@ -171,7 +171,7 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
 Install with statically defined cluster at the CLI, but with a non-default service account assigned to the deployment.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.4/kafka-lag-exporter-0.5.4.tgz \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.5/kafka-lag-exporter-0.5.5.tgz \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set clusters\[0\].name=my-cluster \
@@ -182,7 +182,7 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
 Run a debug install (`DEBUG` logging, debug helm chart install, force docker pull policy to `Always`).
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.4/kafka-lag-exporter-0.5.4.tgz \
+helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.5.5/kafka-lag-exporter-0.5.5.tgz \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set image.pullPolicy=Always \
@@ -294,7 +294,7 @@ Ex)
 ```
 docker run -p 8000:8000 \
     -v $(pwd):/opt/docker/conf/ \
-    lightbend/kafka-lag-exporter:0.5.4 \
+    lightbend/kafka-lag-exporter:0.5.5 \
     /opt/docker/bin/kafka-lag-exporter \
     -Dconfig.file=/opt/docker/conf/application.conf \
     -Dlogback.configurationFile=/opt/docker/conf/logback.xml
