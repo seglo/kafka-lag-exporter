@@ -36,6 +36,14 @@ data:
             {{- end }}
           ]
           {{- end }}
+          {{- if $cluster.topicBlacklist }}
+          topic-blacklist = [
+            {{- $lastIndex := sub (len $cluster.topicBlacklist) 1}}
+            {{- range $i, $blacklist := $cluster.topicBlacklist }}
+            {{ quote $blacklist }}{{- if ne $i $lastIndex -}}, {{ end }}
+            {{- end }}
+          ]
+          {{- end }}
           consumer-properties = {
             {{- range $key, $val := $cluster.consumerProperties }}
             {{ $key }} = {{ quote $val }}
