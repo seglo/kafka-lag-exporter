@@ -6,6 +6,8 @@ clusters: {}
 #    bootstrapBrokers: "simple-strimzi-kafka-bootstrap.strimzi.svc.cluster.local:9092"
 #    topicWhitelist:
 #    - "^xyz-corp-topics\..+"
+#    topicBlacklist:
+#    - "^unmonitored-topics-.+"
 #    groupWhitelist:
 #    - "^analytics-app-.+"
 #    # Properties defined by org.apache.kafka.clients.consumer.ConsumerConfig

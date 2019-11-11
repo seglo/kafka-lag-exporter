@@ -30,9 +30,17 @@ data:
           {{- end }}
           {{- if $cluster.topicWhitelist }}
           topic-whitelist = [
-            {{- $lastIndex := sub (len $cluster.groupWhitelist) 1}}
-            {{- range $i, $whitelist := $cluster.groupWhitelist }}
+            {{- $lastIndex := sub (len $cluster.topicWhitelist) 1}}
+            {{- range $i, $whitelist := $cluster.topicWhitelist }}
             {{ quote $whitelist }}{{- if ne $i $lastIndex -}}, {{ end }}
+            {{- end }}
+          ]
+          {{- end }}
+          {{- if $cluster.topicBlacklist }}
+          topic-blacklist = [
+            {{- $lastIndex := sub (len $cluster.topicBlacklist) 1}}
+            {{- range $i, $blacklist := $cluster.topicBlacklist }}
+            {{ quote $blacklist }}{{- if ne $i $lastIndex -}}, {{ end }}
             {{- end }}
           ]
           {{- end }}
