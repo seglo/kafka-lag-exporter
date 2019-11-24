@@ -113,6 +113,12 @@ Labels: `cluster_name, topic, partition`
 
 The earliest offset available for topic partition.  Kafka Lag Exporter will calculate a set of partitions for all consumer groups available and then poll for the earliest available offset.  The earliest available offset is used in the calculation of other metrics provided, so it is exported for informational purposes.  For example, the accompanying Grafana dashboard makes use of it to visualize the offset-based volume of a partition in certain panels.
 
+**`kafka_consumergroup_poll_time_ms`**
+
+Labels: `cluster_name`
+
+The time taken to poll (milli seconds) all the information from all consumer groups for every cluster. 
+
 ### Labels
 
 Each metric may include the following labels when reported. If you define the `labels` property for configuration of a cluster then those labels will also be included. 
@@ -388,6 +394,11 @@ kafka_consumergroup_group_max_lag{cluster_name="pipelines-strimzi",group="variab
 
 This is an undocumented feature of the Prometheus HTTP server.  For reference consult the [`parseQuery` method](https://github.com/prometheus/client_java/blob/4e0e7527b048f1ffd0382dcb74c0b9dab23b4d9f/simpleclient_httpserver/src/main/java/io/prometheus/client/exporter/HTTPServer.java#L101) for the
 HTTP server in the [`prometheus/client_java`](https://github.com/prometheus/client_java/) GitHub repository.
+
+## Health Check
+`kafka_consumergroup_poll_time_ms` metric exposes the time taken the poll all the consumer group information for every cluster. This can be used as health check endpoint and optionally fail the health check if it's greater than some value (longer than the poll interval)
+Ex:
+```$ curl -X GET -g http://localhost:8000/metrics?name[]=kafka_consumergroup_poll_time_ms```
 
 ## Development
 
