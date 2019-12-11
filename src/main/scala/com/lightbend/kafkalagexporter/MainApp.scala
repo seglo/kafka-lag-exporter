@@ -33,7 +33,8 @@ object MainApp extends App {
       KafkaClient(cluster, appConfig.clientGroupId, appConfig.clientTimeout)(kafkaClientEc)
     val server = new HTTPServer(appConfig.port)
     val endpointCreator = () => PrometheusEndpointSink(Metrics.definitions, appConfig.metricWhitelist,
-      appConfig.clustersGlobalLabels(), server, CollectorRegistry.defaultRegistry)
+      appConfig.clustersGlobalLabels(), server, CollectorRegistry.defaultRegistry,
+      appConfig.graphiteConfig)
 
     ActorSystem(
       KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafka-lag-exporter")

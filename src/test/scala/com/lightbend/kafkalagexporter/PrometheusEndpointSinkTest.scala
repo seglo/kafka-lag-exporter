@@ -38,7 +38,7 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
   "PrometheusEndpointSinkImpl should" - {
 
     "register only metrics which match the regex" in { fixture =>
-      PrometheusEndpointSink(Metrics.definitions, List(".*max_lag.*"), Map("cluster" -> Map.empty), fixture.server, fixture.registry)
+      PrometheusEndpointSink(Metrics.definitions, List(".*max_lag.*"), Map("cluster" -> Map.empty), fixture.server, fixture.registry, None)
       val metricSamples = fixture.registry.metricFamilySamples().asScala.toSet
 
       metricSamples.map(_.name).intersect(Metrics.definitions.map(_.name).toSet) should contain theSameElementsAs
@@ -58,7 +58,7 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
         ),
         "cluster3" -> Map.empty[String, String]
       )
-      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry)
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry, None)
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster2", "group", 1))
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster3", "group", 1))
@@ -119,7 +119,7 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
       val groupLabel = Map(
         "cluster" -> Map.empty[String, String]
       )
-      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry)
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(".*"), groupLabel, fixture.server, fixture.registry, None)
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
 
       val metricSamples = fixture.registry.metricFamilySamples().asScala.toList
@@ -145,7 +145,7 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
 
     "report only metrics which match the regex" in { fixture =>
       val sink = PrometheusEndpointSink(Metrics.definitions, List("kafka_consumergroup_group_max_lag"), Map("cluster" -> Map.empty),
-        fixture.server, fixture.registry)
+        fixture.server, fixture.registry, None)
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster", "group", 100))
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
       val labels = Array[String]("cluster_name", "group")
@@ -157,7 +157,7 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
 
     "remove only metrics which match the regex" in { fixture =>
       val sink = PrometheusEndpointSink(Metrics.definitions, List("kafka_consumergroup_group_max_lag"), Map("cluster" -> Map.empty),
-        fixture.server, fixture.registry)
+        fixture.server, fixture.registry, None)
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster", "group", 100))
       sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupOffsetLagMetric, "cluster", "group"))
       sink.remove(Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group"))
@@ -172,7 +172,7 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
         "clusterB" -> Map("environment" -> "production"),
         "clusterC" -> Map.empty[String, String]
       )
-      val sink = PrometheusEndpointSink(Metrics.definitions, List(""), clustersGlobalValuesMap, fixture.server, fixture.registry).asInstanceOf[PrometheusEndpointSink]
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(""), clustersGlobalValuesMap, fixture.server, fixture.registry, None).asInstanceOf[PrometheusEndpointSink]
       sink.globalLabelNames shouldEqual List("environment", "location")
       sink.getGlobalLabelValuesOrDefault("clusterA") shouldEqual List("integration", "ny")
       sink.getGlobalLabelValuesOrDefault("clusterB") shouldEqual List("production", "")
@@ -182,7 +182,7 @@ class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
 
     "should add blank value for the cluster label for the cluster label is not specified for the cluster" in { fixture =>
       val clustersGlobalValuesMap = Map.empty[String, Map[String, String]]
-      val sink = PrometheusEndpointSink(Metrics.definitions, List(""), clustersGlobalValuesMap, fixture.server, fixture.registry).asInstanceOf[PrometheusEndpointSink]
+      val sink = PrometheusEndpointSink(Metrics.definitions, List(""), clustersGlobalValuesMap, fixture.server, fixture.registry, None).asInstanceOf[PrometheusEndpointSink]
       sink.globalLabelNames shouldEqual List.empty
       sink.getGlobalLabelValuesOrDefault("clusterA") shouldEqual List.empty
       sink.getGlobalLabelValuesOrDefault("clusterB") shouldEqual List.empty

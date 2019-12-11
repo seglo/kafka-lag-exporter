@@ -18,6 +18,10 @@ import scala.util.Try
 object AppConfig {
   def apply(config: Config): AppConfig = {
     val c = config.getConfig("kafka-lag-exporter")
+    val graphiteConfig: Option[GraphiteConfig] = (
+      for (host <- Try(c.getString("graphite-host"));
+           port <- Try(c.getInt("graphite-port")),
+             ) yield GraphiteConfig(host, port)).toOption
     val pollInterval = c.getDuration("poll-interval").toScala
     val lookupTableSize = c.getInt("lookup-table-size")
     val port = c.getInt("port")
@@ -67,7 +71,7 @@ object AppConfig {
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
     val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
-    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist)
+    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist, graphiteConfig)
   }
 
   // Copied from Alpakka Kafka
@@ -121,8 +125,15 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
   }
 }
 final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, port: Int, clientGroupId: String,
-                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean, metricWhitelist: List[String]) {
+                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean,
+                           metricWhitelist: List[String], graphiteConfig: Option[GraphiteConfig]) {
   override def toString(): String = {
+    val graphiteString =
+      graphiteConfig.map { graphite => s"""
+        |Graphite: 
+        |  host: ${graphite.host}
+        |  port: ${graphite.port}
+        """.stripMargin }.getOrElse("")
     val clusterString =
       if (clusters.isEmpty)
         "  (none)"
@@ -134,6 +145,7 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
        |Prometheus metrics whitelist: [${metricWhitelist.mkString(", ")}]
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
+       |$graphiteString
        |Statically defined Clusters:
        |$clusterString
        |Watchers:
