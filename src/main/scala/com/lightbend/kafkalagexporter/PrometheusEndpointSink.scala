@@ -5,9 +5,10 @@
 package com.lightbend.kafkalagexporter
 
 import com.lightbend.kafkalagexporter.MetricsSink._
-import com.lightbend.kafkalagexporter.PrometheusEndpointSink.{ClusterGlobalLabels, ClusterName, Metrics}
+import com.lightbend.kafkalagexporter.PrometheusEndpointSink.{ClusterGlobalLabels, ClusterName, Metrics, GraphiteCluster}
 import io.prometheus.client.exporter.HTTPServer
 import io.prometheus.client.hotspot.DefaultExports
+import io.prometheus.client.bridge.Graphite
 import io.prometheus.client.{CollectorRegistry, Gauge}
 
 import scala.util.Try
@@ -17,16 +18,20 @@ object PrometheusEndpointSink {
   type GlobalLabels = Map[String, String]
   type ClusterGlobalLabels = Map[ClusterName, GlobalLabels]
   type Metrics = Map[GaugeDefinition, Gauge]
+  case class GraphiteCluster(host: String, port: Int)
 
   def apply(definitions: MetricDefinitions, metricWhitelist: List[String], clusterGlobalLabels: ClusterGlobalLabels,
-            server: HTTPServer, registry: CollectorRegistry): MetricsSink = {
-    Try(new PrometheusEndpointSink(definitions, metricWhitelist, clusterGlobalLabels, server, registry))
+            server: HTTPServer, registry: CollectorRegistry, graphiteCluster: Option[GraphiteCluster]): MetricsSink = {
+    Try(new PrometheusEndpointSink(definitions, metricWhitelist, clusterGlobalLabels, server, registry, graphiteCluster))
       .fold(t => throw new Exception("Could not create Prometheus Endpoint", t), sink => sink)
   }
 }
 
 class PrometheusEndpointSink private(definitions: MetricDefinitions, metricWhitelist: List[String], clusterGlobalLabels: ClusterGlobalLabels,
-                                     server: HTTPServer, registry: CollectorRegistry) extends MetricsSink {
+                                     server: HTTPServer, registry: CollectorRegistry, graphiteCluster: Option[GraphiteCluster]) extends MetricsSink {
+  graphiteCluster.map { cluster =>
+    new Graphite(cluster.host, cluster.port).start(registry, 20);
+  }
   DefaultExports.initialize()
 
   private[kafkalagexporter] val globalLabelNames: List[String] = {

@@ -27,6 +27,7 @@ lazy val kafkaLagExporter =
         Prometheus,
         PrometheusHotSpot,
         PrometheusHttpServer,
+        PrometheusGraphiteBridge,
         ScalaJava8Compat,
         Logback,
         ScalaTest,

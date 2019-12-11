@@ -18,6 +18,10 @@ import scala.util.Try
 object AppConfig {
   def apply(config: Config): AppConfig = {
     val c = config.getConfig("kafka-lag-exporter")
+    val graphiteCluster: Option[PrometheusEndpointSink.GraphiteCluster] = (for ( host <- Try(c.getString("graphite-cluster-host"));
+      port <- Try(c.getInt("graphite-cluster-port"))) yield {
+        PrometheusEndpointSink.GraphiteCluster(host, port)
+      }).toOption
     val pollInterval = c.getDuration("poll-interval").toScala
     val lookupTableSize = c.getInt("lookup-table-size")
     val port = c.getInt("port")
@@ -67,7 +71,7 @@ object AppConfig {
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
     val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
-    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist)
+    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist, graphiteCluster)
   }
 
   // Copied from Alpakka Kafka
@@ -121,7 +125,8 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
   }
 }
 final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, port: Int, clientGroupId: String,
-                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean, metricWhitelist: List[String]) {
+                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean,
+                           metricWhitelist: List[String], graphiteCluster: Option[PrometheusEndpointSink.GraphiteCluster]) {
   override def toString(): String = {
     val clusterString =
       if (clusters.isEmpty)
