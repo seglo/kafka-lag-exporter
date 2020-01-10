@@ -89,6 +89,14 @@ class LookupTableSpec extends FreeSpec with Matchers {
         table.lookup(0) shouldBe LagIsZero
       }
 
+      "lookups when table has a single element same as lookup" in {
+        val table = Table(5)
+
+        table.addPoint(Point(0, 100))
+
+        table.lookup(0) shouldBe LagIsZero
+      }
+
       "infinite lookups, dy == 0, flat curve/no growth" in {
         val table = Table(10)
 
@@ -138,7 +146,7 @@ class LookupTableSpec extends FreeSpec with Matchers {
         table.lookup(2999) shouldBe Prediction(2.9996428571428573)
         table.lookup(3000) shouldBe Prediction(3)
         table.lookup(3001) shouldBe Prediction(3.000027027027027)
-        table.lookup(40000) shouldBe Prediction(4)
+        table.lookup(40000) shouldBe LagIsZero
         // extrapolation
         table.lookup(-10000) shouldBe Prediction(-1)
         table.lookup(50000) shouldBe Prediction(5)
