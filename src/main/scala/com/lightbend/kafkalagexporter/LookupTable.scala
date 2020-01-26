@@ -73,11 +73,9 @@ object LookupTable {
       }
 
       points.toList match {
+        // if last point is same as looked up group offset then lag is zero
+        case p if p.nonEmpty && offset == p.last.offset => LagIsZero
         case p if p.length < 2 => TooFewPoints
-        // if we only have 2 points the same as the current offset then report
-        // lag as zero
-        case p1 :: p2 :: Nil if p1.offset == p2.offset &&
-                                p2.offset == offset => LagIsZero
         case _ => estimate()
 
       }
