@@ -20,8 +20,11 @@ lazy val kafkaLagExporter =
       libraryDependencies ++= Vector(
         LightbendConfig,
         Kafka,
+        Akka,
         AkkaTyped,
         AkkaSlf4j,
+        AkkaStreams,
+        AkkaStreamsProtobuf,
         Fabric8Model,
         Fabric8Client,
         Prometheus,
@@ -32,7 +35,9 @@ lazy val kafkaLagExporter =
         ScalaTest,
         AkkaTypedTestKit,
         MockitoScala,
+        AkkaStreamsTestKit,
         AlpakkaKafkaTestKit,
+        EmbeddedKafka,
         AkkaHttp
       ),
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),

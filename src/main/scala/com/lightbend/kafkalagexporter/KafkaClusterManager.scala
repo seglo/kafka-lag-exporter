@@ -82,13 +82,13 @@ object KafkaClusterManager {
         watchers.foreach(_ ! Watcher.Stop)
         collectors.foreach { case (_, collector) => collector ! ConsumerGroupCollector.Stop }
         implicit val timeout = stopTimeout
-        context.ask(reporter){_: ActorRef[Message] => MetricsSink.Stop(context.self)} {
+        context.ask(reporter, (_: ActorRef[MetricsSink.Message]) => MetricsSink.Stop(context.self)) {
           case Success(_) => Done
           case Failure(ex) =>
             context.log.error("The metrics reporter shutdown failed.", ex)
             Done
         }
-        Behavior.same
+        Behaviors.same
       case (_, _: Done) =>
         Behaviors.stopped
     } receiveSignal {

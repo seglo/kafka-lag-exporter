@@ -15,7 +15,7 @@ object StrimziClusterWatcher {
     val watcher = new Watcher.Events {
       override def added(cluster: KafkaCluster): Unit = handler ! KafkaClusterManager.ClusterAdded(cluster)
       override def removed(cluster: KafkaCluster): Unit = handler ! KafkaClusterManager.ClusterAdded(cluster)
-      override def error(e: Throwable): Unit = context.log.error(e, e.getMessage)
+      override def error(e: Throwable): Unit = context.log.error(e.getMessage, e)
     }
     val client = StrimziClient(watcher)
     watch(client)
