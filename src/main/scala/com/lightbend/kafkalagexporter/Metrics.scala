@@ -7,13 +7,25 @@ package com.lightbend.kafkalagexporter
 import com.lightbend.kafkalagexporter.MetricsSink._
 
 object Metrics {
+  sealed trait ClusterMessage extends Message with Metric {
+    def definition: GaugeDefinition
+    def clusterName: String
+    override def labels: List[String] =
+      List(
+        clusterName
+      )
+  }
+
+  final case class ClusterValueMessage(definition: GaugeDefinition, clusterName: String, value: Double) extends ClusterMessage with MetricValue
+
   sealed trait TopicPartitionMessage extends Message with Metric {
     def definition: GaugeDefinition
     def clusterName: String
     def topicPartition: Domain.TopicPartition
     override def labels: List[String] =
       List(
-        clusterName, topicPartition.topic,
+        clusterName,
+        topicPartition.topic,
         topicPartition.partition.toString
       )
   }
@@ -85,6 +97,9 @@ object Metrics {
 
   val groupLabels = List("cluster_name", "group")
 
+  val ClusterLabels = List("cluster_name")
+
+
   val MaxGroupOffsetLagMetric = GaugeDefinition(
     "kafka_consumergroup_group_max_lag",
     "Max group offset lag",
@@ -131,6 +146,12 @@ object Metrics {
     groupTopicLabels
   )
 
+  val PollTimeMetric = GaugeDefinition(
+    "kafka_consumergroup_poll_time_ms",
+    "Group time poll time",
+    ClusterLabels
+  )
+
   val definitions = List(
     LatestOffsetMetric,
     EarliestOffsetMetric,
@@ -140,6 +161,7 @@ object Metrics {
     OffsetLagMetric,
     TimeLagMetric,
     SumGroupOffsetLagMetric,
-    SumGroupTopicOffsetLagMetric
+    SumGroupTopicOffsetLagMetric,
+    PollTimeMetric
   )
 }

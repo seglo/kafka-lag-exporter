@@ -26,12 +26,13 @@ object ConsumerGroupCollector {
   sealed trait Stop extends Message
   final case object Stop extends Stop
   final case class StopWithError(throwable: Throwable) extends Message
+  final case class MetaData(pollTime: Long) extends Message
   final case class OffsetsSnapshot(
-                                     timestamp: Long,
-                                     groups: List[String],
-                                     earliestOffsets: PartitionOffsets,
-                                     latestOffsets: PartitionOffsets,
-                                     lastGroupOffsets: GroupOffsets
+                                    timestamp: Long,
+                                    groups: List[String],
+                                    earliestOffsets: PartitionOffsets,
+                                    latestOffsets: PartitionOffsets,
+                                    lastGroupOffsets: GroupOffsets
                                   ) extends Message {
     private val TpoFormat = "  %-64s%-11s%s"
     private val GtpFormat = "  %-64s%-64s%-11s%s"
@@ -136,7 +137,7 @@ object ConsumerGroupCollector {
         }
 
         context.log.info("Collecting offsets")
-
+        val startPollingTime = config.clock.instant().toEpochMilli
         val f = for {
           (groups, groupTopicPartitions) <- client.getGroups()
           offsetSnapshot <- getOffsetSnapshot(groups, groupTopicPartitions)
@@ -144,7 +145,9 @@ object ConsumerGroupCollector {
 
         f.onComplete {
           case Success(newOffsets) =>
+            val pollTimeMs = config.clock.instant().toEpochMilli - startPollingTime
             context.self ! newOffsets
+            context.self ! MetaData(pollTimeMs)
           case Failure(t) =>
             context.self ! StopWithError(t)
         }(ec)
@@ -176,6 +179,12 @@ object ConsumerGroupCollector {
         )
 
         collector(config, client, reporter, newState)
+
+      case (context, metaData: MetaData) =>
+        context.log.debug("Received Meta data:\n{}", metaData)
+        reportPollTimeMetrics(config, reporter, metaData)
+        Behaviors.same
+
       case (context, _: Stop) =>
         state.scheduledCollect.cancel()
         Behaviors.stopped { () =>
@@ -248,10 +257,10 @@ object ConsumerGroupCollector {
     }
 
     private def reportEarliestOffsetMetrics(
-                                           config: CollectorConfig,
-                                           reporter: ActorRef[MetricsSink.Message],
-                                           offsetsSnapshot: OffsetsSnapshot
-                                         ): Unit = {
+                                             config: CollectorConfig,
+                                             reporter: ActorRef[MetricsSink.Message],
+                                             offsetsSnapshot: OffsetsSnapshot
+                                           ): Unit = {
       for {(tp, topicPoint) <- offsetsSnapshot.earliestOffsets} yield {
         reporter ! Metrics.TopicPartitionValueMessage(Metrics.EarliestOffsetMetric, config.cluster.name, tp, topicPoint.offset)
       }
@@ -291,5 +300,13 @@ object ConsumerGroupCollector {
         topic <- gtps.map(_.topic).distinct
       } reporter ! Metrics.GroupTopicRemoveMetricMessage(Metrics.SumGroupTopicOffsetLagMetric, config.cluster.name, group, topic)
     }
+  }
+
+  private def reportPollTimeMetrics(
+                                     config: CollectorConfig,
+                                     reporter: ActorRef[MetricsSink.Message],
+                                     metaData: MetaData
+                                   ): Unit = {
+    reporter ! Metrics.ClusterValueMessage(Metrics.PollTimeMetric, config.cluster.name, metaData.pollTime)
   }
 }
