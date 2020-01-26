@@ -72,6 +72,7 @@ lazy val kafkaLagExporter =
         updateHelmChartRelease,                 // Update the Helm Chart
         publishDockerImage,                     // Publish the Docker images used by the chart
         packageChart,                           // Package the Helm Chart
+        packageJavaApp,                         // Package the standalone Java App
         commitReleaseVersion,
         updateReadmeRelease,                    // Update the README.md with this version
         commitReadmeVersion,                    // Commit the README.md
@@ -101,6 +102,7 @@ lazy val commonSettings = Seq(
     "-language:_",
     "-unchecked"
   ),
+  maintainer := "sean.glover@lightbend.com",
   scalacOptions in (Compile, console) := (scalacOptions in (Global)).value.filter(_ == "-Ywarn-unused-import"),
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
   organizationName := "Lightbend Inc. <http://www.lightbend.com>",
@@ -195,7 +197,7 @@ lazy val packageChart = ReleaseStep(action = st => {
 lazy val githubReleaseDraft = ReleaseStep(action = st => {
   val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
   exec(
-    s"./scripts/github_release.sh lightbend/kafka-lag-exporter v$releaseVersion -- kafka-lag-exporter-$releaseVersion.tgz",
+    s"./scripts/github_release.sh lightbend/kafka-lag-exporter v$releaseVersion -- kafka-lag-exporter-$releaseVersion.tgz ./target/universal/kafka-lag-exporter-$releaseVersion.zip",
     "Error while publishing GitHub release draft")
   st
 })
@@ -205,5 +207,13 @@ lazy val publishDockerImage = ReleaseStep(
     val extracted = Project.extract(st)
     val ref = extracted.get(thisProjectRef)
     extracted.runAggregated(publish in Docker in ref, st)
+  }
+)
+
+lazy val packageJavaApp = ReleaseStep(
+  action = { st: State =>
+    val extracted = Project.extract(st)
+    val ref = extracted.get(thisProjectRef)
+    extracted.runAggregated(packageBin in Universal in ref, st)
   }
 )

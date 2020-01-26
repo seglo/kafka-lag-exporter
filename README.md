@@ -507,6 +507,12 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.6.0
+
+* Add Metadata poll timer metric `kafka_consumergroup_poll_time_ms` [#105](https://github.com/lightbend/kafka-lag-exporter/pull/105) ([@anbarasantr](https://github.com/anbarasantr))
+* Bugfix: Bypass prediction when consumer group is caught up. Reported in [#111](https://github.com/lightbend/kafka-lag-exporter/issues/111) ([@rkrage](https://github.com/rkrage)).
+* Publish Java App Packaging for non-Docker envs [#119](https://github.com/lightbend/kafka-lag-exporter/pull/119)
+
 0.5.5
 
 * Add kafka topic blacklist [#90](https://github.com/lightbend/kafka-lag-exporter/pull/90) ([@drrzmr](https://github.com/drrzmr))
