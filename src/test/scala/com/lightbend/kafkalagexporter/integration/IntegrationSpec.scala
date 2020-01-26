@@ -103,5 +103,12 @@ class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) wi
 
       eventually(scrapeAndAssertDne(exporterPort, "Assert offset-based metrics no longer exist", rules: _*))
     }
+
+    "report poll time metric greater than 0 ms" in {
+      assertAllStagesStopped {
+        val rule = Rule.create(PollTimeMetric, (actual: String) => actual.toDouble should be > 0d, clusterName)
+        eventually(scrapeAndAssert(exporterPort, "Assert poll time metric", rule))
+      }
+    }
   }
 }
