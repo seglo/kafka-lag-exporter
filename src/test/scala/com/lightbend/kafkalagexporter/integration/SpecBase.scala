@@ -27,7 +27,7 @@ abstract class SpecBase(kafkaPort: Int, val exporterPort: Int)
     with PrometheusUtils
     with LagSim {
 
-  def createKafkaConfig: EmbeddedKafkaConfig =
+  override def createKafkaConfig: EmbeddedKafkaConfig =
     EmbeddedKafkaConfig(kafkaPort,
       zooKeeperPort,
       Map(

@@ -9,7 +9,7 @@ import com.lightbend.kafkalagexporter.MetricsSink._
 
 object MetricsSink {
   trait Message
-  final case class Stop(sender: ActorRef[KafkaClusterManager.Message]) extends Message
+  final case class Stop(sender: ActorRef[KafkaClusterManager.Message]) extends MetricsSink.Message
 
   final case class GaugeDefinition(name: String, help: String, labels: List[String])
   type MetricDefinitions = List[GaugeDefinition]

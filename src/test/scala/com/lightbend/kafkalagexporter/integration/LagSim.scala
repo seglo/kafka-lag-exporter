@@ -7,9 +7,10 @@ package com.lightbend.kafkalagexporter.integration
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{Behavior, PostStop}
-import akka.kafka.Subscriptions
-import akka.kafka.scaladsl.Consumer
+import akka.kafka.{CommitterSettings, Subscriptions}
+import akka.kafka.scaladsl.{Committer, Consumer}
 import akka.kafka.testkit.scaladsl.KafkaSpec
+import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSink
 import org.scalatest.concurrent.ScalaFutures
@@ -18,18 +19,18 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 trait LagSim extends KafkaSpec with ScalaFutures {
-  private implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 1 second)
+  private implicit val patience: PatienceConfig = PatienceConfig(30.seconds, 1.second)
 
   class LagSimulator(topic: String, group: String) {
     private var offset: Int = 0
+    private val committerSettings = CommitterSettings(system).withMaxBatch(1).withParallelism(1)
 
     private lazy val (consumerControl, consumerProbe) = Consumer
       .committableSource(consumerDefaults.withGroupId(group), Subscriptions.topics(topic))
-      .filterNot(_.record.value == InitialMsg)
+      .buffer(size = 1, OverflowStrategy.backpressure)
       .map { elem =>
+        log.debug("Committing elem with offset: {}", elem.committableOffset.partitionOffset)
         elem.committableOffset.commitScaladsl()
-        log.debug("Committed offset: {}", elem.committableOffset.partitionOffset)
-        elem
       }
       .toMat(TestSink.probe)(Keep.both)
       .run()
@@ -39,6 +40,7 @@ trait LagSim extends KafkaSpec with ScalaFutures {
       offset += num + 1
     }
 
+    // TODO: Replace this with regular Kafka Consumer for more fine-grained control over committing
     def consumeElements(num: Int): Unit = {
       consumerProbe
         .request(num)
