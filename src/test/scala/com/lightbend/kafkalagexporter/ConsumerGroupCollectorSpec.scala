@@ -35,7 +35,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       topicPartitionTables = TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable))
     )
 
-    val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+    val behavior = ConsumerGroupCollector.collector(config, client, List(reporter.ref), state)
     val testKit = BehaviorTestKit(behavior)
 
     val newEarliestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 0, time = timestampNow))
@@ -102,7 +102,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       )),
     )
 
-    val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+    val behavior = ConsumerGroupCollector.collector(config, client, List(reporter.ref), state)
     val testKit = BehaviorTestKit(behavior)
 
     val newEarliestOffsets = PartitionOffsets(
@@ -149,7 +149,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       )),
     )
 
-    val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+    val behavior = ConsumerGroupCollector.collector(config, client, List(reporter.ref), state)
     val testKit = BehaviorTestKit(behavior)
 
     val newEarliestOffsets = PartitionOffsets(
@@ -195,7 +195,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       topicPartitionTables = TopicPartitionTable(config.lookupTableSize, Map(topicPartition0 -> lookupTable))
     )
 
-    val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, state)
+    val behavior = ConsumerGroupCollector.collector(config, client, List(reporter.ref), state)
     val testKit = BehaviorTestKit(behavior)
 
     val newEarliestOffsets = PartitionOffsets(topicPartition0 -> Point(offset = 0, time = timestampNow))
@@ -274,7 +274,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     }
 
     "remove metric for consumer ids no longer being reported" in {
-      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, newState())
+      val behavior = ConsumerGroupCollector.collector(config, client, List(reporter.ref), newState())
       val testKit = BehaviorTestKit(behavior)
 
       val newConsumerId = s"$consumerId-new"
@@ -296,7 +296,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
     }
 
     "remove metrics for topic group partitions no longer being reported" in {
-      val behavior = ConsumerGroupCollector.collector(config, client, reporter.ref, newState())
+      val behavior = ConsumerGroupCollector.collector(config, client, List(reporter.ref), newState())
       val testKit = BehaviorTestKit(behavior)
 
       val newGroupId = s"$groupId-new"
@@ -325,7 +325,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
       // see example: https://gist.github.com/patriknw/5f0c54f5748d25d7928389165098b89e#file-synctestingfsmmockitoexamplespec
       val collectorBehavior = spy(new ConsumerGroupCollector.CollectorBehavior)
 
-      val behavior = collectorBehavior.collector(config, client, reporter.ref, newState())
+      val behavior = collectorBehavior.collector(config, client, List(reporter.ref), newState())
       val testKit = BehaviorTestKit(behavior)
 
       val snapshot = ConsumerGroupCollector.OffsetsSnapshot(
@@ -359,7 +359,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
         verify(collectorBehavior, times(2)).collector(
           any[ConsumerGroupCollector.CollectorConfig],
           any[KafkaClient.KafkaClientContract],
-          any[ActorRef[MetricsSink.Message]],
+          any[List[ActorRef[MetricsSink.Message]]],
           argThat[ConsumerGroupCollector.CollectorState](_.topicPartitionTables.tables.isEmpty)
         )
       }

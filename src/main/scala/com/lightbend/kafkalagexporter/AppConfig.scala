@@ -6,7 +6,7 @@ package com.lightbend.kafkalagexporter
 
 import java.util
 
-import com.lightbend.kafkalagexporter.PrometheusEndpointSink.ClusterGlobalLabels
+import com.lightbend.kafkalagexporter.EndpointSink.ClusterGlobalLabels
 import com.typesafe.config.{Config, ConfigObject}
 
 import scala.annotation.tailrec
@@ -21,7 +21,8 @@ object AppConfig {
     val graphiteConfig: Option[GraphiteConfig] = (
       for (host <- Try(c.getString("graphite-host"));
            port <- Try(c.getInt("graphite-port")),
-             ) yield GraphiteConfig(host, port)).toOption
+             ) yield GraphiteConfig(
+               host, port, Try(c.getString("graphite-prefix")).toOption)).toOption
     val pollInterval = c.getDuration("poll-interval").toScala
     val lookupTableSize = c.getInt("lookup-table-size")
     val port = c.getInt("port")
@@ -133,6 +134,7 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
         |Graphite: 
         |  host: ${graphite.host}
         |  port: ${graphite.port}
+        |  prefix: ${graphite.prefix}
         """.stripMargin }.getOrElse("")
     val clusterString =
       if (clusters.isEmpty)

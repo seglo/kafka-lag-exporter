@@ -92,7 +92,7 @@ object ConsumerGroupCollector {
 
   def init(config: CollectorConfig,
            clientCreator: KafkaCluster => KafkaClientContract,
-           reporter: ActorRef[MetricsSink.Message]): Behavior[Message] = Behaviors.supervise[Message] {
+           reporters: List[ActorRef[MetricsSink.Message]]): Behavior[Message] = Behaviors.supervise[Message] {
     Behaviors.setup { context =>
       context.log.info("Spawned ConsumerGroupCollector for cluster: {}", config.cluster.name)
 
@@ -100,15 +100,15 @@ object ConsumerGroupCollector {
 
       val collectorState = CollectorState(
            topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize))
-      collector(config, clientCreator(config.cluster), reporter, collectorState)
+      collector(config, clientCreator(config.cluster), reporters, collectorState)
     }
   }.onFailure(SupervisorStrategy.restartWithBackoff(1 seconds, 10 seconds, 0.2))
 
   def collector(config: CollectorConfig,
                 client: KafkaClientContract,
-                reporter: ActorRef[MetricsSink.Message],
+                reporters: List[ActorRef[MetricsSink.Message]],
                 state: CollectorState): Behavior[Message] =
-    (new CollectorBehavior).collector(config, client, reporter, state)
+    (new CollectorBehavior).collector(config, client, reporters, state)
 
   // TODO: Ideally this wouldn't be in a class, like the other behaviors, but at this time there's no other way to
   // TODO: assert state transition changes. See `ConsumerGroupCollectorSpec` which uses mockito to assert the state
@@ -116,7 +116,7 @@ object ConsumerGroupCollector {
   class CollectorBehavior {
     def collector(config: CollectorConfig,
                   client: KafkaClientContract,
-                  reporter: ActorRef[MetricsSink.Message],
+                  reporters: List[ActorRef[MetricsSink.Message]],
                   state: CollectorState): Behavior[Message] = Behaviors.receive {
       case (context, _: Collect) =>
         implicit val ec: ExecutionContextExecutor = context.executionContext
@@ -164,13 +164,15 @@ object ConsumerGroupCollector {
         context.log.info("Updating lookup tables")
         refreshLookupTable(state, snapshot, evictedTps)
 
-        context.log.info("Reporting offsets")
-        reportEarliestOffsetMetrics(config, reporter, snapshot)
-        reportLatestOffsetMetrics(config, reporter, state.topicPartitionTables)
-        reportConsumerGroupMetrics(config, reporter, snapshot, state.topicPartitionTables)
+        reporters.foreach { reporter =>
+          context.log.info("Reporting offsets")
+          reportEarliestOffsetMetrics(config, reporter, snapshot)
+          reportLatestOffsetMetrics(config, reporter, state.topicPartitionTables)
+          reportConsumerGroupMetrics(config, reporter, snapshot, state.topicPartitionTables)
 
-        context.log.info("Clearing evicted metrics")
-        reportEvictedMetrics(config, reporter, evictedTps, evictedGroups, evictedGtps)
+          context.log.info("Clearing evicted metrics")
+          reportEvictedMetrics(config, reporter, evictedTps, evictedGroups, evictedGtps)
+        }
 
         context.log.info("Polling in {}", config.pollInterval)
         val newState = state.copy(
@@ -178,11 +180,13 @@ object ConsumerGroupCollector {
           scheduledCollect = context.scheduleOnce(config.pollInterval, context.self, Collect)
         )
 
-        collector(config, client, reporter, newState)
+        collector(config, client, reporters, newState)
 
       case (context, metaData: MetaData) =>
         context.log.debug("Received Meta data:\n{}", metaData)
-        reportPollTimeMetrics(config, reporter, metaData)
+        reporters.foreach { reporter =>
+          reportPollTimeMetrics(config, reporter, metaData)
+        }
         Behaviors.same
 
       case (context, _: Stop) =>
