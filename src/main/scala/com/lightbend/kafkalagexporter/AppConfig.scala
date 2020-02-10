@@ -19,13 +19,15 @@ object AppConfig {
   def apply(config: Config): AppConfig = {
     val c = config.getConfig("kafka-lag-exporter")
     val graphiteConfig: Option[GraphiteConfig] = (
-      for (host <- Try(c.getString("graphite-host"));
-           port <- Try(c.getInt("graphite-port")),
+      for (host <- Try(c.getString("reporters.graphite.host"));
+           port <- Try(c.getInt("reporters.graphite.port")),
              ) yield GraphiteConfig(
-               host, port, Try(c.getString("graphite-prefix")).toOption)).toOption
+               host, port, Try(c.getString("reporters.graphite.prefix")).toOption)).toOption
     val pollInterval = c.getDuration("poll-interval").toScala
     val lookupTableSize = c.getInt("lookup-table-size")
-    val port = c.getInt("port")
+    val prometheusPortLegacy = Try(c.getInt("port")).toOption
+    val prometheusPortNew = Try(c.getInt("reporters.prometheus.port")).toOption
+    val prometheusConfig = (prometheusPortNew orElse prometheusPortLegacy).map { port => PrometheusConfig(port) }
     val clientGroupId = c.getString("client-group-id")
     val kafkaClientTimeout = c.getDuration("kafka-client-timeout").toScala
     val clusters = c.getConfigList("clusters").asScala.toList.map { clusterConfig =>
@@ -72,7 +74,7 @@ object AppConfig {
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
     val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
-    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist, graphiteConfig)
+    AppConfig(pollInterval, lookupTableSize, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist, prometheusConfig, graphiteConfig)
   }
 
   // Copied from Alpakka Kafka
@@ -125,9 +127,11 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
      """.stripMargin
   }
 }
-final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, port: Int, clientGroupId: String,
+final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, clientGroupId: String,
                            clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean,
-                           metricWhitelist: List[String], graphiteConfig: Option[GraphiteConfig]) {
+                           metricWhitelist: List[String],
+                           prometheusConfig: Option[PrometheusConfig],
+                           graphiteConfig: Option[GraphiteConfig]) {
   override def toString(): String = {
     val graphiteString =
       graphiteConfig.map { graphite => s"""
@@ -136,6 +140,11 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
         |  port: ${graphite.port}
         |  prefix: ${graphite.prefix}
         """.stripMargin }.getOrElse("")
+    val prometheusString =
+      prometheusConfig.map { prometheus => s"""
+        |Prometheus: 
+        |  port: ${prometheus.port}
+        """.stripMargin }.getOrElse("")
     val clusterString =
       if (clusters.isEmpty)
         "  (none)"
@@ -143,10 +152,10 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
     s"""
        |Poll interval: $pollInterval
        |Lookup table size: $lookupTableSize
-       |Prometheus metrics endpoint port: $port
-       |Prometheus metrics whitelist: [${metricWhitelist.mkString(", ")}]
+       |Metrics whitelist: [${metricWhitelist.mkString(", ")}]
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
+       |$prometheusString
        |$graphiteString
        |Statically defined Clusters:
        |$clusterString

@@ -17,7 +17,7 @@ object GraphiteEndpointSink {
   def apply(metricWhitelist: List[String], clusterGlobalLabels: ClusterGlobalLabels,
             graphiteConfig: Option[GraphiteConfig]): MetricsSink = {
     Try(new GraphiteEndpointSink(metricWhitelist, clusterGlobalLabels, graphiteConfig))
-      .fold(t => throw new Exception("Could not create Prometheus Endpoint", t), sink => sink)
+      .fold(t => throw new Exception("Could not create Graphite Endpoint", t), sink => sink)
   }
 }
 
@@ -39,6 +39,12 @@ class GraphiteEndpointSink private(metricWhitelist: List[String], clusterGlobalL
     }
   }
 
+  /**
+    * get graphite metric name for a metric value
+    *
+    * @example { label1=value1, label2=value2, name=myName } => "value1.value2.myName"
+    *
+    */ 
   def metricNameToGraphiteMetricName(metricValue: MetricValue): String = {
     (getGlobalLabelValuesOrDefault(metricValue.clusterName) ++ metricValue.labels
       ).map( x => x.replaceAll("\\.", "_")).mkString(".") + "." + metricValue.definition.name;
