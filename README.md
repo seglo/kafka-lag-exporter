@@ -20,6 +20,7 @@
   - [View the health endpoint](#view-the-health-endpoint)
     - [View exporter logs](#view-exporter-logs)
 - [Run Standalone](#run-standalone)
+  - [Reporters](#reporters)
   - [Configuration](#configuration-1)
   - [Running Docker Image](#running-docker-image)
 - [Estimate Consumer Group Time Lag](#estimate-consumer-group-time-lag)
@@ -240,9 +241,9 @@ General Configuration (`kafka-lag-exporter{}`)
 | Key                         | Default            | Description                                                                                                                           |
 |-----------------------------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | `reporters.prometheus.port` | `8000`             | The port to run the Prometheus endpoint on                                                                                            |
-| `reporters.graphite.host`   | None               | The graphite host to send metrics to (if not set, will not output to grahpite)                                                        |
+| `reporters.graphite.host`   | None               | The graphite host to send metrics to (if not set, will not output to graphite)                                                        |
 | `reporters.graphite.port`   | None               | The graphite port to send metrics to (if not set, will not output to graphite)                                                        |
-| `reporters.graphite.prefix` | None               | The graphite metric prefix (if not set, prefix will be embty)                                                                         |
+| `reporters.graphite.prefix` | None               | The graphite metric prefix (if not set, prefix will be empty)                                                                         |
 | `poll-interval`             | `30 seconds`       | How often to poll Kafka for latest and group offsets                                                                                  |
 | `lookup-table-size`         | `60`               | The maximum window size of the look up table **per partition**                                                                        |
 | `client-group-id`           | `kafkalagexporter` | Consumer group id of kafka-lag-exporter's client connections                                                                          |
