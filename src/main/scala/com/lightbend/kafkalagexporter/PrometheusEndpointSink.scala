@@ -22,6 +22,11 @@ object PrometheusEndpointSink {
     Try(new PrometheusEndpointSink(sinkConfig: PrometheusEndpointSinkConfig, definitions, clusterGlobalLabels, new HTTPServer(sinkConfig.port), registry))
       .fold(t => throw new Exception("Could not create Prometheus Endpoint", t), sink => sink)
   }
+
+  def apply(sinkConfig: PrometheusEndpointSinkConfig, definitions: MetricDefinitions, clusterGlobalLabels: ClusterGlobalLabels, server: HTTPServer, registry: CollectorRegistry): MetricsSink = {
+    Try(new PrometheusEndpointSink(sinkConfig: PrometheusEndpointSinkConfig, definitions, clusterGlobalLabels, server, registry))
+      .fold(t => throw new Exception("Could not create Prometheus Endpoint", t), sink => sink)
+  }
 }
 
 class PrometheusEndpointSink private(sinkConfig: PrometheusEndpointSinkConfig, definitions: MetricDefinitions, clusterGlobalLabels: ClusterGlobalLabels,
