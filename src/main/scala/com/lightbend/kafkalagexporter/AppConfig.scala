@@ -20,7 +20,16 @@ object AppConfig {
     val c = config.getConfig("kafka-lag-exporter")
     val pollInterval = c.getDuration("poll-interval").toScala
     val lookupTableSize = c.getInt("lookup-table-size")
-    val port = c.getInt("port")
+    val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
+    val sinkType = if (c.hasPath("sink"))
+      c.getString("sink")
+    else "PrometheusEndpointSink"
+
+    val sinkConfig = sinkType match {
+      case "PrometheusEndpointSink" => new PrometheusEndpointSinkConfig(sinkType, metricWhitelist, c)
+      case "InfluxDBPusherSink" => new InfluxDBPusherSinkConfig(sinkType, metricWhitelist, c)
+    }
+
     val clientGroupId = c.getString("client-group-id")
     val kafkaClientTimeout = c.getDuration("kafka-client-timeout").toScala
     val clusters = c.getConfigList("clusters").asScala.toList.map { clusterConfig =>
@@ -66,8 +75,8 @@ object AppConfig {
       )
     }
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
-    val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
-    AppConfig(pollInterval, lookupTableSize, port, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher, metricWhitelist)
+
+    AppConfig(pollInterval, lookupTableSize, sinkConfig, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher)
   }
 
   // Copied from Alpakka Kafka
@@ -120,8 +129,8 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
      """.stripMargin
   }
 }
-final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, port: Int, clientGroupId: String,
-                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean, metricWhitelist: List[String]) {
+final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, sinkConfig: SinkConfig, clientGroupId: String,
+                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean) {
   override def toString(): String = {
     val clusterString =
       if (clusters.isEmpty)
@@ -130,8 +139,8 @@ final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, p
     s"""
        |Poll interval: $pollInterval
        |Lookup table size: $lookupTableSize
-       |Prometheus metrics endpoint port: $port
-       |Prometheus metrics whitelist: [${metricWhitelist.mkString(", ")}]
+       |Sink : $sinkConfig.sinkType
+       |Sink metrics whitelist: [${sinkConfig.metricWhitelist.mkString(", ")}]
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
        |Statically defined Clusters:

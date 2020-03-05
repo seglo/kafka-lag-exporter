@@ -40,6 +40,7 @@ lazy val kafkaLagExporter =
         EmbeddedKafka,
         AkkaHttp
       ),
+      libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-influxdb" % "1.1.2",
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),
       dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("lightbend")),
       // Based on best practices found in OpenShift Creating images guidelines
