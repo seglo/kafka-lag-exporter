@@ -20,6 +20,7 @@
   - [View the health endpoint](#view-the-health-endpoint)
     - [View exporter logs](#view-exporter-logs)
 - [Run Standalone](#run-standalone)
+  - [Reporters](#reporters)
   - [Configuration](#configuration-1)
   - [Running Docker Image](#running-docker-image)
 - [Estimate Consumer Group Time Lag](#estimate-consumer-group-time-lag)
@@ -224,20 +225,32 @@ To run the project in standalone mode you must first define a configuration `app
 contain at least connection info to your Kafka cluster (`kafka-lag-exporter.clusters`). All other configuration has
 defaults defined in the project itself.  See [`reference.conf`](./src/main/resources/reference.conf) for defaults.
 
+### Reporters
+
+It is possible to report (either or both):
+
+  - to graphite via the config `kafka-lag-exporter.reporters.graphite`
+  - as prometheus via the config `kafka-lag-exporter.reporters.prometheus`
+
+See section below for more information.
+
 ### Configuration
 
 General Configuration (`kafka-lag-exporter{}`)
 
-| Key                           | Default            | Description                                                                                                                           |
-|-------------------------------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| `port`                        | `8000`             | The port to run the Prometheus endpoint on                                                                                            |
-| `poll-interval`               | `30 seconds`       | How often to poll Kafka for latest and group offsets                                                                                  |
-| `lookup-table-size`           | `60`               | The maximum window size of the look up table **per partition**                                                                        |
-| `client-group-id`             | `kafkalagexporter` | Consumer group id of kafka-lag-exporter's client connections                                                                          |
-| `kafka-client-timeout`        | `10 seconds`       | Connection timeout when making API calls to Kafka                                                                                     |
-| `clusters`                    | `[]`               | A statically defined list of Kafka connection details.  This list is optional if you choose to use the Strimzi auto-discovery feature |
-| `watchers`                    | `{}`               | Settings for Kafka cluster "watchers" used for auto-discovery.                                                                        |
-| `metric-whitelist`            | `[".*"]`           | Regex of metrics to be exposed via Prometheus endpoint. Eg. `[".*_max_lag.*", "kafka_partition_latest_offset"]`                       |
+| Key                         | Default            | Description                                                                                                                           |
+|-----------------------------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `reporters.prometheus.port` | `8000`             | The port to run the Prometheus endpoint on                                                                                            |
+| `reporters.graphite.host`   | None               | The graphite host to send metrics to (if not set, will not output to graphite)                                                        |
+| `reporters.graphite.port`   | None               | The graphite port to send metrics to (if not set, will not output to graphite)                                                        |
+| `reporters.graphite.prefix` | None               | The graphite metric prefix (if not set, prefix will be empty)                                                                         |
+| `poll-interval`             | `30 seconds`       | How often to poll Kafka for latest and group offsets                                                                                  |
+| `lookup-table-size`         | `60`               | The maximum window size of the look up table **per partition**                                                                        |
+| `client-group-id`           | `kafkalagexporter` | Consumer group id of kafka-lag-exporter's client connections                                                                          |
+| `kafka-client-timeout`      | `10 seconds`       | Connection timeout when making API calls to Kafka                                                                                     |
+| `clusters`                  | `[]`               | A statically defined list of Kafka connection details.  This list is optional if you choose to use the Strimzi auto-discovery feature |
+| `watchers`                  | `{}`               | Settings for Kafka cluster "watchers" used for auto-discovery.                                                                        |
+| `metric-whitelist`          | `[".*"]`           | Regex of metrics to be exposed via Prometheus endpoint. Eg. `[".*_max_lag.*", "kafka_partition_latest_offset"]`                       |
 
 Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 
@@ -264,7 +277,11 @@ and `AdminClient` used by the project.
 
 ```
 kafka-lag-exporter {
-  port = 9999
+  reporters {
+    prometheus {
+      port = 9999
+    }
+  }
   lookup-table-size = 120
   clusters = [
     {

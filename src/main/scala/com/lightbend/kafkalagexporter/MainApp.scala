@@ -31,11 +31,23 @@ object MainApp extends App {
 
     val clientCreator = (cluster: KafkaCluster) =>
       KafkaClient(cluster, appConfig.clientGroupId, appConfig.clientTimeout)(kafkaClientEc)
-    val server = new HTTPServer(appConfig.port)
-    val endpointCreator = () => PrometheusEndpointSink(Metrics.definitions, appConfig.metricWhitelist,
-      appConfig.clustersGlobalLabels(), server, CollectorRegistry.defaultRegistry)
-
+    var endpointCreators : List[KafkaClusterManager.NamedCreator] = List()
+    appConfig.prometheusConfig.foreach { prometheus =>
+      val prometheusCreator = KafkaClusterManager.NamedCreator(
+        "prometheus-lag-reporter", 
+        (() => PrometheusEndpointSink(
+          Metrics.definitions, appConfig.metricWhitelist, appConfig.clustersGlobalLabels(), new HTTPServer(prometheus.port), CollectorRegistry.defaultRegistry
+        ))
+      )
+      endpointCreators = prometheusCreator :: endpointCreators
+    }
+    appConfig.graphiteConfig.foreach { _ =>
+      val graphiteCreator = KafkaClusterManager.NamedCreator(
+        "graphite-lag-reporter",
+        (() => GraphiteEndpointSink(appConfig.metricWhitelist, appConfig.clustersGlobalLabels(), appConfig.graphiteConfig)))
+      endpointCreators = graphiteCreator :: endpointCreators
+    }
     ActorSystem(
-      KafkaClusterManager.init(appConfig, endpointCreator, clientCreator), "kafka-lag-exporter")
+      KafkaClusterManager.init(appConfig, endpointCreators, clientCreator), "kafka-lag-exporter")
   }
 }
