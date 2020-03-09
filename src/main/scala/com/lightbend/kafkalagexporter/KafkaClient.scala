@@ -161,8 +161,6 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
 
   /**
     * Retrieve partitions by consumer group ID. This is used in case when members info is unavailable for the group.
-    * @param groupId
-    * @return
     */
   def getGroupPartitionsInfo(groupId: String): Future[List[Domain.GroupTopicPartition]] = {
     for {
