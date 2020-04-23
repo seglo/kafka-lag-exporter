@@ -1,11 +1,12 @@
 import sbt._
 
 object Version {
-  val Scala      = "2.12.10"
-  val Akka       = "2.6.1"
-  val Prometheus = "0.6.0"
-  val Fabric8    = "4.2.2"
-  val Kafka      = "2.4.0"
+  val Scala      = "2.12.11"
+  val Akka       = "2.6.4"
+  val Prometheus = "0.8.1"
+  val Fabric8    = "4.9.1"
+  val Kafka      = "2.5.0"
+  val EmbeddedKafka = "2.4.1"
 }
 
 object Dependencies {
@@ -41,6 +42,6 @@ object Dependencies {
   val AkkaStreamsTestKit    = "com.typesafe.akka"       %% "akka-stream-testkit"       % Version.Akka        % Test
   val MockitoScala          = "org.mockito"             %% "mockito-scala"             % "1.0.8"             % Test
   val AlpakkaKafkaTestKit   = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.0.1"             % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
-  val EmbeddedKafka         = "io.github.embeddedkafka" %% "embedded-kafka"            % Version.Kafka       % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
+  val EmbeddedKafka         = "io.github.embeddedkafka" %% "embedded-kafka"            % Version.EmbeddedKafka % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
   val AkkaHttp              = "com.typesafe.akka"       %% "akka-http"                 % "10.1.11"           % Test
 }
