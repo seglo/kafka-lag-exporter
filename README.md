@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/lightbend/kafka-lag-exporter.svg?branch=master)](https://travis-ci.org/lightbend/kafka-lag-exporter)
-![GitHub release](https://img.shields.io/github/release-pre/lightbend/kafka-lag-exporter.svg)
+![GitHub release](https://img.shields.io/github/v/release/lightbend/kafka-lag-exporter?include_prereleases)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/lightbend/kafka-lag-exporter/blob/master/LICENSE.txt)
 
 # Kafka Lag Exporter
