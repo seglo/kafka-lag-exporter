@@ -80,6 +80,11 @@ securityContext: {}
   # runAsNonRoot: true
   # capabilities:
   #   drop: ["all"]
+initContainers: []
+## Init containers to be added to the pod.
+# - name: my-init-container
+#   image: busybox:latest
+#   command: ['sh', '-c', 'echo hello']
 service:
   type: ClusterIP
   port: 8000
