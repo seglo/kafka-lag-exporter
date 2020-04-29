@@ -24,7 +24,11 @@ spec:
       {{- end }}
     spec:
       {{- if or .Values.watchers.strimzi .Values.serviceAccount.create }}
+      {{- if .Values.serviceAccount.nameOverride }}
+      serviceAccountName: {{ .Values.serviceAccount.nameOverride }}
+      {{- else }}
       serviceAccountName: {{ include "kafka-lag-exporter.fullname" . }}-serviceaccount
+      {{- end }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
