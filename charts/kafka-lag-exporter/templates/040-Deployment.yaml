@@ -64,6 +64,10 @@ spec:
               subPath: {{ .subPath }}
               readOnly: {{ .readOnly }}
           {{- end }}
+          {{- range .Values.extraMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+          {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- with .Values.initContainers }}
@@ -89,4 +93,8 @@ spec:
         - name: {{ .name }}
           configMap:
             name: {{ .configMap }}
+      {{- end }}
+      {{- range .Values.extraMounts }}
+        - name: {{ .name }}
+{{ toYaml .mount | indent 10 }}
       {{- end }}
