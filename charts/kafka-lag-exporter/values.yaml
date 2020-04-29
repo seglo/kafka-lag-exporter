@@ -113,6 +113,9 @@ extraMounts: []
   #     emptyDir:
   #       medium: Memory
   #   mountPath: /var/run/my-secrets
+env: {}
+  # - name: JAVA_OPTS
+  #   value: "-Djava.security.auth.login.config=/var/run/my-secrets/jaasConfig"
 podAnnotations: {}
   # foo: bar
 
