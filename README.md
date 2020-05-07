@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/lightbend/kafka-lag-exporter.svg?branch=master)](https://travis-ci.org/lightbend/kafka-lag-exporter)
-![GitHub release](https://img.shields.io/github/release-pre/lightbend/kafka-lag-exporter.svg)
+![GitHub release](https://img.shields.io/github/v/release/lightbend/kafka-lag-exporter?include_prereleases)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/lightbend/kafka-lag-exporter/blob/master/LICENSE.txt)
 
 # Kafka Lag Exporter
@@ -523,6 +523,17 @@ required.  Before running a release make sure the following pre-req's are met.
 4. Review the GitHub release draft and submit it.
 
 ## Change log
+
+<!--
+0.6.2
+
+* Support consumer groups for which member information is unavailable [#128](https://github.com/lightbend/kafka-lag-exporter/pull/128) ([@lilyevsky](https://github.com/lilyevsky)) 
+-->
+
+0.6.1
+
+* Update to Apache Kafka 2.5.0. Resolves issue of "Invalid negative offset" for uninitizalized consumer groups [#120](https://github.com/lightbend/kafka-lag-exporter/issues/120)
+* Graphite support [#105](https://github.com/lightbend/kafka-lag-exporter/pull/115) ([@yazgoo](https://github.com/yazgoo))
 
 0.6.0
 
