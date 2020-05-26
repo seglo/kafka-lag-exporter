@@ -24,7 +24,11 @@ spec:
       {{- end }}
     spec:
       {{- if or .Values.watchers.strimzi .Values.serviceAccount.create }}
+      {{- if .Values.serviceAccount.nameOverride }}
+      serviceAccountName: {{ .Values.serviceAccount.nameOverride }}
+      {{- else }}
       serviceAccountName: {{ include "kafka-lag-exporter.fullname" . }}-serviceaccount
+      {{- end }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -34,7 +38,10 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env: []
+          {{- if .Values.env }}
+          env:
+{{ toYaml .Values.env | indent 10 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
@@ -60,8 +67,15 @@ spec:
               subPath: {{ .subPath }}
               readOnly: {{ .readOnly }}
           {{- end }}
+          {{- range .Values.extraMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+          {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.initContainers }}
+      initContainers: {{ toYaml . | nindent 8 }}
+    {{- end }}
     {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
@@ -82,4 +96,8 @@ spec:
         - name: {{ .name }}
           configMap:
             name: {{ .configMap }}
+      {{- end }}
+      {{- range .Values.extraMounts }}
+        - name: {{ .name }}
+{{ toYaml .mount | indent 10 }}
       {{- end }}

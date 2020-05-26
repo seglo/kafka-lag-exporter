@@ -43,6 +43,9 @@ watchers:
 ## Otherwise, the default service account for the namespace will be used.
 serviceAccount:
   create: false
+  ## The name of the service account will be generated based on the release name, use nameOverride to override
+  ## with a static name.
+  # nameOverride: my-serviceaccount
 
 ## You can use regex to control the metrics exposed by Prometheus endpoint.
 ## Any metric that matches one of the regex in the whitelist will be exposed.
@@ -80,6 +83,11 @@ securityContext: {}
   # runAsNonRoot: true
   # capabilities:
   #   drop: ["all"]
+initContainers: []
+## Init containers to be added to the pod.
+# - name: my-init-container
+#   image: busybox:latest
+#   command: ['sh', '-c', 'echo hello']
 service:
   type: ClusterIP
   port: 8000
@@ -99,6 +107,15 @@ extraConfigmapMounts: []
   #   mountPath: /etc/pki/ca-trust/extracted/java/cacerts
   #   subPath: ca-bundle.jks
   #   readOnly: true
+extraMounts: []
+  # - name: my-secrets
+  #   mount:
+  #     emptyDir:
+  #       medium: Memory
+  #   mountPath: /var/run/my-secrets
+env: {}
+  # - name: JAVA_OPTS
+  #   value: "-Djava.security.auth.login.config=/var/run/my-secrets/jaasConfig"
 podAnnotations: {}
   # foo: bar
 
