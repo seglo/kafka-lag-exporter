@@ -524,11 +524,10 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
-<!--
 0.6.2
 
+* Support init containers in helm chart [#135](https://github.com/lightbend/kafka-lag-exporter/pull/135) ([@terjesannum](https://github.com/terjesannum))
 * Support consumer groups for which member information is unavailable [#128](https://github.com/lightbend/kafka-lag-exporter/pull/128) ([@lilyevsky](https://github.com/lilyevsky)) 
--->
 
 0.6.1
 
