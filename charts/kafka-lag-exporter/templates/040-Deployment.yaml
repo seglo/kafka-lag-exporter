@@ -54,10 +54,20 @@ spec:
             httpGet:
               path: /
               port: http
+            initialDelaySeconds: {{ .Values.livenessProbeInitialDelay }}
+            periodSeconds: {{ .Values.livenessProbePeriodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbeTimeout }}
+            failureThreshold: {{ .Values.livenessProbeFailureThreshold }}
+            successThreshold: {{ .Values.livenessProbeSuccessThreshold }}
           readinessProbe:
             httpGet:
               path: /
               port: http
+            initialDelaySeconds: {{ .Values.readinessProbeInitialDelay }}
+            periodSeconds: {{ .Values.readinessProbePeriodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbeTimeout }}
+            failureThreshold: {{ .Values.readinessProbeFailureThreshold }}
+            successThreshold: {{ .Values.readinessProbeSuccessThreshold }}
           volumeMounts:
             - name: config-volume
               mountPath: /opt/docker/conf/
