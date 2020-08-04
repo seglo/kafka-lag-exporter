@@ -118,6 +118,18 @@ env: {}
   #   value: "-Djava.security.auth.login.config=/var/run/my-secrets/jaasConfig"
 podAnnotations: {}
   # foo: bar
+## Readiness and liveness probe initial delay and timeout
+## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+readinessProbeInitialDelay: 30
+readinessProbePeriodSeconds: 5
+readinessProbeTimeout: 30
+readinessProbeFailureThreshold: 3
+readinessProbeSuccessThreshold: 1
+livenessProbeInitialDelay: 30
+livenessProbePeriodSeconds: 15
+livenessProbeTimeout: 30
+livenessProbeFailureThreshold: 3
+livenessProbeSuccessThreshold: 1
 
 prometheus:
   serviceMonitor:
