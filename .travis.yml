@@ -9,5 +9,17 @@ cache:
 before_cache:
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
-script:
-  - sbt test
+before_install:
+  - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
+  - chmod 700 get_helm.sh
+  - sudo ./get_helm.sh
+  - helm init --client-only
+jobs:
+  include:
+    - stage: test
+      script: sbt test
+      name: tests
+    - name: helm chart
+      script:
+        - ./scripts/lint_chart.sh
+        - ./scripts/package_chart.sh
