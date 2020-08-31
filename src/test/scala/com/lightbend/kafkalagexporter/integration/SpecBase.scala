@@ -5,42 +5,41 @@
 package com.lightbend.kafkalagexporter.integration
 
 import akka.actor.typed.ActorSystem
-import akka.kafka.testkit.scaladsl.{EmbeddedKafkaLike, ScalatestKafkaSpec}
-import com.lightbend.kafkalagexporter.MainApp
-import com.lightbend.kafkalagexporter.KafkaClusterManager
+import akka.kafka.testkit.KafkaTestkitTestcontainersSettings
+import akka.kafka.testkit.scaladsl.{ScalatestKafkaSpec, TestcontainersKafkaPerClassLike}
+import com.lightbend.kafkalagexporter.{KafkaClusterManager, MainApp}
 import com.typesafe.config.{Config, ConfigFactory}
-import net.manub.embeddedkafka.EmbeddedKafkaConfig
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-abstract class SpecBase(kafkaPort: Int, val exporterPort: Int)
-  extends ScalatestKafkaSpec(kafkaPort)
+abstract class SpecBase(val exporterPort: Int)
+  extends ScalatestKafkaSpec(-1)
     with WordSpecLike
     with BeforeAndAfterEach
-    with EmbeddedKafkaLike
+    with TestcontainersKafkaPerClassLike
     with Matchers
     with ScalaFutures
     with Eventually
     with PrometheusUtils
     with LagSim {
 
-  override def createKafkaConfig: EmbeddedKafkaConfig =
-    EmbeddedKafkaConfig(kafkaPort,
-      zooKeeperPort,
-      Map(
-        "offsets.topic.replication.factor" -> "1"
-      ))
+  implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 2 second)
+
+  override val testcontainersSettings = KafkaTestkitTestcontainersSettings(system)
+    .withConfigureKafka { brokerContainers =>
+      brokerContainers.foreach(_.withEnv("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1"))
+    }
 
   var kafkaLagExporter: ActorSystem[KafkaClusterManager.Message] = _
 
   val clusterName = "default"
 
-  val config: Config = ConfigFactory.parseString(s"""
+  def config: Config = ConfigFactory.parseString(s"""
                                             |kafka-lag-exporter {
-                                            |  port: $exporterPort
+                                            |  reporters.prometheus.port = $exporterPort
                                             |  clusters = [
                                             |    {
                                             |      name: "$clusterName"

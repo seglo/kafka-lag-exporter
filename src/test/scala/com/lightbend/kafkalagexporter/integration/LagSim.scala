@@ -7,9 +7,9 @@ package com.lightbend.kafkalagexporter.integration
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{Behavior, PostStop}
-import akka.kafka.{CommitterSettings, Subscriptions}
-import akka.kafka.scaladsl.{Committer, Consumer}
+import akka.kafka.scaladsl.Consumer
 import akka.kafka.testkit.scaladsl.KafkaSpec
+import akka.kafka.{CommitterSettings, Subscriptions}
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSink

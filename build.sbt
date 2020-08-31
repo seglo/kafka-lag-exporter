@@ -37,7 +37,7 @@ lazy val kafkaLagExporter =
         MockitoScala,
         AkkaStreamsTestKit,
         AlpakkaKafkaTestKit,
-        EmbeddedKafka,
+        Testcontainers,
         AkkaHttp
       ),
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),
@@ -62,6 +62,7 @@ lazy val kafkaLagExporter =
         s"./scripts/update_chart.sh ${version.value} $repo" !
       },
       skip in publish := true,
+      parallelExecution in Test := false,
       releaseProcess := Seq[ReleaseStep](
         lintHelmChart,                          // Lint the Helm Chart for errors
         checkSnapshotDependencies,

@@ -7,15 +7,10 @@ package com.lightbend.kafkalagexporter.integration
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.lightbend.kafkalagexporter.Metrics._
-import org.scalatest.BeforeAndAfterEach
 
-import scala.collection.JavaConverters._
-import scala.concurrent.duration._
 import scala.util.Try
 
-class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) with BeforeAndAfterEach {
-
-  implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 2 second)
+class IntegrationSpec extends SpecBase(exporterPort = 8000) {
 
   "kafka lag exporter" should {
     val group = createGroupId(1)
@@ -75,33 +70,6 @@ class IntegrationSpec extends SpecBase(kafkaPort = 9094, exporterPort = 8000) wi
       }
 
       testKit.stop(simulatorActor)
-    }
-
-    "does not report metrics for group members or partitions that no longer exist" in {
-      val topic = createTopic(1, 1, 1)
-
-      val offsetsToCommit = 5
-      val totalOffsets = 10
-
-      val rules = List(
-        Rule.create(LatestOffsetMetric, (actual: String) => actual shouldBe (totalOffsets + 1).toDouble.toString, clusterName, topic, partition),
-        Rule.create(LastGroupOffsetMetric, (actual: String) => actual shouldBe offsetsToCommit.toDouble.toString, clusterName, group, topic, partition),
-        Rule.create(OffsetLagMetric, (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group, topic, partition),
-        Rule.create(TimeLagMetric, (_: String) => (), clusterName, group, topic, partition),
-        Rule.create(MaxGroupOffsetLagMetric, (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group),
-        Rule.create(MaxGroupTimeLagMetric, (_: String) => (), clusterName, group)
-      )
-
-      val simulator = new LagSimulator(topic, group)
-      simulator.produceElements(totalOffsets)
-      simulator.consumeElements(offsetsToCommit)
-      simulator.shutdown()
-
-      eventually(scrapeAndAssert(exporterPort, "Assert offset-based metrics", rules: _*))
-
-      adminClient.deleteConsumerGroups(List(group).asJava)
-
-      eventually(scrapeAndAssertDne(exporterPort, "Assert offset-based metrics no longer exist", rules: _*))
     }
 
     "report poll time metric greater than 0 ms" in {
