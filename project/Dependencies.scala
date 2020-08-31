@@ -2,7 +2,7 @@ import sbt._
 
 object Version {
   val Scala      = "2.12.11"
-  val Akka       = "2.6.4"
+  val Akka       = "2.6.8"
   val Prometheus = "0.8.1"
   val Fabric8    = "4.9.1"
   val Kafka      = "2.5.0"
@@ -37,11 +37,12 @@ object Dependencies {
   val Fabric8Client         = "io.fabric8"              %  "kubernetes-client"         % Version.Fabric8
   val ScalaJava8Compat      = "org.scala-lang.modules"  %% "scala-java8-compat"        % "0.9.0"
 
+  /* Test */
   val ScalaTest             = "org.scalatest"           %% "scalatest"                 % "3.0.5"             % Test
   val AkkaTypedTestKit      = "com.typesafe.akka"       %% "akka-actor-testkit-typed"  % Version.Akka        % Test
   val AkkaStreamsTestKit    = "com.typesafe.akka"       %% "akka-stream-testkit"       % Version.Akka        % Test
   val MockitoScala          = "org.mockito"             %% "mockito-scala"             % "1.0.8"             % Test
-  val AlpakkaKafkaTestKit   = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.0.1"             % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
-  val EmbeddedKafka         = "io.github.embeddedkafka" %% "embedded-kafka"            % Version.EmbeddedKafka % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
+  val AlpakkaKafkaTestKit   = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.0.4"             % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
+  val Testcontainers        = "org.testcontainers"      %  "kafka"                     % "1.14.3"            % Test
   val AkkaHttp              = "com.typesafe.akka"       %% "akka-http"                 % "10.1.11"           % Test
 }
