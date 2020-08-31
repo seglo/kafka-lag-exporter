@@ -107,14 +107,8 @@ lazy val commonSettings = Seq(
   scalacOptions in (Compile, console) := (scalacOptions in (Global)).value.filter(_ == "-Ywarn-unused-import"),
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
   organizationName := "Lightbend Inc. <http://www.lightbend.com>",
-  startYear := Some(2019),
-  licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
-  headerLicense := Some(
-    HeaderLicense.Custom(
-      s"""|Copyright (C) ${startYear.value.get} Lightbend Inc. <http://www.lightbend.com>
-          |""".stripMargin
-    )
-  ),
+  startYear := Some(2020),
+  licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
 )
 
 lazy val updateHelmChart = taskKey[Unit]("Update Helm Chart")
