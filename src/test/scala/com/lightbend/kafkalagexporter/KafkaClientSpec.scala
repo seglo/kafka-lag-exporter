@@ -10,7 +10,7 @@ import com.lightbend.kafkalagexporter.Domain.GroupOffsets
 import com.lightbend.kafkalagexporter.KafkaClient.{AdminKafkaClientContract, ConsumerKafkaClientContract, KafkaTopicPartitionOps}
 import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.common.{ConsumerGroupState, TopicPartition => TP}
+import org.apache.kafka.common.{ConsumerGroupState, TopicPartition => KafkaTopicPartition}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FreeSpec, Matchers}
@@ -86,6 +86,22 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
         groupOffsets(gtp0_0) shouldEqual Some(LookupTable.Point(0, 0))
         groupOffsets(gtp0_1) shouldEqual Some(LookupTable.Point(1, 0))
       }
+
+      "returns no offsets when a null offset is returned" in {
+        val groups = List(groupId)
+        val gtps = List(gtp0)
+
+        val (adminKafkaClient, _, client) = getClient()
+
+        val listGroupOffsetResults = Future.successful(Map[KafkaTopicPartition, OffsetAndMetadata](
+          topicPartition0.asKafka -> null
+        ).asJava)
+        when(adminKafkaClient.listConsumerGroupOffsets(groupId)).thenReturn(listGroupOffsetResults)
+
+        val groupOffsets = client.getGroupOffsets(0, groups, gtps).futureValue
+
+        groupOffsets(gtp0) shouldEqual None
+      }
     }
 
     "getOffsetOrZero returns offsets of None (Option[Point]) for missing partitions" in {
@@ -107,7 +123,7 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
       val tmpHost = "brokers"
       "will default to fetching all topics" in {
         val (_,_,client) = getClient()
-        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new KafkaTopicPartition(tp.topic, tp.partition)).asJava
         val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
 
         val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
@@ -118,7 +134,7 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
       "will only fetch whitelisted topic when whitelist contains a single topic" in {
         val tmpCluster = cluster.copy(topicWhitelist = List(topic2))
         val (_,_,client) = getClient(tmpCluster)
-        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new KafkaTopicPartition(tp.topic, tp.partition)).asJava
         val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
 
         val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
@@ -129,7 +145,7 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
       "will only fetch non blacklisted topics" in {
         val tmpCluster: KafkaCluster = cluster.copy(topicWhitelist = List(topic, topic2), topicBlacklist = List(topic))
         val (_,_,client) = getClient(tmpCluster)
-        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new KafkaTopicPartition(tp.topic, tp.partition)).asJava
         val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
 
         val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
@@ -140,7 +156,7 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
       "will only fetch whitelisted topics when whitelist is a regex against multiple topics" in {
         val tmpCluster = cluster.copy(topicWhitelist = List("test.+"))
         val (_,_,client) = getClient(tmpCluster)
-        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new KafkaTopicPartition(tp.topic, tp.partition)).asJava
         val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
 
         val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
@@ -151,7 +167,7 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
       "will exclude topics that match with blacklist regex" in {
         val tmpCluster = cluster.copy(topicWhitelist = List("test.+"), topicBlacklist = List(".+topic-2"))
         val (_,_,client) = getClient(tmpCluster)
-        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new KafkaTopicPartition(tp.topic, tp.partition)).asJava
         val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
 
         val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)
@@ -162,7 +178,7 @@ class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoS
       "will not return any topics if the whitelist is empty" in {
         val tmpCluster = cluster.copy(topicWhitelist = List.empty)
         val (_,_,client) = getClient(tmpCluster)
-        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new TP(tp.topic, tp.partition)).asJava
+        val tps = Set(topicPartition0, topicPartition1, topicPartition2, topic2Partition0).map(tp => new KafkaTopicPartition(tp.topic, tp.partition)).asJava
         val members = List(new MemberDescription(consumerId, clientId, tmpHost, new MemberAssignment(tps))).asJava
 
         val description = new ConsumerGroupDescription(groupId, true, members, "", ConsumerGroupState.STABLE, node)

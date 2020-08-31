@@ -253,8 +253,15 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
                                                 offsetMap: Map[KafkaTopicPartition, OffsetAndMetadata]): GroupOffsets =
     (for {
       gtp <- gtps
-      offset <- offsetMap.get(gtp.tp.asKafka).map(_.offset())
-    } yield gtp -> Some(LookupTable.Point(offset, now))).toMap
+      offsetResult <- offsetMap.get(gtp.tp.asKafka)
+    } yield {
+      // Offset can be null if it's invalid.  See javadocs:
+      // https://kafka.apache.org/25/javadoc/org/apache/kafka/clients/admin/ListConsumerGroupOffsetsResult.html#partitionsToOffsetAndMetadata--
+      if (offsetResult == null)
+        gtp -> None
+      else
+        gtp -> Some(LookupTable.Point(offsetResult.offset(), now))
+    }).toMap
 
   def close(): Unit = {
     adminClient.close()
