@@ -10,7 +10,7 @@ import com.lightbend.kafkalagexporter.Metrics._
 
 import scala.util.Try
 
-class IntegrationSpec extends SpecBase(exporterPort = 8000) {
+class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationSpec) {
 
   "kafka lag exporter" should {
     val group = createGroupId(1)
