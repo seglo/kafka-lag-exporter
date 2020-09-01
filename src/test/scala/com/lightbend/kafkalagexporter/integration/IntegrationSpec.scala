@@ -10,7 +10,7 @@ import com.lightbend.kafkalagexporter.Metrics._
 
 import scala.util.Try
 
-class IntegrationSpec extends SpecBase(exporterPort = 8000) {
+class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationSpec) {
 
   "kafka lag exporter" should {
     val group = createGroupId(1)
@@ -25,6 +25,7 @@ class IntegrationSpec extends SpecBase(exporterPort = 8000) {
 
         val rules = List(
           Rule.create(LatestOffsetMetric, (actual: String) => actual shouldBe (totalOffsets + 1).toDouble.toString, clusterName, topic, partition),
+          Rule.create(EarliestOffsetMetric, (actual: String) => actual shouldBe 0.toDouble.toString, clusterName, topic, partition),
           Rule.create(LastGroupOffsetMetric, (actual: String) => actual shouldBe offsetsToCommit.toDouble.toString, clusterName, group, topic, partition),
           Rule.create(OffsetLagMetric, (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group, topic, partition),
           // TODO: update test so we can assert actual lag in time.  keep producer running for more than two polling cycles.

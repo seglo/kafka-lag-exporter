@@ -9,8 +9,10 @@ import java.time.Clock
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import com.lightbend.kafkalagexporter.ConsumerGroupCollector.OffsetsSnapshot.MetricKeys
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
+import org.slf4j.Logger
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -27,6 +29,14 @@ object ConsumerGroupCollector {
   final case object Stop extends Stop
   final case class StopWithError(throwable: Throwable) extends Message
   final case class MetaData(pollTime: Long) extends Message
+  object OffsetsSnapshot {
+    final case class MetricKeys(
+                                 tps: List[Domain.TopicPartition] = Nil,
+                                 groups: List[String] = Nil,
+                                 gtps: List[Domain.GroupTopicPartition] = Nil
+                               )
+
+  }
   final case class OffsetsSnapshot(
                                     timestamp: Long,
                                     groups: List[String],
@@ -34,14 +44,18 @@ object ConsumerGroupCollector {
                                     latestOffsets: PartitionOffsets,
                                     lastGroupOffsets: GroupOffsets
                                   ) extends Message {
+    import OffsetsSnapshot._
+
     private val TpoFormat = "  %-64s%-11s%s"
     private val GtpFormat = "  %-64s%-64s%-11s%s"
 
-    def diff(other: OffsetsSnapshot): (List[TopicPartition], List[String], List[GroupTopicPartition]) = {
-      val evictedTps = latestOffsets.keySet.diff(other.latestOffsets.keySet).toList
-      val evictedGroups = groups.diff(other.groups)
-      val evictedGtps = lastGroupOffsets.keySet.diff(other.lastGroupOffsets.keySet).toList
-      (evictedTps, evictedGroups, evictedGtps)
+    val metricKeys: MetricKeys = MetricKeys(latestOffsets.keys.toList, groups, lastGroupOffsets.keys.toList)
+
+    def diff(other: OffsetsSnapshot): MetricKeys = {
+      val evictedTps = metricKeys.tps.diff(other.metricKeys.tps)
+      val evictedGroups = metricKeys.groups.diff(other.metricKeys.groups)
+      val evictedGtps = metricKeys.gtps.diff(other.metricKeys.gtps)
+      MetricKeys(evictedTps, evictedGroups, evictedGtps)
     }
 
     override def toString: String = {
@@ -156,13 +170,10 @@ object ConsumerGroupCollector {
       case (context, snapshot: OffsetsSnapshot) =>
         context.log.debug("Received Offsets Snapshot:\n{}", snapshot)
 
-        val (evictedTps, evictedGroups, evictedGtps) = state
-          .lastSnapshot
-          .map(_.diff(snapshot))
-          .getOrElse((Nil, Nil, Nil))
+        val evictedKeys = state.lastSnapshot.map(_.diff(snapshot)).getOrElse(MetricKeys())
 
         context.log.info("Updating lookup tables")
-        refreshLookupTable(state, snapshot, evictedTps)
+        refreshLookupTable(state, snapshot, evictedKeys.tps)
 
         reporters.foreach { reporter =>
           context.log.info("Reporting offsets")
@@ -171,7 +182,7 @@ object ConsumerGroupCollector {
           reportConsumerGroupMetrics(config, reporter, snapshot, state.topicPartitionTables)
 
           context.log.info("Clearing evicted metrics")
-          reportEvictedMetrics(config, reporter, evictedTps, evictedGroups, evictedGtps)
+          evictMetricsFromReporter(config, reporter, evictedKeys)
         }
 
         context.log.info("Polling in {}", config.pollInterval)
@@ -193,12 +204,23 @@ object ConsumerGroupCollector {
         state.scheduledCollect.cancel()
         Behaviors.stopped { () =>
           client.close()
+          evictAllClusterMetrics(context.log, config, reporters, state)
           context.log.info("Gracefully stopped polling and Kafka client for cluster: {}", config.cluster.name)
         }
-      case (_, StopWithError(t)) =>
+      case (context, StopWithError(t)) =>
         state.scheduledCollect.cancel()
         client.close()
+        evictAllClusterMetrics(context.log, config, reporters, state)
         throw new Exception("A failure occurred while retrieving offsets.  Shutting down.", t)
+    }
+
+    /**
+      * Evict all metrics from reports before shutdown
+      */
+    private def evictAllClusterMetrics(log: Logger, config: CollectorConfig, reporters: List[ActorRef[MetricsSink.Message]], state: CollectorState) = {
+      log.info("Clearing all metrics before shutdown")
+      val metricKeys = state.lastSnapshot.map(_.metricKeys).getOrElse(MetricKeys())
+      reporters.foreach(reporter => evictMetricsFromReporter(config, reporter, metricKeys))
     }
 
     /**
@@ -281,26 +303,27 @@ object ConsumerGroupCollector {
       } reporter ! Metrics.TopicPartitionValueMessage(Metrics.LatestOffsetMetric, config.cluster.name, tp, point.offset)
     }
 
-    private def reportEvictedMetrics(
+    private def evictMetricsFromReporter(
                                       config: CollectorConfig,
                                       reporter: ActorRef[MetricsSink.Message],
-                                      tps: List[Domain.TopicPartition],
-                                      groups: List[String],
-                                      gtps: List[Domain.GroupTopicPartition]): Unit = {
-      tps.foreach(tp => reporter ! Metrics.TopicPartitionRemoveMetricMessage(Metrics.LatestOffsetMetric, config.cluster.name, tp))
-      groups.foreach { group =>
+                                      metricKeys: MetricKeys): Unit = {
+      metricKeys.tps.foreach { tp =>
+        reporter ! Metrics.TopicPartitionRemoveMetricMessage(Metrics.LatestOffsetMetric, config.cluster.name, tp)
+        reporter ! Metrics.TopicPartitionRemoveMetricMessage(Metrics.EarliestOffsetMetric, config.cluster.name, tp)
+      }
+      metricKeys.groups.foreach { group =>
         reporter ! Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupOffsetLagMetric, config.cluster.name, group)
         reporter ! Metrics.GroupRemoveMetricMessage(Metrics.MaxGroupTimeLagMetric, config.cluster.name, group)
         reporter ! Metrics.GroupRemoveMetricMessage(Metrics.SumGroupOffsetLagMetric, config.cluster.name, group)
       }
-      gtps.foreach { gtp =>
+      metricKeys.gtps.foreach { gtp =>
         reporter ! Metrics.GroupPartitionRemoveMetricMessage(Metrics.LastGroupOffsetMetric, config.cluster.name, gtp)
         reporter ! Metrics.GroupPartitionRemoveMetricMessage(Metrics.OffsetLagMetric, config.cluster.name, gtp)
         reporter ! Metrics.GroupPartitionRemoveMetricMessage(Metrics.TimeLagMetric, config.cluster.name, gtp)
       }
 
       for {
-        (group, gtps) <- gtps.groupBy(_.id)
+        (group, gtps) <- metricKeys.gtps.groupBy(_.id)
         topic <- gtps.map(_.topic).distinct
       } reporter ! Metrics.GroupTopicRemoveMetricMessage(Metrics.SumGroupTopicOffsetLagMetric, config.cluster.name, group, topic)
     }
