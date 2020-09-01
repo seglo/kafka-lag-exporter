@@ -22,7 +22,8 @@
 - [Run Standalone](#run-standalone)
   - [Reporters](#reporters)
   - [Configuration](#configuration-1)
-  - [Running Docker Image](#running-docker-image)
+  - [Run as Java App](#run-as-java-app)
+  - [Run as Docker Image](#run-as-docker-image)
 - [Troubleshooting](#troubleshooting)
 - [Required Permissions for Kafka ACL](#required-permissions-for-kafka-acl)
 - [Estimate Consumer Group Time Lag](#estimate-consumer-group-time-lag)
@@ -306,12 +307,25 @@ kafka-lag-exporter {
 }
 ```
 
-### Running Docker Image
+### Run as Java App
+
+Download the release **zip** file (`kafka-lag-exporter-{VERSION}.zip`) from the [GitHub release](https://github.com/lightbend/kafka-lag-exporter/releases) page.
+Extract its contents and run the `./bin/kafka-lag-exporter` shell script.
+
+Ex)
+
+```
+./bin/kafka-lag-exporter \
+    -Dconfig.file=/opt/docker/conf/application.conf \ 
+    -Dlogback.configurationFile=/opt/docker/conf/logback.xml
+```
+
+### Run as Docker Image
 
 Define an `application.conf` and optionally a `logback.xml` with your configuration.
 
-Run the Docker image. Expose metrics endpoint on the host port `8000`. Mount a config dir with your `application.conf`
-`logback.xml` into the container.
+Run the Docker image. 
+Expose metrics endpoint on the host port `8000`. Mount a config dir with your `application.conf` and `logback.xml` into the container.
 
 Ex)
 
