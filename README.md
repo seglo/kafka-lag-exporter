@@ -24,6 +24,7 @@
   - [Configuration](#configuration-1)
   - [Running Docker Image](#running-docker-image)
 - [Troubleshooting](#troubleshooting)
+- [Required Permissions for Kafka ACL](#required-permissions-for-kafka-acl)
 - [Estimate Consumer Group Time Lag](#estimate-consumer-group-time-lag)
 - [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher)
 - [Monitoring with Grafana](#monitoring-with-grafana)
@@ -351,6 +352,28 @@ Last Group Offsets:
 If installing with Helm then you can enable `DEBUG` logging with the `kafkaLogLevel` configuration in the chart's `[values.yaml](https://github.com/lightbend/kafka-lag-exporter/blob/master/charts/kafka-lag-exporter/values.yaml)`.
 
 When running in standalone mode you can either define assign the `KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL` environment variable to `DEBUG`, or override the log level of `com.lightbend.kafkalagexporter` directly in the `logback.xml`.
+
+## Required Permissions for Kafka ACL
+
+Kafka Lag Exporter (`kafka-lag-exporter`) requires the `DESCRIBE` operation permission for consumer groups and topics at the cluster level.
+
+```
+ACLs for principal `User:kafka-lag-exporter`
+Current ACLs for resource `Cluster:LITERAL:kafka-cluster`: 
+ 	User:kafka-lag-exporter has Allow permission for operations: Describe from hosts: * 
+
+Current ACLs for resource `Group:LITERAL:*`: 
+ 	User:kafka-lag-exporter has Allow permission for operations: Describe from hosts: * 
+
+Current ACLs for resource `Topic:LITERAL:*`: 
+ 	User:kafka-lag-exporter has Allow permission for operations: Describe from hosts: * 
+```
+
+This can be added using the following command:
+
+```
+kafka-acls --add --allow-principal "User:kafka-lag-exporter" --operation DESCRIBE --group '*' --topic '*' --cluster
+```
 
 ## Estimate Consumer Group Time Lag
 
