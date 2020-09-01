@@ -588,6 +588,14 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.6.3
+
+* Configurable readiness and liveness probes in helm chart [#145](https://github.com/lightbend/kafka-lag-exporter/pull/145) ([@chelomontilla](https://github.com/chelomontilla))
+* Swap embedded-kafka for testcontainers [#147](https://github.com/lightbend/kafka-lag-exporter/pull/147)
+* Bugfix: Handle null offset in consumer group offset result [#149](https://github.com/lightbend/kafka-lag-exporter/pull/149)
+* List Permissions required by Kafka Lag Exporter to run against a secured Kafka cluster [#152](https://github.com/lightbend/kafka-lag-exporter/pull/152)
+* Bugfix: Evict all metrics for a cluster on collector stop or failure [#154](https://github.com/lightbend/kafka-lag-exporter/pull/154)
+
 0.6.2
 
 * Support init containers in helm chart [#135](https://github.com/lightbend/kafka-lag-exporter/pull/135) ([@terjesannum](https://github.com/terjesannum))
