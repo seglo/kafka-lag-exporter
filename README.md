@@ -23,10 +23,12 @@
   - [Reporters](#reporters)
   - [Configuration](#configuration-1)
   - [Running Docker Image](#running-docker-image)
+- [Troubleshooting](#troubleshooting)
 - [Estimate Consumer Group Time Lag](#estimate-consumer-group-time-lag)
 - [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher)
 - [Monitoring with Grafana](#monitoring-with-grafana)
 - [Filtering Metrics without Prometheus Server](#filtering-metrics-without-prometheus-server)
+- [Health Check](#health-check)
 - [Development](#development)
   - [Tests](#tests)
   - [Testing with local `docker-compose.yaml`](#testing-with-local-docker-composeyaml)
@@ -323,6 +325,33 @@ docker run -p 8000:8000 \
 
 See full example in [`./examples/standalone`](./examples/standalone).
 
+## Troubleshooting
+
+If you observe Kafka Lag Exporter reporting odd or inconsistent metric data then before creating an issue please enable `DEBUG` logging to get raw data consumed from Kafka used to calculate metrics that are exported.
+If this logging does not help you resolve the problem then include logs, and your application configuration in a new GitHub issue.
+
+Ex)
+
+```
+2020-08-31 16:14:06,478 DEBUG [default-dispatcher-3] [c.l.k.ConsumerGroupCollector$       ]  Received Offsets Snapshot:
+
+Timestamp: 1598904846431
+Groups: group-1-1
+Earliest Offsets:
+  Topic                                                           Partition  Earliest
+  topic-1-2                                                       0          0
+Latest Offsets:
+  Topic                                                           Partition  Offset
+  topic-1-2                                                       0          11
+Last Group Offsets:
+  Group                                                           Topic                                                           Partition  Offset
+  group-1-1                                                       topic-1-2                                                       0          5
+```
+
+If installing with Helm then you can enable `DEBUG` logging with the `kafkaLogLevel` configuration in the chart's `[values.yaml](https://github.com/lightbend/kafka-lag-exporter/blob/master/charts/kafka-lag-exporter/values.yaml)`.
+
+When running in standalone mode you can either define assign the `KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL` environment variable to `DEBUG`, or override the log level of `com.lightbend.kafkalagexporter` directly in the `logback.xml`.
+
 ## Estimate Consumer Group Time Lag
 
 One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag (wait time).  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.
@@ -516,7 +545,7 @@ required.  Before running a release make sure the following pre-req's are met.
 ### Release steps
 
 1. Update the Change log
-2. Run `doctoc` on `README.md`
+2. Run `doctoc README.md`
 3. Run `sbt release`.  To see what steps are performed during release consult the `build.sbt`.
 4. Review the GitHub release draft and submit it.
 
