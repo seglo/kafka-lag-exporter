@@ -49,9 +49,7 @@ application written in [Scala](https://www.scala-lang.org/).
 For more information about Kafka Lag Exporter's features see Lightbend's blog post:
 [Monitor Kafka Consumer Group Latency with Kafka Lag Exporter](https://www.lightbend.com/blog/monitor-kafka-consumer-group-latency-with-kafka-lag-exporter).
 
-**Project Status:** *beta*
-
-**Author:** [Sean Glover](https://seanglover.com) ([@seg1o](https://twitter.com/seg1o))
+_Kafka Lag Exporter is maintained by [@seglo](https://github.com/seglo) and a community of contributors. It is not covered by support under the [Lightbend subscription](https://www.lightbend.com/subscription)._
 
 ## Metrics
 
