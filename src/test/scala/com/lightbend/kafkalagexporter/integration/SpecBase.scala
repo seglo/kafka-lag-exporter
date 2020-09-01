@@ -56,6 +56,6 @@ abstract class SpecBase(val exporterPort: Int)
 
   override def afterEach(): Unit = {
     kafkaLagExporter ! KafkaClusterManager.Stop
-    Await.result(kafkaLagExporter.whenTerminated, 10 seconds)
+    Await.result(kafkaLagExporter.whenTerminated, 15 seconds)
   }
 }

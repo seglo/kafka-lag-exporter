@@ -6,11 +6,9 @@ package com.lightbend.kafkalagexporter.integration
 
 import com.lightbend.kafkalagexporter.Metrics._
 
-import scala.jdk.CollectionConverters._
-
-class MetricsEvictionSpec extends SpecBase(exporterPort = 8001) {
+class MetricsEvictionOnFailureSpec extends SpecBase(exporterPort = 8001) {
   "kafka lag exporter" should {
-    "not report metrics for group members or partitions that no longer exist" in {
+    "not report metrics for group members or partitions after a failure" in {
       val group = createGroupId(1)
       val partition = "0"
       val topic = createTopic(1, 1, 1)
@@ -35,7 +33,7 @@ class MetricsEvictionSpec extends SpecBase(exporterPort = 8001) {
 
       eventually(scrapeAndAssert(exporterPort, "Assert offset-based metrics", rules: _*))
 
-      adminClient.deleteConsumerGroups(List(group).asJava)
+      stopKafka()
 
       eventually(scrapeAndAssertDne(exporterPort, "Assert offset-based metrics no longer exist", rules: _*))
     }
