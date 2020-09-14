@@ -9,7 +9,6 @@ import java.util.concurrent.Executors
 import akka.actor.typed.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import io.prometheus.client.CollectorRegistry
-import io.prometheus.client.exporter.HTTPServer
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
@@ -31,22 +30,27 @@ object MainApp extends App {
 
     val clientCreator = (cluster: KafkaCluster) =>
       KafkaClient(cluster, appConfig.clientGroupId, appConfig.clientTimeout)(kafkaClientEc)
+
     var endpointCreators : List[KafkaClusterManager.NamedCreator] = List()
-    appConfig.prometheusConfig.foreach { prometheus =>
-      val prometheusCreator = KafkaClusterManager.NamedCreator(
-        "prometheus-lag-reporter", 
-        (() => PrometheusEndpointSink(
-          Metrics.definitions, appConfig.metricWhitelist, appConfig.clustersGlobalLabels(), new HTTPServer(prometheus.port), CollectorRegistry.defaultRegistry
-        ))
-      )
-      endpointCreators = prometheusCreator :: endpointCreators
+
+    appConfig.sinkConfigs.foreach { sinkConfig =>
+      val endpointCreator = sinkConfig.sinkType match {
+        case "PrometheusEndpointSink" =>
+          KafkaClusterManager.NamedCreator("prometheus-lag-reporter",
+            (() => PrometheusEndpointSink(sinkConfig.asInstanceOf[PrometheusEndpointSinkConfig], Metrics.definitions,
+              appConfig.clustersGlobalLabels(), CollectorRegistry.defaultRegistry)))
+        case "InfluxDBPusherSink" =>
+          KafkaClusterManager.NamedCreator("influxDB-lag-reporter",
+            (() => InfluxDBPusherSink(sinkConfig.asInstanceOf[InfluxDBPusherSinkConfig],
+              appConfig.clustersGlobalLabels())))
+        case "GraphiteEndpointSink" =>
+          KafkaClusterManager.NamedCreator("graphite-lag-reporter",
+            (() => GraphiteEndpointSink(sinkConfig.asInstanceOf[GraphiteEndpointConfig], appConfig.clustersGlobalLabels())))
+      }
+      endpointCreators = endpointCreator :: endpointCreators
     }
-    appConfig.graphiteConfig.foreach { _ =>
-      val graphiteCreator = KafkaClusterManager.NamedCreator(
-        "graphite-lag-reporter",
-        (() => GraphiteEndpointSink(appConfig.metricWhitelist, appConfig.clustersGlobalLabels(), appConfig.graphiteConfig)))
-      endpointCreators = graphiteCreator :: endpointCreators
-    }
+
+
     ActorSystem(
       KafkaClusterManager.init(appConfig, endpointCreators, clientCreator), "kafka-lag-exporter")
   }
