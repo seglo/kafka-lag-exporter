@@ -250,7 +250,7 @@ class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData wi
 
     "topic offset lag metric" in {
       metrics.collectFirst {
-        case GroupTopicValueMessage(`SumGroupTopicOffsetLagMetric`, config.cluster.name, `groupId`, `topic`, value) if value.isNaN => true
+        case GroupTopicValueMessage(`SumGroupTopicOffsetLagMetric`, config.cluster.name, `groupId`, `topic`, value) if !value.isNaN => true
       }.nonEmpty shouldBe true
     }
   }
