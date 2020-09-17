@@ -271,11 +271,11 @@ object ConsumerGroupCollector {
         reporter ! Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, config.cluster.name, group, maxOffsetLag.offsetLag)
         reporter ! Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, config.cluster.name, group, maxTimeLag.timeLag)
 
-        val sumOffsetLag = groupValues.map(_.offsetLag).sum
+        val sumOffsetLag = groupValues.map(_.offsetLag).filter(offsetLag => !offsetLag.isNaN).sum
         reporter ! Metrics.GroupValueMessage(Metrics.SumGroupOffsetLagMetric, config.cluster.name, group, sumOffsetLag)
 
         for((topic, topicValues) <- groupValues.groupBy(_.gtp.topic)) {
-          val topicOffsetLag = topicValues.map(_.offsetLag).sum
+          val topicOffsetLag = topicValues.map(_.offsetLag).filter(offsetLag => !offsetLag.isNaN).sum
 
           reporter ! Metrics.GroupTopicValueMessage(Metrics.SumGroupTopicOffsetLagMetric, config.cluster.name, group, topic, topicOffsetLag)
         }
