@@ -588,6 +588,10 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.6.4
+
+* Bugfix: Filter Out NaN Values from Aggregate Metrics [#158](https://github.com/lightbend/kafka-lag-exporter/pull/158) ([@simoncaron](https://github.com/simoncaron))
+
 0.6.3
 
 * Configurable readiness and liveness probes in helm chart [#145](https://github.com/lightbend/kafka-lag-exporter/pull/145) ([@chelomontilla](https://github.com/chelomontilla))
