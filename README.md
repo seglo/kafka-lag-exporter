@@ -588,6 +588,10 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.6.5
+
+* Use `centos:8` docker base layer [#168](https://github.com/lightbend/kafka-lag-exporter/pull/168) ([@killuazhu](https://github.com/killuazhu))
+
 0.6.4
 
 * Bugfix: Filter Out NaN Values from Aggregate Metrics [#158](https://github.com/lightbend/kafka-lag-exporter/pull/158) ([@simoncaron](https://github.com/simoncaron))

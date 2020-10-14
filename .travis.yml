@@ -19,6 +19,8 @@ jobs:
     - stage: test
       script: sbt test
       name: tests
+    - name: docker image
+      script: sbt docker:publishLocal
     - name: helm chart
       script:
         - ./scripts/lint_chart.sh
