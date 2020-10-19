@@ -30,4 +30,7 @@ spec:
     {{- if .Values.prometheus.serviceMonitor.scrapeTimeout }}
     scrapeTimeout: {{ .Values.prometheus.serviceMonitor.scrapeTimeout }}
     {{- end }}
+  {{- if .Values.prometheus.serviceMonitor.additionalConfig }}
+{{ toYaml .Values.prometheus.serviceMonitor.additionalConfig | indent 2}}
+  {{- end }}
 {{- end }}

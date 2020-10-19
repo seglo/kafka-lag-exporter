@@ -138,4 +138,8 @@ prometheus:
     # service monitor label selectors: https://github.com/helm/charts/blob/f5a751f174263971fafd21eee4e35416d6612a3d/stable/prometheus-operator/templates/prometheus/prometheus.yaml#L74
     # additionalLabels:
     #   prometheus: k8s
+    # additionalConfig:
+    #   targetLabels:
+    #   - prometheus
+    #   - app.kubernetes.io/name
 
