@@ -36,7 +36,7 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
 
   override def report(m: MetricValue): Unit = {
     if (sinkConfig.metricWhitelist.exists(m.definition.name.matches)) {
-      if (!m.value.isNaN) {
+      if (!m.value.isNaN && !m.value.isInfinite) {
         write(m)
       }
     }
