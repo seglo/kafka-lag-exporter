@@ -32,7 +32,7 @@ object AppConfig {
       sink match {
         case "PrometheusEndpointSink" => Some(new PrometheusEndpointSinkConfig(sink, metricWhitelist, c))
         case "InfluxDBPusherSink" => Some(new InfluxDBPusherSinkConfig(sink, metricWhitelist, c))
-        case "GraphicEndpointSink" => Some(new GraphiteEndpointConfig(sink, metricWhitelist, c))
+        case "GraphiteEndpointSink" => Some(new GraphiteEndpointConfig(sink, metricWhitelist, c))
         case _ => None
       }
     }
