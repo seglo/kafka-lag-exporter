@@ -34,8 +34,8 @@ class InfluxDBPusherSinkTest extends fixture.FreeSpec with Matchers
   override def withFixture(test: OneArgTest): Outcome = {
     val port: Int = 8086
     val properties: Map[String, Any] = Map(
-      "reporters.influxDB.endpoint" -> "http://localhost",
-      "reporters.influxDB.port" -> port
+      "reporters.influxdb.endpoint" -> "http://localhost",
+      "reporters.influxdb.port" -> port
     )
     test(Fixture(properties, port))
   }

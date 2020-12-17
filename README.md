@@ -231,7 +231,7 @@ defaults defined in the project itself.  See [`reference.conf`](./src/main/resou
 
 It is possible to report (either one, multiple or all):
 
-  - to influxdb via the config `kafka-lag-exporter.reporters.influxDB`
+  - to influxdb via the config `kafka-lag-exporter.reporters.influxdb`
   - to graphite via the config `kafka-lag-exporter.reporters.graphite`
   - as prometheus via the config `kafka-lag-exporter.reporters.prometheus`
 
@@ -247,12 +247,12 @@ General Configuration (`kafka-lag-exporter{}`)
 | `reporters.graphite.host`     | None                 | The graphite host to send metrics to (if not set, will not output to graphite)                                                        |
 | `reporters.graphite.port`     | None                 | The graphite port to send metrics to (if not set, will not output to graphite)                                                        |
 | `reporters.graphite.prefix`   | None                 | The graphite metric prefix (if not set, prefix will be empty)                                                                         |
-| `reporters.influxDB.endpoint` | None                 | The influxDB host to send metrics to (if not set, will not output to influxDB)                                                        |
-| `reporters.influxDB.port`     | None                 | The influxDB port to send metrics to (if not set, will not output to influxDB)                                                        |
-| `reporters.influxDB.database` | `kafka_lag_exporter` | The influxDB database to send metrics to                                                                                              |
-| `reporters.influxDB.username` | None                 | The influxDB username to connect (if not set, username will be empty)                                                                 |
-| `reporters.influxDB.password` | None                 | The influxDB password to connect (if not set, password will be empty)                                                                 |
-| `reporters.influxDB.async`    | `true`               | Flag to enable influxDB async **non-blocking** write mode to send metrics                                                             |
+| `reporters.influxdb.endpoint` | None                 | The influxdb host to send metrics to (if not set, will not output to influxdb)                                                        |
+| `reporters.influxdb.port`     | None                 | The influxdb port to send metrics to (if not set, will not output to influxdb)                                                        |
+| `reporters.influxdb.database` | `kafka_lag_exporter` | The influxdb database to send metrics to                                                                                              |
+| `reporters.influxdb.username` | None                 | The influxdb username to connect (if not set, username will be empty)                                                                 |
+| `reporters.influxdb.password` | None                 | The influxdb password to connect (if not set, password will be empty)                                                                 |
+| `reporters.influxdb.async`    | `true`               | Flag to enable influxdb async **non-blocking** write mode to send metrics                                                             |
 | `poll-interval`               | `30 seconds`         | How often to poll Kafka for latest and group offsets                                                                                  |
 | `lookup-table-size`           | `60`                 | The maximum window size of the look up table **per partition**                                                                        |
 | `client-group-id`             | `kafkalagexporter`   | Consumer group id of kafka-lag-exporter's client connections                                                                          |
