@@ -25,4 +25,3 @@ abstract class EndpointSink (clusterGlobalLabels: ClusterGlobalLabels) extends M
     globalLabelNames.map(l => globalLabelValuesForCluster.getOrElse(l, ""))
   }
 }
-

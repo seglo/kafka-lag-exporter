@@ -229,8 +229,9 @@ defaults defined in the project itself.  See [`reference.conf`](./src/main/resou
 
 ### Reporters
 
-It is possible to report (either or both):
+It is possible to report (either one, multiple or all):
 
+  - to influxdb via the config `kafka-lag-exporter.reporters.influxdb`
   - to graphite via the config `kafka-lag-exporter.reporters.graphite`
   - as prometheus via the config `kafka-lag-exporter.reporters.prometheus`
 
@@ -240,19 +241,25 @@ See section below for more information.
 
 General Configuration (`kafka-lag-exporter{}`)
 
-| Key                         | Default            | Description                                                                                                                           |
-|-----------------------------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| `reporters.prometheus.port` | `8000`             | The port to run the Prometheus endpoint on                                                                                            |
-| `reporters.graphite.host`   | None               | The graphite host to send metrics to (if not set, will not output to graphite)                                                        |
-| `reporters.graphite.port`   | None               | The graphite port to send metrics to (if not set, will not output to graphite)                                                        |
-| `reporters.graphite.prefix` | None               | The graphite metric prefix (if not set, prefix will be empty)                                                                         |
-| `poll-interval`             | `30 seconds`       | How often to poll Kafka for latest and group offsets                                                                                  |
-| `lookup-table-size`         | `60`               | The maximum window size of the look up table **per partition**                                                                        |
-| `client-group-id`           | `kafkalagexporter` | Consumer group id of kafka-lag-exporter's client connections                                                                          |
-| `kafka-client-timeout`      | `10 seconds`       | Connection timeout when making API calls to Kafka                                                                                     |
-| `clusters`                  | `[]`               | A statically defined list of Kafka connection details.  This list is optional if you choose to use the Strimzi auto-discovery feature |
-| `watchers`                  | `{}`               | Settings for Kafka cluster "watchers" used for auto-discovery.                                                                        |
-| `metric-whitelist`          | `[".*"]`           | Regex of metrics to be exposed via Prometheus endpoint. Eg. `[".*_max_lag.*", "kafka_partition_latest_offset"]`                       |
+| Key                           | Default              | Description                                                                                                                           |
+|-------------------------------|----------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `reporters.prometheus.port`   | `8000`               | The port to run the Prometheus endpoint on                                                                                            |
+| `reporters.graphite.host`     | None                 | The graphite host to send metrics to (if not set, will not output to graphite)                                                        |
+| `reporters.graphite.port`     | None                 | The graphite port to send metrics to (if not set, will not output to graphite)                                                        |
+| `reporters.graphite.prefix`   | None                 | The graphite metric prefix (if not set, prefix will be empty)                                                                         |
+| `reporters.influxdb.endpoint` | None                 | The influxdb host to send metrics to (if not set, will not output to influxdb)                                                        |
+| `reporters.influxdb.port`     | None                 | The influxdb port to send metrics to (if not set, will not output to influxdb)                                                        |
+| `reporters.influxdb.database` | `kafka_lag_exporter` | The influxdb database to send metrics to                                                                                              |
+| `reporters.influxdb.username` | None                 | The influxdb username to connect (if not set, username will be empty)                                                                 |
+| `reporters.influxdb.password` | None                 | The influxdb password to connect (if not set, password will be empty)                                                                 |
+| `reporters.influxdb.async`    | `true`               | Flag to enable influxdb async **non-blocking** write mode to send metrics                                                             |
+| `poll-interval`               | `30 seconds`         | How often to poll Kafka for latest and group offsets                                                                                  |
+| `lookup-table-size`           | `60`                 | The maximum window size of the look up table **per partition**                                                                        |
+| `client-group-id`             | `kafkalagexporter`   | Consumer group id of kafka-lag-exporter's client connections                                                                          |
+| `kafka-client-timeout`        | `10 seconds`         | Connection timeout when making API calls to Kafka                                                                                     |
+| `clusters`                    | `[]`                 | A statically defined list of Kafka connection details.  This list is optional if you choose to use the Strimzi auto-discovery feature |
+| `watchers`                    | `{}`                 | Settings for Kafka cluster "watchers" used for auto-discovery.                                                                        |
+| `metric-whitelist`            | `[".*"]`             | Regex of metrics to be exposed via Prometheus endpoint. Eg. `[".*_max_lag.*", "kafka_partition_latest_offset"]`                       |
 
 Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 

@@ -25,6 +25,7 @@ lazy val kafkaLagExporter =
         AkkaSlf4j,
         AkkaStreams,
         AkkaStreamsProtobuf,
+        AkkaInfluxDB,
         Fabric8Model,
         Fabric8Client,
         Prometheus,
@@ -38,6 +39,7 @@ lazy val kafkaLagExporter =
         AkkaStreamsTestKit,
         AlpakkaKafkaTestKit,
         Testcontainers,
+        EmbedInflux,
         AkkaHttp
       ),
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),

@@ -14,16 +14,16 @@ import scala.util.Try
 
 object GraphiteEndpointSink {
 
-  def apply(metricWhitelist: List[String], clusterGlobalLabels: ClusterGlobalLabels,
-            graphiteConfig: Option[GraphiteConfig]): MetricsSink = {
-    Try(new GraphiteEndpointSink(metricWhitelist, clusterGlobalLabels, graphiteConfig))
+  def apply(graphiteConfig: GraphiteEndpointConfig, clusterGlobalLabels: ClusterGlobalLabels
+            ): MetricsSink = {
+    Try(new GraphiteEndpointSink(graphiteConfig, clusterGlobalLabels))
       .fold(t => throw new Exception("Could not create Graphite Endpoint", t), sink => sink)
   }
 }
 
-class GraphiteEndpointSink private(metricWhitelist: List[String], clusterGlobalLabels: ClusterGlobalLabels,
-                                      graphiteConfig: Option[GraphiteConfig]) extends EndpointSink(clusterGlobalLabels) {
-  def graphitePush(graphiteConfig: GraphiteConfig, metricName: String, metricValue: Double): Unit = {
+class GraphiteEndpointSink private(graphiteConfig: GraphiteEndpointConfig, clusterGlobalLabels:
+   ClusterGlobalLabels) extends EndpointSink(clusterGlobalLabels) {
+  def graphitePush(graphiteConfig: GraphiteEndpointConfig, metricName: String, metricValue: Double): Unit = {
     Try(new Socket(graphiteConfig.host, graphiteConfig.port)) match {
       case Success(socket) =>
         Try(new PrintWriter(socket.getOutputStream)) match {
@@ -44,23 +44,19 @@ class GraphiteEndpointSink private(metricWhitelist: List[String], clusterGlobalL
     *
     * @example { label1=value1, label2=value2, name=myName } => "value1.value2.myName"
     *
-    */ 
+    */
   def metricNameToGraphiteMetricName(metricValue: MetricValue): String = {
     (getGlobalLabelValuesOrDefault(metricValue.clusterName) ++ metricValue.labels
       ).map( x => x.replaceAll("\\.", "_")).mkString(".") + "." + metricValue.definition.name;
   }
 
   override def report(m: MetricValue): Unit = {
-    if (metricWhitelist.exists(m.definition.name.matches)) {
-      graphiteConfig.foreach { conf =>
-        graphitePush(conf, metricNameToGraphiteMetricName(m), m.value);
+    if (graphiteConfig.metricWhitelist.exists(m.definition.name.matches)) {
+      graphitePush(graphiteConfig, metricNameToGraphiteMetricName(m), m.value);
       }
     }
-  }
 
   override def remove(m: RemoveMetric): Unit = {
   }
 
-
 }
-

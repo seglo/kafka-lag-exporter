@@ -5,6 +5,8 @@
 package com.lightbend.kafkalagexporter
 
 import org.scalatest._
+import com.typesafe.config.{Config, ConfigFactory}
+import scala.collection.JavaConversions.mapAsJavaMap
 
 class GraphiteEndpointSinkTest extends fixture.FreeSpec with Matchers {
 
@@ -34,8 +36,11 @@ class GraphiteEndpointSinkTest extends fixture.FreeSpec with Matchers {
   "GraphiteEndpointSinkImpl should" - {
 
     "report only metrics which match the regex" in { fixture =>
-      val sink = GraphiteEndpointSink(List("kafka_consumergroup_group_max_lag"), Map("cluster" -> Map.empty),
-        Some(GraphiteConfig("localhost", fixture.server.server.getLocalPort(), None)))
+      val properties = Map(
+        "reporters.graphite.host" -> "localhost",
+        "reporters.graphite.port" -> fixture.server.server.getLocalPort()
+      )
+      val sink = GraphiteEndpointSink(new GraphiteEndpointConfig("GraphiteEndpointSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(mapAsJavaMap(properties))), Map("cluster" -> Map.empty))
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster", "group", 100))
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
       fixture.server.join()
@@ -45,4 +50,3 @@ class GraphiteEndpointSinkTest extends fixture.FreeSpec with Matchers {
   }
 
 }
-
