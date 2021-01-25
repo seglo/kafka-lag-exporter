@@ -43,8 +43,8 @@ object Dependencies {
   val AkkaTypedTestKit      = "com.typesafe.akka"       %% "akka-actor-testkit-typed"  % Version.Akka        % Test
   val AkkaStreamsTestKit    = "com.typesafe.akka"       %% "akka-stream-testkit"       % Version.Akka        % Test
   val MockitoScala          = "org.mockito"             %% "mockito-scala"             % "1.0.8"             % Test
-  val AlpakkaKafkaTestKit   = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.0.4"             % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
-  val Testcontainers        = "org.testcontainers"      %  "kafka"                     % "1.14.3"            % Test
+  val AlpakkaKafkaTestKit   = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.0.6"             % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
+  val Testcontainers        = "org.testcontainers"      %  "kafka"                     % "1.15.1"            % Test
   val AkkaHttp              = "com.typesafe.akka"       %% "akka-http"                 % "10.1.11"
   val EmbedInflux           = "com.github.fsanaulla"    %% "scalatest-embedinflux"     % "0.2.3"             % Test
 }
