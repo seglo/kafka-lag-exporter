@@ -10,6 +10,8 @@ clusters: {}
 #    - "^unmonitored-topics-.+"
 #    groupWhitelist:
 #    - "^analytics-app-.+"
+#    groupBlacklist:
+#    - "^unmonitored-groups-.+"
 #    # Properties defined by org.apache.kafka.clients.consumer.ConsumerConfig
 #    # can be defined in this configuration section.
 #    # https://kafka.apache.org/documentation/#consumerconfigs
@@ -142,4 +144,3 @@ prometheus:
     #   targetLabels:
     #   - prometheus
     #   - app.kubernetes.io/name
-

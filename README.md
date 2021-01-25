@@ -263,16 +263,17 @@ General Configuration (`kafka-lag-exporter{}`)
 
 Kafka Cluster Connection Details (`kafka-lag-exporter.clusters[]`)
 
-| Key                       | Default     | Required | Description                                                                                                                                                                                        |
-|---------------------------|-------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `name`                    | `""`        | Yes      | A unique cluster name to for this Kafka connection detail object                                                                                                                                   |
-| `bootstrap-brokers`       | `""`        | Yes      | Kafka bootstrap brokers.  Comma delimited list of broker hostnames                                                                                                                                 |
-| `group-whitelist`         | `[".*"]`    | No       | A list of Regex of consumer groups monitored. For example, if you only wish to expose only certain groups with `input` and `output` prefixes, use `["^input-.+", "^output-.+"]`.                   |
-| `topic-whitelist`         | `[".*"]`    | No       | A list of Regex of topics monitored. For example, if you only wish to expose only certain topics, use either `["^topic.+"]` or `["topic1", "topic2"]`.                                             |
-| `topic-blacklist`         | `[]`        | No       | A list of Regex of topics **not** monitored. For example, if you wish **not** expose certain topics , use either `["^unmonitored-topic.+"]` or `["unmonitored-topic1", "unmonitored-topic2"]`.     |
-| `consumer-properties`     | `{}`        | No       | A map of key value pairs used to configure the `KafkaConsumer`. See the [Consumer Config](https://kafka.apache.org/documentation/#consumerconfigs) section of the Kafka documentation for options. |
-| `admin-client-properties` | `{}`        | No       | A map of key value pairs used to configure the `AdminClient`. See the [Admin Config](https://kafka.apache.org/documentation/#adminclientconfigs) section of the Kafka documentation for options.   |
-| `labels`                  | `{}`        | No       | A map of key value pairs will be set as additional custom labels per cluster for all the metrics in prometheus.                                                                                    |
+| Key                       | Default     | Required | Description                                                                                                                                                                                               |
+|---------------------------|-------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `name`                    | `""`        | Yes      | A unique cluster name to for this Kafka connection detail object                                                                                                                                          |
+| `bootstrap-brokers`       | `""`        | Yes      | Kafka bootstrap brokers.  Comma delimited list of broker hostnames                                                                                                                                        |
+| `group-whitelist`         | `[".*"]`    | No       | A list of Regex of consumer groups monitored. For example, if you only wish to expose certain groups with `input` and `output` prefixes, use `["^input-.+", "^output-.+"]`.                               |
+| `group-blacklist`         | `[]`        | No       | A list of Regex of consumer groups **not** monitored. For example, if you wish to **not** expose certain groups, use either `["^unmonitored-group.+"]` or `["unmonitored-group1", "unmonitored-group2"]`. |
+| `topic-whitelist`         | `[".*"]`    | No       | A list of Regex of topics monitored. For example, if you only wish to expose certain topics, use either `["^topic.+"]` or `["topic1", "topic2"]`.                                                         |
+| `topic-blacklist`         | `[]`        | No       | A list of Regex of topics **not** monitored. For example, if you wish to **not** expose certain topics, use either `["^unmonitored-topic.+"]` or `["unmonitored-topic1", "unmonitored-topic2"]`.          |
+| `consumer-properties`     | `{}`        | No       | A map of key value pairs used to configure the `KafkaConsumer`. See the [Consumer Config](https://kafka.apache.org/documentation/#consumerconfigs) section of the Kafka documentation for options.        |
+| `admin-client-properties` | `{}`        | No       | A map of key value pairs used to configure the `AdminClient`. See the [Admin Config](https://kafka.apache.org/documentation/#adminclientconfigs) section of the Kafka documentation for options.          |
+| `labels`                  | `{}`        | No       | A map of key value pairs will be set as additional custom labels per cluster for all the metrics in prometheus.                                                                                           |
 
 Watchers (`kafka-lag-exporters.watchers{}`)
 

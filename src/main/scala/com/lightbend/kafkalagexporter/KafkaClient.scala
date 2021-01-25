@@ -177,7 +177,8 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
   }
 
   private[kafkalagexporter] def getGroupIds(groups: util.Collection[ConsumerGroupListing]): List[String] =
-    groups.asScala.map(_.groupId()).toList.filter(g => cluster.groupWhitelist.exists(r => g.matches(r)))
+    groups.asScala.map(_.groupId()).toList
+      .filter(g => cluster.groupWhitelist.exists(r => g.matches(r)) && !cluster.groupBlacklist.exists(r => g.matches(r)))
 
   private[kafkalagexporter] def groupTopicPartitions(groupId: String, desc: ConsumerGroupDescription): List[Domain.GroupTopicPartition] = {
     val groupTopicPartitions = for {
