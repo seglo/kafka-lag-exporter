@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter

@@ -1,25 +1,25 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
- package com.lightbend.kafkalagexporter
+package com.lightbend.kafkalagexporter
 
- import org.scalatest._
- import com.typesafe.config.ConfigFactory
- import scala.collection.JavaConversions.mapAsJavaMap
- import com.github.fsanaulla.core.testing.configurations.InfluxUDPConf
- import com.github.fsanaulla.scalatest.embedinflux.EmbeddedInfluxDB
- import org.scalatest.concurrent.{Eventually, IntegrationPatience}
- import org.scalatest.{Matchers, TryValues}
- import akka.http.scaladsl.unmarshalling.Unmarshal
- import java.net.URLEncoder
- import akka.actor.typed.ActorSystem
- import akka.actor.typed.scaladsl.Behaviors
- import akka.http.scaladsl.Http
- import akka.http.scaladsl.model._
+import org.scalatest._
+import com.typesafe.config.ConfigFactory
+import com.github.fsanaulla.core.testing.configurations.InfluxUDPConf
+import com.github.fsanaulla.scalatest.embedinflux.EmbeddedInfluxDB
+import org.scalatest.concurrent.{Eventually, IntegrationPatience}
+import org.scalatest.{Matchers, TryValues}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import java.net.URLEncoder
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
 
- import scala.concurrent.Await
- import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 
 class InfluxDBPusherSinkTest extends fixture.FreeSpec with Matchers
     with EmbeddedInfluxDB
@@ -50,13 +50,13 @@ class InfluxDBPusherSinkTest extends fixture.FreeSpec with Matchers
     val response: HttpResponse = Await.result(Http(system).singleRequest(request), Duration(10, "seconds"))
     val body: String = Await.result(Unmarshal(response.entity).to[String], Duration(10, "seconds"))
 
-    return body
+    body
   }
 
   "InfluxDBPusherSinkImpl should" - {
 
     "create database" in { fixture =>
-      val sink = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(mapAsJavaMap(fixture.properties))), Map("cluster" -> Map.empty))
+      val _ = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(fixture.properties.asJava)), Map("cluster" -> Map.empty))
       val port = fixture.port
       val url = s"http://localhost:$port"
       val query = URLEncoder.encode("SHOW DATABASES", "UTF-8");
@@ -65,7 +65,7 @@ class InfluxDBPusherSinkTest extends fixture.FreeSpec with Matchers
     }
 
     "report metrics which match the regex" in { fixture =>
-      val sink = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(mapAsJavaMap(fixture.properties))), Map("cluster" -> Map.empty))
+      val sink = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(fixture.properties.asJava)), Map("cluster" -> Map.empty))
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster_test", "group_test", 100))
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster_test", "group_test", 101))
 
