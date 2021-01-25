@@ -6,8 +6,11 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 cd $DIR/..
 
+CHARTS_DIR=".helm-release-packages"
+
 # Bundle Kafka Lag Exporter Helm Chart into a tarball artifact.  The `helm package` command will output the artifact
-# in the CWD it is executed from.
+# in the CHARTS_DIR.
 echo Package helm chart
-rm -f ./kafka-lag-exporter-*.tgz
-helm package ./charts/kafka-lag-exporter
+mkdir -p $CHARTS_DIR
+rm -f $CHARTS_DIR/kafka-lag-exporter-*.tgz
+helm package ./charts/kafka-lag-exporter -d $CHARTS_DIR

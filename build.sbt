@@ -75,6 +75,7 @@ lazy val kafkaLagExporter =
         updateHelmChartRelease,                 // Update the Helm Chart
         publishDockerImage,                     // Publish the Docker images used by the chart
         packageChart,                           // Package the Helm Chart
+        buildChartsIndex,                       // Build Helm Charts index
         packageJavaApp,                         // Package the standalone Java App
         commitReleaseVersion,
         updateReadmeRelease,                    // Update the README.md with this version
@@ -82,6 +83,7 @@ lazy val kafkaLagExporter =
         commitChartThisVersion,                 // Commit the Helm Chart
         tagRelease,
         githubReleaseDraft,                     // Create a GitHub release draft
+        publishChartsIndex,                     // Publish Helm Charts index
         setNextVersion,
         updateHelmChartNextVersion,             // Update the Helm Chart with the next snapshot version
         commitChartNextVersion,                 // Commit the Helm Chart
@@ -191,10 +193,23 @@ lazy val packageChart = ReleaseStep(action = st => {
   st
 })
 
+lazy val buildChartsIndex = ReleaseStep(action = st => {
+  val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
+  exec(
+    s"./scripts/build_charts_index.sh https://github.com/lightbend/kafka-lag-exporter/releases/download/v$releaseVersion/ https://lightbend.github.io/kafka-lag-exporter/index.yaml",
+    "Error while building Helm Charts index")
+  st
+})
+
+lazy val publishChartsIndex = ReleaseStep(action = st => {
+  exec("./scripts/publish_charts_index.sh", "Error while publishing Helm Charts index")
+  st
+})
+
 lazy val githubReleaseDraft = ReleaseStep(action = st => {
   val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
   exec(
-    s"./scripts/github_release.sh lightbend/kafka-lag-exporter v$releaseVersion -- kafka-lag-exporter-$releaseVersion.tgz ./target/universal/kafka-lag-exporter-$releaseVersion.zip",
+    s"./scripts/github_release.sh lightbend/kafka-lag-exporter v$releaseVersion -- .helm-release-packages/kafka-lag-exporter-$releaseVersion.tgz ./target/universal/kafka-lag-exporter-$releaseVersion.zip",
     "Error while publishing GitHub release draft")
   st
 })
