@@ -47,6 +47,4 @@ object Dependencies {
   val AlpakkaKafkaTestKit    = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.0.6+2-fde5e983"     % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
   val TestcontainersKafka    = "org.testcontainers"      %  "kafka"                     % Version.Testcontainers % Test
   val TestcontainersInfluxDb = "org.testcontainers"      %  "influxdb"                  % Version.Testcontainers % Test
-  //val EmbedInflux            = "com.github.fsanaulla"    %% "scalatest-embedinflux"     % "0.2.3"                % Test
-  //val PlexusUtils            = "org.codehaus.plexus"     %  "plexus-utils"              % "3.0.20"               % Test
 }

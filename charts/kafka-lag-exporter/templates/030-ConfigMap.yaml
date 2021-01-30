@@ -28,6 +28,14 @@ data:
             {{- end }}
           ]
           {{- end }}
+          {{- if $cluster.groupBlacklist }}
+          group-blacklist = [
+            {{- $lastIndex := sub (len $cluster.groupBlacklist) 1}}
+            {{- range $i, $blacklist := $cluster.groupBlacklist }}
+            {{ quote $blacklist }}{{- if ne $i $lastIndex -}}, {{ end }}
+            {{- end }}
+          ]
+          {{- end }}
           {{- if $cluster.topicWhitelist }}
           topic-whitelist = [
             {{- $lastIndex := sub (len $cluster.topicWhitelist) 1}}

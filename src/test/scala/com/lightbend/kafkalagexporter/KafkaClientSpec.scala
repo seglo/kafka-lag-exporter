@@ -226,6 +226,41 @@ class KafkaClientSpec extends AnyFreeSpec with Matchers with TestData with Mocki
         val groupIds = client.getGroupIds(groups)
         groupIds shouldBe List.empty
       }
+
+      "will only fetch non blacklisted groups" in {
+        val tmpCluster = cluster.copy(groupBlacklist = List(groupIdIotData))
+        val (_,_,client) = getClient(tmpCluster)
+        val groupIds = client.getGroupIds(groups)
+        groupIds should contain theSameElementsAs List(groupId1, groupId2)
+      }
+
+      "will exclude groups that match with blacklist regex" in {
+        val tmpCluster = cluster.copy(groupBlacklist = List("testGroupId[0-9]"))
+        val (_,_,client) = getClient(tmpCluster)
+        val groupIds = client.getGroupIds(groups)
+        groupIds should contain theSameElementsAs List(groupIdIotData)
+      }
+
+      "will not return any groups when blacklist matches all" in {
+        val tmpCluster = cluster.copy(groupBlacklist = List(".*"))
+        val (_,_,client) = getClient(tmpCluster)
+        val groupIds = client.getGroupIds(groups)
+        groupIds shouldBe List.empty
+      }
+
+      "will only fetch whitelisted and non blacklisted groups" in {
+        val tmpCluster = cluster.copy(groupWhitelist = List(groupId1, groupId2), groupBlacklist = List(groupId2, groupIdIotData))
+        val (_,_,client) = getClient(tmpCluster)
+        val groupIds = client.getGroupIds(groups)
+        groupIds should contain theSameElementsAs List(groupId1)
+      }
+
+      "will include groups that match with whitelist regex and exclude groups that match with blacklist regex" in {
+        val tmpCluster = cluster.copy(groupWhitelist = List("iot-.+"), groupBlacklist = List("testGroupId[0-9]"))
+        val (_,_,client) = getClient(tmpCluster)
+        val groupIds = client.getGroupIds(groups)
+        groupIds should contain theSameElementsAs List(groupIdIotData)
+      }
     }
   }
 

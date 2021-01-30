@@ -62,6 +62,10 @@ object AppConfig {
         clusterConfig.getStringList("group-whitelist").asScala.toList
       else KafkaCluster.GroupWhitelistDefault
 
+      val groupBlacklist = if (clusterConfig.hasPath("group-blacklist"))
+        clusterConfig.getStringList("group-blacklist").asScala.toList
+      else KafkaCluster.GroupBlacklistDefault
+
       val topicWhitelist = if (clusterConfig.hasPath("topic-whitelist"))
         clusterConfig.getStringList("topic-whitelist").asScala.toList
       else KafkaCluster.TopicWhitelistDefault
@@ -74,6 +78,7 @@ object AppConfig {
         clusterConfig.getString("name"),
         clusterConfig.getString("bootstrap-brokers"),
         groupWhitelist,
+        groupBlacklist,
         topicWhitelist,
         topicBlacklist,
         consumerProperties,
@@ -115,12 +120,14 @@ object AppConfig {
 
 object KafkaCluster {
   val GroupWhitelistDefault = List(".*")
+  val GroupBlacklistDefault = List.empty[String]
   val TopicWhitelistDefault = List(".*")
   val TopicBlacklistDefault = List.empty[String]
 }
 
 final case class KafkaCluster(name: String, bootstrapBrokers: String,
                               groupWhitelist: List[String] = KafkaCluster.GroupWhitelistDefault,
+                              groupBlacklist: List[String] = KafkaCluster.GroupBlacklistDefault,
                               topicWhitelist: List[String] = KafkaCluster.TopicWhitelistDefault,
                               topicBlacklist: List[String] = KafkaCluster.TopicBlacklistDefault,
                               consumerProperties: Map[String, String] = Map.empty,
@@ -131,6 +138,7 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
        |  Cluster name: $name
        |  Cluster Kafka bootstrap brokers: $bootstrapBrokers
        |  Consumer group whitelist: [${groupWhitelist.mkString(", ")}]
+       |  Consumer group blacklist: [${groupBlacklist.mkString(", ")}]
        |  Topic whitelist: [${topicWhitelist.mkString(", ")}]
        |  Topic blacklist: [${topicBlacklist.mkString(", ")}]
      """.stripMargin

@@ -4,11 +4,9 @@
 
 package com.lightbend.kafkalagexporter.integration
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Materializer
 import com.lightbend.kafkalagexporter.MetricsSink.GaugeDefinition
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,16 +34,16 @@ trait PrometheusUtils { self: SpecBase =>
   }
 
   def scrapeAndAssert(port: Int, description: String, rules: Rule*)
-                     (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit =
+                     (implicit ec: ExecutionContext): Unit =
     scrapeAndAssert(port, description, _.assert(), rules: _*)
 
   def scrapeAndAssertDne(port: Int, description: String, rules: Rule*)
-                        (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit =
+                        (implicit ec: ExecutionContext): Unit =
     scrapeAndAssert(port, description, _.assertDne(), rules: _*)
 
 
   private def scrapeAndAssert(port: Int, description: String, resultF: Result => Unit, rules: Rule*)
-                             (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit = {
+                             (implicit ec: ExecutionContext): Unit = {
     val results = scrape(port, rules: _*).futureValue
     log.debug("Start: {}", description)
     results.foreach(resultF)
