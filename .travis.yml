@@ -25,3 +25,6 @@ jobs:
       script:
         - ./scripts/lint_chart.sh
         - ./scripts/package_chart.sh
+
+after_failure:
+  - find . -name "*.log" -exec ./scripts/cat-log.sh {} \;

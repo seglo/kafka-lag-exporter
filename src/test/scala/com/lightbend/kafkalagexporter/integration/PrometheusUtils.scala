@@ -1,18 +1,13 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter.integration
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.Materializer
 import com.lightbend.kafkalagexporter.MetricsSink.GaugeDefinition
-import org.scalatest.Matchers
-import org.scalatest.concurrent.ScalaFutures
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
@@ -20,15 +15,13 @@ import scala.util.matching.Regex
 /**
  * Test utilities to parse the Prometheus health endpoint to assert metrics in integration tests.
  */
-trait PrometheusUtils extends Matchers with ScalaFutures {
+trait PrometheusUtils { self: SpecBase =>
+  private val http = Http()
 
-  private val log: Logger = LoggerFactory.getLogger(getClass)
-
-  def scrape(port: Int, rules: Rule*)
-            (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Future[List[Result]] = {
+  def scrape(port: Int, rules: Rule*)(implicit ec: ExecutionContext): Future[List[Result]] = {
     val request = HttpRequest(uri = s"http://localhost:$port/metrics")
     for {
-      HttpResponse(StatusCodes.OK, _, entity, _) <- Http().singleRequest(request)
+      HttpResponse(StatusCodes.OK, _, entity, _) <- http.singleRequest(request)
       body <- Unmarshal(entity).to[String]
     } yield {
       log.debug("Received metrics response body:\n{}", body)
@@ -41,16 +34,16 @@ trait PrometheusUtils extends Matchers with ScalaFutures {
   }
 
   def scrapeAndAssert(port: Int, description: String, rules: Rule*)
-                     (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit =
+                     (implicit ec: ExecutionContext): Unit =
     scrapeAndAssert(port, description, _.assert(), rules: _*)
 
   def scrapeAndAssertDne(port: Int, description: String, rules: Rule*)
-                        (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit =
+                        (implicit ec: ExecutionContext): Unit =
     scrapeAndAssert(port, description, _.assertDne(), rules: _*)
 
 
   private def scrapeAndAssert(port: Int, description: String, resultF: Result => Unit, rules: Rule*)
-                             (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Unit = {
+                             (implicit ec: ExecutionContext): Unit = {
     val results = scrape(port, rules: _*).futureValue
     log.debug("Start: {}", description)
     results.foreach(resultF)

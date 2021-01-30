@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter.integration
@@ -9,15 +9,18 @@ import akka.kafka.testkit.KafkaTestkitTestcontainersSettings
 import akka.kafka.testkit.scaladsl.{ScalatestKafkaSpec, TestcontainersKafkaPerClassLike}
 import com.lightbend.kafkalagexporter.{KafkaClusterManager, MainApp}
 import com.typesafe.config.{Config, ConfigFactory}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 abstract class SpecBase(val exporterPort: Int)
   extends ScalatestKafkaSpec(-1)
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterEach
     with TestcontainersKafkaPerClassLike
     with Matchers
@@ -25,6 +28,8 @@ abstract class SpecBase(val exporterPort: Int)
     with Eventually
     with PrometheusUtils
     with LagSim {
+
+  private[this] val log: Logger = LoggerFactory.getLogger(getClass)
 
   implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 2 second)
 

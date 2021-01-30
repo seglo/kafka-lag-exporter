@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -8,14 +8,15 @@ import java.net.ServerSocket
 
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.HTTPServer
-import org.scalatest._
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
-
 import com.typesafe.config.{Config, ConfigFactory}
+import org.scalatest.Outcome
+import org.scalatest.freespec.FixtureAnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class PrometheusEndpointSinkTest extends fixture.FreeSpec with Matchers {
+class PrometheusEndpointSinkTest extends FixtureAnyFreeSpec with Matchers {
 
   case class Fixture(server: HTTPServer, registry: CollectorRegistry, config: Config)
   type FixtureParam = Fixture

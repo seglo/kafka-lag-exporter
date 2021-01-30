@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.freespec.AnyFreeSpec
 
-class AppConfigSpec extends FreeSpec with Matchers {
+class AppConfigSpec extends AnyFreeSpec with Matchers {
 
   val configString =
     s"""

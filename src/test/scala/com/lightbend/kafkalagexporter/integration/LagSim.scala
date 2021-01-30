@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter.integration
@@ -7,9 +7,9 @@ package com.lightbend.kafkalagexporter.integration
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{Behavior, PostStop}
+import akka.kafka.Subscriptions
 import akka.kafka.scaladsl.Consumer
 import akka.kafka.testkit.scaladsl.KafkaSpec
-import akka.kafka.{CommitterSettings, Subscriptions}
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSink
@@ -23,7 +23,6 @@ trait LagSim extends KafkaSpec with ScalaFutures {
 
   class LagSimulator(topic: String, group: String) {
     private var offset: Int = 0
-    private val committerSettings = CommitterSettings(system).withMaxBatch(1).withParallelism(1)
 
     private lazy val (consumerControl, consumerProbe) = Consumer
       .committableSource(consumerDefaults.withGroupId(group), Subscriptions.topics(topic))

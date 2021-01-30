@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -14,11 +14,12 @@ import com.lightbend.kafkalagexporter.Domain._
 import com.lightbend.kafkalagexporter.Metrics._
 import org.mockito.MockitoSugar
 import org.mockito.ArgumentMatchers._
-import org.scalatest.{Matchers, _}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
-class ConsumerGroupCollectorSpec extends FreeSpec with Matchers with TestData with MockitoSugar {
+class ConsumerGroupCollectorSpec extends AnyFreeSpec with Matchers with TestData with MockitoSugar {
   val client: KafkaClientContract = mock[KafkaClientContract]
   val config = ConsumerGroupCollector.CollectorConfig(0 seconds, 20, KafkaCluster("default", ""), Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
   val clusterName = config.cluster.name

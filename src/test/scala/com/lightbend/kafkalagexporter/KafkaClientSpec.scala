@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -13,12 +13,13 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.{ConsumerGroupState, TopicPartition => KafkaTopicPartition}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
-class KafkaClientSpec extends FreeSpec with Matchers with TestData with MockitoSugar with ArgumentMatchersSugar with ScalaFutures {
+class KafkaClientSpec extends AnyFreeSpec with Matchers with TestData with MockitoSugar with ArgumentMatchersSugar with ScalaFutures {
   "KafkaClient" - {
     "getGroupOffsets" - {
       "returns None offsets for missing partitions and doesn't overwrite results for shared topic partitions" in {

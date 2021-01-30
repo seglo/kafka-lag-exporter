@@ -1,7 +1,7 @@
 <configuration>
-    <variable name="ROOT_LOG_LEVEL" value="${ROOT_LOG_LEVEL:-INFO}" />
-    <variable name="KAFKA_LAG_EXPORTER_LOG_LEVEL" value="${KAFKA_LAG_EXPORTER_LOG_LEVEL:-DEBUG}" />
-    <variable name="KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL" value="${KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL:-DEBUG}" />
+    <variable name="ROOT_LOG_LEVEL" value="INFO" />
+    <variable name="KAFKA_LAG_EXPORTER_LOG_LEVEL" value="DEBUG" />
+    <variable name="KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL" value="DEBUG" />
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg %ex%n</pattern>
@@ -15,6 +15,7 @@
         </encoder>
     </appender>
     <logger name="org.apache.kafka" level="${KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL}"/>
+    <logger name="akka.kafka.test.testcontainers.logs" level="INFO" />
     <logger name="com.lightbend.kafkalagexporter" level="${KAFKA_LAG_EXPORTER_LOG_LEVEL}"/>
     <root level="${ROOT_LOG_LEVEL}">
         <!--<appender-ref ref="STDOUT" />-->
