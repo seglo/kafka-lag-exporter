@@ -13,6 +13,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -27,6 +28,8 @@ abstract class SpecBase(val exporterPort: Int)
     with Eventually
     with PrometheusUtils
     with LagSim {
+
+  private[this] val log: Logger = LoggerFactory.getLogger(getClass)
 
   implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 2 second)
 

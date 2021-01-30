@@ -10,9 +10,6 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
 import com.lightbend.kafkalagexporter.MetricsSink.GaugeDefinition
-import org.scalatest.Matchers
-import org.scalatest.concurrent.ScalaFutures
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
@@ -20,15 +17,13 @@ import scala.util.matching.Regex
 /**
  * Test utilities to parse the Prometheus health endpoint to assert metrics in integration tests.
  */
-trait PrometheusUtils extends Matchers with ScalaFutures {
+trait PrometheusUtils { self: SpecBase =>
+  private val http = Http()
 
-  private val log: Logger = LoggerFactory.getLogger(getClass)
-
-  def scrape(port: Int, rules: Rule*)
-            (implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext): Future[List[Result]] = {
+  def scrape(port: Int, rules: Rule*)(implicit ec: ExecutionContext): Future[List[Result]] = {
     val request = HttpRequest(uri = s"http://localhost:$port/metrics")
     for {
-      HttpResponse(StatusCodes.OK, _, entity, _) <- Http().singleRequest(request)
+      HttpResponse(StatusCodes.OK, _, entity, _) <- http.singleRequest(request)
       body <- Unmarshal(entity).to[String]
     } yield {
       log.debug("Received metrics response body:\n{}", body)
