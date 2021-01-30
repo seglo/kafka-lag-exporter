@@ -35,15 +35,15 @@ lazy val kafkaLagExporter =
         PrometheusHotSpot,
         PrometheusHttpServer,
         ScalaJava8Compat,
+        AkkaHttp,
         Logback,
         ScalaTest,
         AkkaTypedTestKit,
         MockitoScala,
         AkkaStreamsTestKit,
         AlpakkaKafkaTestKit,
-        Testcontainers,
-        EmbedInflux,
-        AkkaHttp
+        TestcontainersKafka,
+        TestcontainersInfluxDb
       ),
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),
       dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("lightbend")),

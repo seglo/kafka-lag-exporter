@@ -4,67 +4,76 @@
 
 package com.lightbend.kafkalagexporter
 
-import org.scalatest._
+import java.net.URL
+
 import com.typesafe.config.ConfigFactory
-import com.github.fsanaulla.core.testing.configurations.InfluxUDPConf
-import com.github.fsanaulla.scalatest.embedinflux.EmbeddedInfluxDB
+import org.influxdb.dto.Query
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
-import org.scalatest.TryValues
-import org.scalatest.matchers.should.Matchers
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import java.net.URLEncoder
-
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
 import org.scalatest.freespec.FixtureAnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{TryValues, _}
+import org.testcontainers.containers.InfluxDBContainer
+import org.testcontainers.utility.DockerImageName
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class InfluxDBPusherSinkTest extends FixtureAnyFreeSpec with Matchers
-    with EmbeddedInfluxDB
-    with InfluxUDPConf
+class InfluxDBPusherSinkTest extends FixtureAnyFreeSpec
+    with Matchers
+    with BeforeAndAfterAll
     with TryValues
     with Eventually
     with IntegrationPatience {
+
+  private val image = DockerImageName.parse("influxdb").withTag("1.4.3")
+  private val adminPassword = "shh"
+  private val container = {
+    val c = new InfluxDBContainer(image)
+    c.withDatabase("kafka_lag_exporter")
+    c.withAdminPassword(adminPassword)
+    c
+  }
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    container.start()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    container.stop()
+  }
 
   case class Fixture(properties: Map[String, Any], port: Int)
   type FixtureParam = Fixture
 
   override def withFixture(test: OneArgTest): Outcome = {
-    val port: Int = 8086
+    val url = new URL(container.getUrl)
+    val port: Int = url.getPort
+    val endpoint: String = s"${url.getProtocol}://${url.getHost}"
     val properties: Map[String, Any] = Map(
-      "reporters.influxdb.endpoint" -> "http://localhost",
-      "reporters.influxdb.port" -> port
+      "reporters.influxdb.endpoint" -> endpoint,
+      "reporters.influxdb.port" -> port,
+      "reporters.influxdb.username" -> "admin",
+      "reporters.influxdb.password" -> adminPassword
     )
     test(Fixture(properties, port))
   }
 
-  def doQuery(url: String, query: String): String = {
-    implicit val system = ActorSystem(Behaviors.empty, "SingleRequest")
-    implicit val executionContext = system.executionContext
-
+  def doQuery(query: String): String = {
+    val db = container.getNewInfluxDB
     val database = "kafka_lag_exporter"
-    val request = HttpRequest(uri = s"$url/query?db=$database&q=$query")
+    val response = db.query(new Query(query, database))
 
-    val response: HttpResponse = Await.result(Http(system).singleRequest(request), Duration(10, "seconds"))
-    val body: String = Await.result(Unmarshal(response.entity).to[String], Duration(10, "seconds"))
-
-    body
+    response.getResults.asScala.mkString("\n")
   }
 
   "InfluxDBPusherSinkImpl should" - {
 
     "create database" in { fixture =>
       val _ = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(fixture.properties.asJava)), Map("cluster" -> Map.empty))
-      val port = fixture.port
-      val url = s"http://localhost:$port"
-      val query = URLEncoder.encode("SHOW DATABASES", "UTF-8");
+      val query = "SHOW DATABASES"
 
-      eventually { doQuery(url, query) should include("kafka_lag_exporter") }
+      eventually { doQuery(query) should include("kafka_lag_exporter") }
     }
 
     "report metrics which match the regex" in { fixture =>
@@ -72,14 +81,11 @@ class InfluxDBPusherSinkTest extends FixtureAnyFreeSpec with Matchers
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster_test", "group_test", 100))
       sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster_test", "group_test", 101))
 
-      val port = fixture.port
-      val url = s"http://localhost:$port"
+      val whitelist_query = "SELECT * FROM kafka_consumergroup_group_max_lag"
+      val blacklist_query = "SELECT * FROM kafka_consumergroup_group_max_lag_seconds"
 
-      val whitelist_query = URLEncoder.encode("SELECT * FROM kafka_consumergroup_group_max_lag", "UTF-8");
-      val blacklist_query = URLEncoder.encode("SELECT * FROM kafka_consumergroup_group_max_lag_seconds", "UTF-8")
-
-      eventually { doQuery(url, whitelist_query) should (include("cluster_test") and include("group_test") and include("100")) }
-      eventually { doQuery(url, blacklist_query) should (not include("cluster_test") and not include("group_test") and not include("101")) }
+      eventually { doQuery(whitelist_query) should (include("cluster_test") and include("group_test") and include("100")) }
+      eventually { doQuery(blacklist_query) should (not include("cluster_test") and not include("group_test") and not include("101")) }
     }
   }
 }
