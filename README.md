@@ -596,6 +596,15 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.6.6
+
+* Add support for Consumer Group blacklisting [#184](https://github.com/lightbend/kafka-lag-exporter/pull/184) ([@Manicben](https://github.com/Manicben))
+* Add release steps to serve Helm Charts Repository on Github Pages [#183](https://github.com/lightbend/kafka-lag-exporter/pull/183) ([@akozich](https://github.com/akozich))
+* Upgrade sbt from 1.2.6 to 1.4.3 to improve the metals support [#178](https://github.com/lightbend/kafka-lag-exporter/pull/178) ([@robsonpeixoto](https://github.com/robsonpeixoto))
+* Automatically roll Deployment when ConfigMap change [#176](https://github.com/lightbend/kafka-lag-exporter/pull/176) ([@robsonpeixoto](https://github.com/robsonpeixoto))
+* Support multiple instances and extra labels for service monitor [#171](https://github.com/lightbend/kafka-lag-exporter/pull/171) ([@ryan-dyer-sp](https://github.com/ryan-dyer-sp))
+* Ability to extend and configure desired sink to report lag metrics, adding support to push lag metrics into InfluxDB as well [#157](https://github.com/lightbend/kafka-lag-exporter/pull/157) ([@hariprasad-k](https://github.com/hariprasad-k))
+
 0.6.5
 
 * Use `centos:8` docker base layer [#168](https://github.com/lightbend/kafka-lag-exporter/pull/168) ([@killuazhu](https://github.com/killuazhu))
