@@ -16,6 +16,7 @@
     </appender>
     <logger name="org.apache.kafka" level="${KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL}"/>
     <logger name="akka.kafka.test.testcontainers.logs" level="INFO" />
+    <logger name="akka.kafka.testkit.internal" level="DEBUG" />
     <logger name="com.lightbend.kafkalagexporter" level="${KAFKA_LAG_EXPORTER_LOG_LEVEL}"/>
     <root level="${ROOT_LOG_LEVEL}">
         <!--<appender-ref ref="STDOUT" />-->
