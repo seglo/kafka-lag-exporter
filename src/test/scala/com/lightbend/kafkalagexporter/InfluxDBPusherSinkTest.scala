@@ -9,19 +9,22 @@ import com.typesafe.config.ConfigFactory
 import com.github.fsanaulla.core.testing.configurations.InfluxUDPConf
 import com.github.fsanaulla.scalatest.embedinflux.EmbeddedInfluxDB
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
-import org.scalatest.{Matchers, TryValues}
+import org.scalatest.TryValues
+import org.scalatest.matchers.should.Matchers
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import java.net.URLEncoder
+
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import org.scalatest.freespec.FixtureAnyFreeSpec
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class InfluxDBPusherSinkTest extends fixture.FreeSpec with Matchers
+class InfluxDBPusherSinkTest extends FixtureAnyFreeSpec with Matchers
     with EmbeddedInfluxDB
     with InfluxUDPConf
     with TryValues

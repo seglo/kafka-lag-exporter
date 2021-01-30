@@ -8,6 +8,9 @@ import sbt.IO
 
 import scala.sys.process._
 
+// for Alpakka Kafka snapshots
+resolvers += Resolver.bintrayRepo("akka", "snapshots")
+
 lazy val kafkaLagExporter =
   Project(id = "kafka-lag-exporter", base = file("."))
     .enablePlugins(AutomateHeaderPlugin)

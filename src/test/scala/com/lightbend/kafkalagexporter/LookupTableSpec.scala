@@ -5,9 +5,10 @@
 package com.lightbend.kafkalagexporter
 
 import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class LookupTableSpec extends FreeSpec with Matchers {
+class LookupTableSpec extends AnyFreeSpec with Matchers {
 
   import com.lightbend.kafkalagexporter.LookupTable._
 

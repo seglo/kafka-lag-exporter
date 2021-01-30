@@ -6,10 +6,12 @@ package com.lightbend.kafkalagexporter
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
+import org.scalatest.freespec.FixtureAnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.jdk.CollectionConverters._
 
-class GraphiteEndpointSinkTest extends fixture.FreeSpec with Matchers {
+class GraphiteEndpointSinkTest extends FixtureAnyFreeSpec with Matchers {
 
   class GraphiteServer extends Thread {
     import java.io._

@@ -4,9 +4,10 @@
 
 package com.lightbend.kafkalagexporter
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.freespec.AnyFreeSpec
 
-class AppConfigSpec extends FreeSpec with Matchers {
+class AppConfigSpec extends AnyFreeSpec with Matchers {
 
   val configString =
     s"""

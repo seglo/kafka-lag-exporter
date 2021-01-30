@@ -9,15 +9,17 @@ import akka.kafka.testkit.KafkaTestkitTestcontainersSettings
 import akka.kafka.testkit.scaladsl.{ScalatestKafkaSpec, TestcontainersKafkaPerClassLike}
 import com.lightbend.kafkalagexporter.{KafkaClusterManager, MainApp}
 import com.typesafe.config.{Config, ConfigFactory}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 abstract class SpecBase(val exporterPort: Int)
   extends ScalatestKafkaSpec(-1)
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterEach
     with TestcontainersKafkaPerClassLike
     with Matchers
