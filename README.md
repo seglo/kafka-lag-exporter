@@ -201,6 +201,15 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
   --debug
 ```
 
+Or use github project page as chartmusemu.
+```
+helm repo add kafka-lag-exporter https://lightbend.github.io/kafka-lag-exporter/repo/
+helm repo update
+helm install kafka-lag-exporter/kafka-lag-exporter \
+  --name kafka-lag-exporter \
+  --namespace myproject
+```
+
 ### View the health endpoint
 
 To view the Prometheus health endpoint from outside your Kubernetes cluster, use `kubectl port-forward`.
