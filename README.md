@@ -149,7 +149,7 @@ file of the accompanying Helm Chart.
 
 ### Install with Helm
 
-You can install the chart from the chart museum ( index file location: https://lightbend.github.io/kafka-lag-exporter/repo/index.yaml ).
+You can install the chart from the chart repository ( index file location: https://lightbend.github.io/kafka-lag-exporter/repo/index.yaml ).
 
 ```
 helm repo add kafka-lag-exporter https://lightbend.github.io/kafka-lag-exporter/repo/
