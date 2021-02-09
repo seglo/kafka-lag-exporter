@@ -149,10 +149,13 @@ file of the accompanying Helm Chart.
 
 ### Install with Helm
 
-You can install the chart from the local filesystem.
+You can install the chart from the chart repository ( index file location: https://lightbend.github.io/kafka-lag-exporter/repo/index.yaml ).
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.6/kafka-lag-exporter-0.6.6.tgz
+helm repo add kafka-lag-exporter https://lightbend.github.io/kafka-lag-exporter/repo/
+helm repo update
+
+helm install kafka-lag-exporter/kafka-lag-exporter 
 ```
 
 #### Examples
@@ -161,7 +164,7 @@ Install with the [Strimzi](https://strimzi.io/) Kafka discovery feature.
 See [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher) for more details.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.6/kafka-lag-exporter-0.6.6.tgz \
+helm install kafka-lag-exporter/kafka-lag-exporter \
   --name kafka-lag-exporter \
   --namespace kafka-lag-exporter \
   --set watchers.strimzi=true
@@ -170,7 +173,7 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
 Install with statically defined cluster at the CLI.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.6/kafka-lag-exporter-0.6.6.tgz \
+helm install kafka-lag-exporter/kafka-lag-exporter \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set clusters\[0\].name=my-cluster \
@@ -180,18 +183,19 @@ helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v
 Install with statically defined cluster at the CLI, but with a non-default service account assigned to the deployment.
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.6/kafka-lag-exporter-0.6.6.tgz \
+helm install kafka-lag-exporter/kafka-lag-exporter \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set clusters\[0\].name=my-cluster \
-  --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap:9092
+  --set clusters\[0\].bootstrapBrokers=my-cluster-kafka-bootstrap:9092 \
   --set serviceAccount.create=true
 ```
 
 Run a debug install (`DEBUG` logging, debug helm chart install, force docker pull policy to `Always`).
 
 ```
-helm install https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.6/kafka-lag-exporter-0.6.6.tgz \
+helm repo update  # force refresh chart version
+helm install kafka-lag-exporter/kafka-lag-exporter \
   --name kafka-lag-exporter \
   --namespace myproject \
   --set image.pullPolicy=Always \
