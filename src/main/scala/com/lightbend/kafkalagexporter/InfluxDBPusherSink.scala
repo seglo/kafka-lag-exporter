@@ -71,6 +71,10 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
 
   def buildPoint(m: MetricValue): Point = {
     val point = Point.measurement(m.definition.name)
+    clusterGlobalLabels.get(m.clusterName)
+      .foreach(globalLabels => globalLabels.foreach(
+        tag => { point.tag(tag._1, tag._2) }
+      ))
     val fields = m.definition.labels zip m.labels
     fields.foreach { field => point.tag(field._1, field._2) }
     point.addField("value", m.value)

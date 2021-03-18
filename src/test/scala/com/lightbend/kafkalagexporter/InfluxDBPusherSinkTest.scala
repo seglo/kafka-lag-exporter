@@ -87,5 +87,18 @@ class InfluxDBPusherSinkTest extends FixtureAnyFreeSpec
       eventually { doQuery(whitelist_query) should (include("cluster_test") and include("group_test") and include("100")) }
       eventually { doQuery(blacklist_query) should (not include("cluster_test") and not include("group_test") and not include("101")) }
     }
+
+    "should get the correct global label names and values as tags" in { fixture =>
+      val clustersGlobalValuesMap = Map(
+        "cluster_test" -> Map("environment" -> "integration")
+      )
+
+      val sink = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(mapAsJavaMap(fixture.properties))), clustersGlobalValuesMap)
+      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster_test", "group_test", 100))
+
+      val tagQuery = "SELECT * FROM kafka_consumergroup_group_max_lag where environment='integration'"
+      
+      eventually { doQuery(tagQuery) should (include("cluster_test") and include("group_test") and include("100") and include("environment") and include("integration"))}
+    }
   }
 }
