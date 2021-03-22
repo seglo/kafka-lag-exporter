@@ -600,6 +600,10 @@ required.  Before running a release make sure the following pre-req's are met.
 
 ## Change log
 
+0.6.7
+
+* Send globalClusterLabels as tags in InfluxDBSink [#200](https://github.com/lightbend/kafka-lag-exporter/pull/200) ([@lukaszkrawiec](https://github.com/lukaszkrawiec))
+
 0.6.6
 
 * Add support for Consumer Group blacklisting [#184](https://github.com/lightbend/kafka-lag-exporter/pull/184) ([@Manicben](https://github.com/Manicben))
