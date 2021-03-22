@@ -16,7 +16,7 @@ import org.scalatest.Outcome
 import org.scalatest.freespec.FixtureAnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class PrometheusEndpointSinkTest extends FixtureAnyFreeSpec with Matchers {
+class PrometheusEndpointSinkSpec extends FixtureAnyFreeSpec with Matchers {
 
   case class Fixture(server: HTTPServer, registry: CollectorRegistry, config: Config)
   type FixtureParam = Fixture
