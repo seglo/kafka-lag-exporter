@@ -17,7 +17,7 @@ import org.testcontainers.utility.DockerImageName
 
 import scala.jdk.CollectionConverters._
 
-class InfluxDBPusherSinkTest extends FixtureAnyFreeSpec
+class InfluxDBPusherSinkSpec extends FixtureAnyFreeSpec
     with Matchers
     with BeforeAndAfterAll
     with TryValues

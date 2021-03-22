@@ -71,14 +71,13 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
 
   def buildPoint(m: MetricValue): Point = {
     val point = Point.measurement(m.definition.name)
-    clusterGlobalLabels.get(m.clusterName)
-      .foreach(globalLabels => globalLabels.foreach(
-        tag => { point.tag(tag._1, tag._2) }
-      ))
+    for(globalLabels <- clusterGlobalLabels.get(m.clusterName);
+        (tagName, tagValue) <- globalLabels)
+      point.tag(tagName, tagValue)
     val fields = m.definition.labels zip m.labels
     fields.foreach { field => point.tag(field._1, field._2) }
     point.addField("value", m.value)
-    return point.build()
+    point.build()
   }
 
   override def remove(m: RemoveMetric): Unit = {
@@ -96,8 +95,8 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
   def connect(): InfluxDB =
   {
     val url = sinkConfig.endpoint + ":" + sinkConfig.port
-    if (!sinkConfig.username.isEmpty) return InfluxDBFactory.connect(url, sinkConfig.username, sinkConfig.password)
-    else return InfluxDBFactory.connect(url)
+    if (!sinkConfig.username.isEmpty) InfluxDBFactory.connect(url, sinkConfig.username, sinkConfig.password)
+    else InfluxDBFactory.connect(url)
   }
 
   def createDatabase() =
@@ -107,7 +106,7 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
 
   def successQueryHandler(): Consumer[QueryResult] =
   {
-    return new Consumer[QueryResult] {
+    new Consumer[QueryResult] {
       override def accept(result:QueryResult): Unit = {
         logger.info(result.toString())
       }
@@ -116,7 +115,7 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
 
   def failQueryHandler(): Consumer[Throwable] =
   {
-    return new Consumer[Throwable] {
+    new Consumer[Throwable] {
       override def accept(throwable:Throwable): Unit = {
         handlingFailure(throwable)
       }
@@ -125,7 +124,7 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
 
   def createExceptionHandler(): BiConsumer[Iterable[Point], Throwable] =
   {
-    return new BiConsumer[Iterable[Point], Throwable] {
+    new BiConsumer[Iterable[Point], Throwable] {
       override def accept(failedPoints:Iterable[Point], throwable:Throwable): Unit = {
         handlingFailure(throwable)
       }
