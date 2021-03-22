@@ -15,3 +15,7 @@ sed -i -r "s/helm install http\S*/helm install ${RELEASE_URL_ESCAPED}/g" $DIR/..
 echo Update README.md Running Docker Image version to:
 echo lightbend/kafka-lag-exporter:${VERSION}
 sed -i -r "s/lightbend\/kafka-lag-exporter:\S*/lightbend\/kafka-lag-exporter:${VERSION}/g" $DIR/../README.md
+
+echo Update examples/standalone/run-docker.sh Docker Image version to:
+echo lightbend/kafka-lag-exporter:${VERSION}
+sed -i -r "s/lightbend\/kafka-lag-exporter:\S*/lightbend\/kafka-lag-exporter:${VERSION}/g" $DIR/../examples/standalone/run-docker.sh

@@ -47,6 +47,7 @@ lazy val kafkaLagExporter =
       ),
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),
       dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("lightbend")),
+      dockerUpdateLatest := true,
       // Based on best practices found in OpenShift Creating images guidelines
       // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
       dockerCommands := Seq(
