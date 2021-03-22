@@ -1,7 +1,7 @@
 apiVersion: v1
-appVersion: "0.6.7"
+appVersion: "0.6.8-SNAPSHOT"
 description: Kafka Lag Exporter
 name: kafka-lag-exporter
-version: 0.6.7
+version: 0.6.8
 maintainers:
 - name: Sean Glover
