@@ -106,11 +106,11 @@ object KafkaClient {
                                                   (implicit ec: ExecutionContext) extends AdminKafkaClientContract {
     private implicit val _clientTimeout: Duration = clientTimeout.toJava
 
-    private val listGroupOptions = new ListConsumerGroupsOptions().timeoutMs(_clientTimeout.toMillis.toInt)
+    private val listGroupOptions = new ListConsumerGroupsOptions().timeoutMs(5000)
     private val describeGroupOptions = new DescribeConsumerGroupsOptions().timeoutMs(_clientTimeout.toMillis.toInt)
     private val listConsumerGroupsOptions = new ListConsumerGroupOffsetsOptions().timeoutMs(_clientTimeout.toMillis.toInt)
 
-    def listConsumerGroups(): Future[util.Collection[ConsumerGroupListing]] = kafkaFuture(client.listConsumerGroups(listGroupOptions).all())
+    def listConsumerGroups(): Future[util.Collection[ConsumerGroupListing]] = kafkaFuture(client.listConsumerGroups(listGroupOptions).valid())
     def describeConsumerGroups(groupIds: List[String]): Future[util.Map[String, ConsumerGroupDescription]] =
       kafkaFuture(client.describeConsumerGroups(groupIds.asJava, describeGroupOptions).all())
     def listConsumerGroupOffsets(group: String): Future[util.Map[KafkaTopicPartition, OffsetAndMetadata]] =
