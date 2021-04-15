@@ -6,7 +6,7 @@ object Version {
   val Prometheus     = "0.8.1"
   val Fabric8        = "4.9.1"
   val Kafka          = "2.5.0"
-  val Testcontainers = "1.15.1"
+  val Testcontainers = "1.15.3"
 }
 
 object Dependencies {
