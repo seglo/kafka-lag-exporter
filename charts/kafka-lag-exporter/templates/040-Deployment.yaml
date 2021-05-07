@@ -53,7 +53,7 @@ spec:
           {{- end }}
           livenessProbe:
             httpGet:
-              path: /
+              path: /metrics?name[]=kafka_consumergroup_poll_time_ms
               port: http
             initialDelaySeconds: {{ .Values.livenessProbeInitialDelay }}
             periodSeconds: {{ .Values.livenessProbePeriodSeconds }}
@@ -62,7 +62,7 @@ spec:
             successThreshold: {{ .Values.livenessProbeSuccessThreshold }}
           readinessProbe:
             httpGet:
-              path: /
+              path: /metrics?name[]=kafka_consumergroup_poll_time_ms
               port: http
             initialDelaySeconds: {{ .Values.readinessProbeInitialDelay }}
             periodSeconds: {{ .Values.readinessProbePeriodSeconds }}
