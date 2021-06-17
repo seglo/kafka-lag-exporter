@@ -70,6 +70,36 @@ data:
         }
         {{- end }}
       ]
+
+      {{- $sinks := list -}}
+      {{- if .Values.reporters.prometheus.enabled }}
+        {{- $sinks = append $sinks "\"PrometheusEndpointSink\"" }}
+      reporters.prometheus.port = {{ .Values.reporters.prometheus.port }}
+      {{- end  }}
+
+      {{- if .Values.reporters.graphite.enabled }}
+        {{- $sinks = append $sinks "\"GraphiteEndpointSink\"" }}
+      reporters.graphite.host = {{ .Values.reporters.graphite.host | quote }}
+      reporters.graphite.port = {{ .Values.reporters.graphite.port }}
+        {{- if .Values.reporters.graphite.prefix }}
+      reporters.graphite.prefix = {{ .Values.reporters.graphite.prefix | quote }}
+        {{- end  }}
+      {{- end  }}
+
+      {{- if .Values.reporters.influxdb.enabled }}
+        {{- $sinks = append $sinks "\"InfluxDBPusherSink\"" }}
+      reporters.influxdb.endpoint = {{ .Values.reporters.influxdb.endpoint | quote }}
+      reporters.influxdb.port = {{ .Values.reporters.influxdb.port }}
+      reporters.influxdb.database = {{ .Values.reporters.influxdb.database | quote }}
+        {{- if .Values.reporters.influxdb.username }}
+      reporters.influxdb.username = {{ .Values.reporters.influxdb.username | quote }}
+        {{- end  }}
+        {{- if .Values.reporters.influxdb.password }}
+      reporters.influxdb.password = {{ .Values.reporters.influxdb.password | quote }}
+        {{- end  }}
+      reporters.influxdb.async = {{ .Values.reporters.influxdb.async }}
+      {{- end  }}
+      sinks = [{{ join ", " $sinks }}]
       watchers = {
         strimzi = "{{ .Values.watchers.strimzi }}"
       }

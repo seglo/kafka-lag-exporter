@@ -36,6 +36,37 @@ lookupTableSize: 60
 clientGroupId: "kafkalagexporter"
 ## The timeout when communicating with Kafka clusters
 kafkaClientTimeoutSeconds: 10
+## Reporters will send metrics to time series databases
+reporters:
+  prometheus:
+    ## Flag to enable the Prometheus metrics reporter
+    enabled: true
+    ## The port to run the Prometheus endpoint on
+    port: 8000
+  graphite:
+    ## Flag to enable the graphite metrics reporter
+    enabled: false
+    ## The graphite host to send metrics to
+    host: "http://graphite"
+    ## The graphite port to send metrics to
+    port: 2003
+    ## The graphite metric prefix
+    prefix: ""
+  influxdb:
+    ## Flag to enable the influxdb metrics reporter
+    enabled: false
+    ## The influxdb host to send metrics to
+    endpoint: "http://influxdb"
+    ## The influxdb port to send metrics to
+    port: 8086
+    ## The influxdb database to send metrics to
+    database: "kafka_lag_exporter"
+    ## The influxdb username to connect
+    username: ""
+    ## The influxdb password to connect
+    password: ""
+    ## Flag to enable influxdb async non-blocking write mode to send metrics
+    async: true
 ## Watchers will automatically discover and forget Kafka clusters
 watchers:
   ## The Strimzi Cluster Watcher automatically watches for `kafka.strimzi.io` group, `Kafka` kind resources and will
