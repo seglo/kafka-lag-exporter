@@ -9,6 +9,8 @@ import java.util.Properties
 import java.util.concurrent.TimeUnit
 import java.{lang, util}
 
+import com.google.common.cache.{CacheBuilder, Cache}
+
 import com.lightbend.kafkalagexporter.Domain.{GroupOffsets, PartitionOffsets}
 import com.lightbend.kafkalagexporter.KafkaClient.{AdminKafkaClientContract, ConsumerKafkaClientContract, KafkaClientContract}
 import org.apache.kafka.clients.admin._
@@ -136,11 +138,38 @@ object KafkaClient {
 
 }
 
+class GCache[K, V](size: Int, ttlMinutes: Int) {
+
+  private val cache = CacheBuilder.newBuilder()
+    .recordStats()
+    .initialCapacity(size)
+    .expireAfterAccess(ttlMinutes.toLong, TimeUnit.MINUTES)
+    .asInstanceOf[CacheBuilder[K, V]]
+    .build[K, V]
+
+  def get(key: K): Option[V]= Option(cache.getIfPresent(key))
+  def put(key: K, value: V) = cache.put(key, value)
+  def remove(key: K) {
+    cache.invalidate(key)
+  }
+  def clear() {
+    cache.invalidateAll()
+  }
+
+  def inst(): Cache[K, V] = cache
+}
+
 class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
                                             consumer: ConsumerKafkaClientContract,
-                                            adminClient: AdminKafkaClientContract)
+                                            adminClient: AdminKafkaClientContract,
+                                            clientCache: Option[GCache[Domain.GroupTopicPartition, LookupTable.Point]] = None)
                                            (implicit ec: ExecutionContext) extends KafkaClientContract {
   import KafkaClient._
+
+  val cache = clientCache match {
+    case Some(existingCache) => existingCache
+    case None => new GCache[Domain.GroupTopicPartition, LookupTable.Point](10000, 30)
+  }
 
   /**
     * Get a list of consumer groups
@@ -244,7 +273,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
   private[kafkalagexporter] def getOffsetOrZero(
                       gtps: List[Domain.GroupTopicPartition],
                       groupOffsets: GroupOffsets): GroupOffsets =
-    gtps.map(gtp => gtp -> groupOffsets.getOrElse(gtp, None)).toMap
+    gtps.map(gtp => gtp -> groupOffsets.getOrElse(gtp, cache.get(gtp))).toMap
 
   /**
     * Transform Kafka response into `GroupOffsets`
@@ -260,8 +289,14 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
       // https://kafka.apache.org/25/javadoc/org/apache/kafka/clients/admin/ListConsumerGroupOffsetsResult.html#partitionsToOffsetAndMetadata--
       if (offsetResult == null)
         gtp -> None
-      else
-        gtp -> Some(LookupTable.Point(offsetResult.offset(), now))
+      else {
+        val point = Some(LookupTable.Point(offsetResult.offset(), now))
+        cache.get(gtp) match {
+          case Some(_) => None
+          case None => cache.put(gtp, LookupTable.Point(offsetResult.offset(), now))
+        }
+        gtp -> point
+      }
     }).toMap
 
   def close(): Unit = {
