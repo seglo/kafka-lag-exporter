@@ -59,6 +59,45 @@ class KafkaClientSpec extends AnyFreeSpec with Matchers with TestData with Mocki
 
       }
 
+      "returns existing offsets from cache for one of missing partitions" in {
+        val groupId0 = "testGroupId0"
+        val groupId1 = "testGroupId1"
+
+        val groups = List(groupId0, groupId1)
+
+        val gtp0_0 = gtp0.copy(id = groupId0)
+        val gtp1_0 = gtp1.copy(id = groupId0)
+        val gtp2_0 = gtp2.copy(id = groupId0)
+        val gtp0_1 = gtp0.copy(id = groupId1)
+
+        val gtps = List(gtp0_0, gtp1_0, gtp2_0, gtp0_1)
+
+        val (adminKafkaClient, _, client) = getClient(cluster, groupId, cache)
+
+        val groupId0Results = Future.successful(Map(
+          topicPartition0.asKafka -> new OffsetAndMetadata(0, Optional.empty(), "")
+          // missing topicPartition1
+          // missing topicPartition2
+        ).asJava)
+        when(adminKafkaClient.listConsumerGroupOffsets(groupId0)).thenReturn(groupId0Results)
+
+        val groupId1Results = Future.successful(Map(
+          topicPartition0.asKafka -> new OffsetAndMetadata(1, Optional.empty(), "")
+        ).asJava)
+        when(adminKafkaClient.listConsumerGroupOffsets(groupId1)).thenReturn(groupId1Results)
+
+        cache.put(gtp1_0, LookupTable.Point(3, 0))
+
+        val groupOffsets = client.getGroupOffsets(0, groups, gtps).futureValue
+
+        groupOffsets.size shouldEqual 4
+        groupOffsets(gtp0_0) shouldEqual Some(LookupTable.Point(0, 0))
+        groupOffsets(gtp1_0) shouldEqual Some(LookupTable.Point(3, 0)) // taken from cache
+        groupOffsets(gtp2_0) shouldEqual None // missing partition
+        groupOffsets(gtp0_1) shouldEqual Some(LookupTable.Point(1, 0))
+
+      }
+
       "returns distinct offsets when multiple groups subscribe to same partitions" in {
         val groupId0 = "testGroupId0"
         val groupId1 = "testGroupId1"
@@ -264,11 +303,11 @@ class KafkaClientSpec extends AnyFreeSpec with Matchers with TestData with Mocki
     }
   }
 
-  def getClient(cluster: KafkaCluster = cluster, groupId: String = groupId) = {
+  def getClient(cluster: KafkaCluster = cluster, groupId: String = groupId, cache: GCache[Domain.GroupTopicPartition, LookupTable.Point] = cache) = {
     implicit val ec: ExecutionContextExecutor = ExecutionContext.global
     val adminKafkaClient = mock[AdminKafkaClientContract]
     val consumer = mock[ConsumerKafkaClientContract]
-    val client = spy(new KafkaClient(cluster, consumer, adminKafkaClient))
+    val client = spy(new KafkaClient(cluster, consumer, adminKafkaClient, Some(cache)))
     (adminKafkaClient, consumer, client)
   }
 }

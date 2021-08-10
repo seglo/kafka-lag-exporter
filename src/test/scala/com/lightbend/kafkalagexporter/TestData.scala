@@ -9,6 +9,7 @@ import com.lightbend.kafkalagexporter.Domain._
 import org.apache.kafka.common.Node
 
 trait TestData {
+  val cache = new GCache[Domain.GroupTopicPartition, LookupTable.Point](2, 1);
   val cluster = KafkaCluster("default", "brokers:9092")
   val node = new Node(1001, "brokers", 9092)
   val groupId = "testGroupId"
