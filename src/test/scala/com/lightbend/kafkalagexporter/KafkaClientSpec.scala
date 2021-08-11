@@ -304,6 +304,7 @@ class KafkaClientSpec extends AnyFreeSpec with Matchers with TestData with Mocki
   }
 
   def getClient(cluster: KafkaCluster = cluster, groupId: String = groupId, cache: GCache[Domain.GroupTopicPartition, LookupTable.Point] = cache) = {
+    cache.clear()
     implicit val ec: ExecutionContextExecutor = ExecutionContext.global
     val adminKafkaClient = mock[AdminKafkaClientContract]
     val consumer = mock[ConsumerKafkaClientContract]
