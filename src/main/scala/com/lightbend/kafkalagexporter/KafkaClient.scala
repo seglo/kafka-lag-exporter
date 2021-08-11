@@ -155,8 +155,6 @@ class GCache[K, V](size: Int, ttlMinutes: Int) {
   def clear() {
     cache.invalidateAll()
   }
-
-  def inst(): Cache[K, V] = cache
 }
 
 class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
