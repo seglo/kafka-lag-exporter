@@ -29,7 +29,7 @@ object Dependencies {
   val AkkaSlf4j              = "com.typesafe.akka"       %% "akka-slf4j"                   % Version.Akka
   val AkkaStreams            = "com.typesafe.akka"       %% "akka-stream"                  % Version.Akka
   val AkkaStreamsProtobuf    = "com.typesafe.akka"       %% "akka-protobuf"                % Version.Akka
-  val AkkaInfluxDB           = "com.lightbend.akka"      %% "akka-stream-alpakka-influxdb" % "1.1.2"
+  val AkkaInfluxDB           = "com.lightbend.akka"      %% "akka-stream-alpakka-influxdb" % "3.0.3"
   val Logback                = "ch.qos.logback"          %  "logback-classic"              % "1.2.3"
   val Prometheus             = "io.prometheus"           %  "simpleclient"                 % Version.Prometheus
   val PrometheusHotSpot      = "io.prometheus"           %  "simpleclient_hotspot"         % Version.Prometheus
