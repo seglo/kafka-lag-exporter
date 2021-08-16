@@ -6,6 +6,7 @@ package com.lightbend.kafkalagexporter
 
 object Domain {
   final case class TopicPartition(topic: String, partition: Int)
+  final case class GroupTopicPartitionCache(id: String, topic: String, partition: Int)
 
   // Once upon a time I had a nested data structure for all these types, but I found that a flat datastructure
   // is much easier to work with, at the sacrifice of some duplication.
