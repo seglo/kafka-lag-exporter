@@ -5,6 +5,7 @@
 package com.lightbend.kafkalagexporter
 
 import java.time.Clock
+import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
@@ -12,6 +13,7 @@ import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import com.lightbend.kafkalagexporter.ConsumerGroupCollector.OffsetsSnapshot.MetricKeys
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
 import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
+import com.google.common.cache.CacheBuilder
 import org.slf4j.Logger
 
 import scala.collection.immutable
@@ -29,6 +31,28 @@ object ConsumerGroupCollector {
   final case object Stop extends Stop
   final case class StopWithError(throwable: Throwable) extends Message
   final case class MetaData(pollTime: Long) extends Message
+  final case class GCache[K, V](size: Int, ttlMinutes: Int) {
+    private val cache = CacheBuilder.newBuilder()
+      .recordStats()
+      .initialCapacity(size)
+      .expireAfterAccess(ttlMinutes.toLong, TimeUnit.MINUTES)
+      .asInstanceOf[CacheBuilder[K, V]]
+      .build[K, V]
+
+    def get(key: K): Option[V]= Option(cache.getIfPresent(key))
+    def put(key: K, value: V) = cache.put(key, value)
+    def remove(key: K) {
+      cache.invalidate(key)
+    }
+    def clear() {
+      cache.invalidateAll()
+    }
+  }
+
+  val cache = new GCache[Domain.GroupTopicPartitionCache, Boolean](10000, 30)
+
+  def gtpConvertToCacheKey(gtp: Domain.GroupTopicPartition): Domain.GroupTopicPartitionCache = new Domain.GroupTopicPartitionCache(gtp.id, gtp.topic, gtp.partition)
+
   object OffsetsSnapshot {
     final case class MetricKeys(
                                  tps: List[Domain.TopicPartition] = Nil,
@@ -49,13 +73,18 @@ object ConsumerGroupCollector {
     private val TpoFormat = "  %-64s%-11s%s"
     private val GtpFormat = "  %-64s%-64s%-11s%s"
 
-    val metricKeys: MetricKeys = MetricKeys(latestOffsets.keys.toList, groups, lastGroupOffsets.keys.toList)
+    var metricKeys: MetricKeys = MetricKeys(latestOffsets.keys.toList, groups, lastGroupOffsets.keys.toList)
 
     def diff(other: OffsetsSnapshot): MetricKeys = {
       val evictedTps = metricKeys.tps.diff(other.metricKeys.tps)
       val evictedGroups = metricKeys.groups.diff(other.metricKeys.groups)
       val evictedGtps = metricKeys.gtps.diff(other.metricKeys.gtps)
-      MetricKeys(evictedTps, evictedGroups, evictedGtps)
+      val beingReportedGtp = other.metricKeys.gtps.map(gtpConvertToCacheKey(_))
+      val evictedGtpsWithCache = evictedGtps.filter(gtp => {
+        val key = gtpConvertToCacheKey(gtp)
+        beingReportedGtp.contains(key) == true || evictedGroups.contains(gtp.id) == true || cache.get(gtpConvertToCacheKey(gtp)) == None
+      })
+      MetricKeys(evictedTps, evictedGroups, evictedGtpsWithCache)
     }
 
     override def toString: String = {
@@ -185,7 +214,22 @@ object ConsumerGroupCollector {
           evictMetricsFromReporter(config, reporter, evictedKeys)
         }
 
+        snapshot.metricKeys.gtps.foreach((gtp) => cache.put(gtpConvertToCacheKey(gtp), true))
+
         context.log.info("Polling in {}", config.pollInterval)
+
+
+
+        state.lastSnapshot match {
+          // add gtps metricKeys which was removed from evicted, otherwise we can have several groups that will be not removed at all
+          case Some(latest) =>
+            val evictedGtps = latest.metricKeys.gtps.diff(snapshot.metricKeys.gtps)
+            val trackedMetrics = evictedGtps.diff(evictedKeys.gtps)
+            if (trackedMetrics.size > 0) snapshot.metricKeys = snapshot.metricKeys.copy(gtps = snapshot.metricKeys.gtps ++ trackedMetrics)
+
+          case _ =>
+        }
+
         val newState = state.copy(
           lastSnapshot = Some(snapshot),
           scheduledCollect = context.scheduleOnce(config.pollInterval, context.self, Collect)
