@@ -18,12 +18,12 @@ clusters: {}
 #    consumerProperties:
 #      security.protocol: SSL
 #      ssl.truststore.location: /path/to/my.truststore.jks
-#      ssl.trustore.password: mypwd
+#      ssl.truststore.password: mypwd
 #    # https://kafka.apache.org/documentation/#adminclientconfigs
 #    adminClientProperties:
 #      security.protocol: SSL
 #      ssl.truststore.location: /path/to/my.truststore.jks
-#      ssl.trustore.password: mypwd
+#      ssl.truststore.password: mypwd
 #    labels:
 #      location: ny
 #      zone: "us-east"
