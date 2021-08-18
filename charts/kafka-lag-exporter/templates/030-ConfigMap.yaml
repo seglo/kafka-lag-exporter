@@ -56,10 +56,16 @@ data:
             {{- range $key, $val := $cluster.consumerProperties }}
             {{ $key }} = {{ quote $val }}
             {{- end }}
+            {{- range $key, $val := $cluster.consumerPropertiesNoQuotes }}
+            {{ $key }} = {{ $val }}
+            {{- end }}
           }
           admin-client-properties = {
             {{- range $key, $val := $cluster.adminClientProperties }}
             {{ $key }} = {{ quote $val }}
+            {{- end }}
+            {{- range $key, $val := $cluster.adminClientPropertiesNoQuotes }}
+            {{ $key }} = {{ $val }}
             {{- end }}
           }
           labels = {
