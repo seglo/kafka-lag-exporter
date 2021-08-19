@@ -84,10 +84,6 @@ spec:
           {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
-      {{- if .Values.imagePullSecrets }}
-      imagePullSecrets:
-      {{- toYaml .Values.imagePullSecrets | nindent 8 }}
-      {{- end }}
     {{- with .Values.initContainers }}
       initContainers: {{ toYaml . | nindent 8 }}
     {{- end }}
