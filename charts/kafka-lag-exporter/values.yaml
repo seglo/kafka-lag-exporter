@@ -93,6 +93,7 @@ initContainers: []
 service:
   type: ClusterIP
   port: 8000
+  additionalLabels: {}
 resources: {}
   # limits:
   #  cpu: 100m
