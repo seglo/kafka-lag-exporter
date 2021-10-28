@@ -124,10 +124,10 @@ secrets: {}
 #      value: base64-encoded-string
 
 hostAliases: {}
-  - ip: "192.168.99.100"
-    hostnames:
-      - "platform.local"
-      - "myotherhost.dev"
+#  - ip: "192.168.99.100"
+#    hostnames:
+#      - "platform.local"
+#      - "myotherhost.dev"
 
 env: {}
   # - name: JAVA_OPTS
