@@ -115,6 +115,20 @@ extraMounts: []
   #     emptyDir:
   #       medium: Memory
   #   mountPath: /var/run/my-secrets
+
+# Define secrets that are mounted at /opt/docker/secrets/ to be used elsewhere, for example in clusters for keystores
+secrets: {}
+#  name: secret-name
+#  data:
+#    - name: my-keystore-file.p12
+#      value: base64-encoded-string
+
+hostAliases: {}
+  - ip: "192.168.99.100"
+    hostnames:
+      - "platform.local"
+      - "myotherhost.dev"
+
 env: {}
   # - name: JAVA_OPTS
   #   value: "-Djava.security.auth.login.config=/var/run/my-secrets/jaasConfig"
