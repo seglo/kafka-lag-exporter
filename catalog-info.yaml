@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-lag-exporter
+  description: kafka-lag-exporter
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/kubernetes-id: 'kafka'
+    github.com/project-slug: 'prabhakarank87/kafka-lag-exporter'
+  links:
+    - url: https://kafka.example.com
+      title: My Dashboard
+      icon: dashboard
+spec:
+  type: service
+  lifecycle: experimental
+  owner: kafka
+  system: kafka
