@@ -5,7 +5,8 @@ metadata:
   description: kafka-lag-exporter
   annotations:
     backstage.io/techdocs-ref: dir:.
-    backstage.io/kubernetes-id: 'kafka'
+    backstage.io/kubernetes-id: 'voting-app'
+    backstage.io/kubernetes-label-selector: 'servicename=voting-analytics,service=voting'
     github.com/project-slug: 'prabhakarank87/kafka-lag-exporter'
   links:
     - url: https://kafka.example.com
