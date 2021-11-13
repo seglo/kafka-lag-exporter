@@ -2,7 +2,7 @@ import sbt._
 
 object Version {
   val Scala          = "2.12.11"
-  val Akka           = "2.6.11"
+  val Akka           = "2.6.15"
   val Prometheus     = "0.8.1"
   val Fabric8        = "4.9.1"
   val Kafka          = "2.5.0"
@@ -44,7 +44,7 @@ object Dependencies {
   val ScalaTest              = "org.scalatest"           %% "scalatest"                 % "3.1.4"                % Test
   val AkkaStreamsTestKit     = "com.typesafe.akka"       %% "akka-stream-testkit"       % Version.Akka           % Test
   val MockitoScala           = "org.mockito"             %% "mockito-scala"             % "1.0.8"                % Test
-  val AlpakkaKafkaTestKit    = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.0.6+3-255156cc"     % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
+  val AlpakkaKafkaTestKit    = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.1.1"     % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
   val TestcontainersKafka    = "org.testcontainers"      %  "kafka"                     % Version.Testcontainers % Test
   val TestcontainersInfluxDb = "org.testcontainers"      %  "influxdb"                  % Version.Testcontainers % Test
 }
