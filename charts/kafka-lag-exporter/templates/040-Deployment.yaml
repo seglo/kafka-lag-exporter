@@ -20,8 +20,12 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/030-ConfigMap.yaml") . | sha256sum }}
+<<<<<<< HEAD
+{{ tpl (toYaml .Values.podAnnotations) . | indent 8 }}
+=======
       {{- if .Values.podAnnotations }}
 {{ toYaml .Values.podAnnotations | indent 8 }}
+>>>>>>> master
       {{- end }}
     spec:
       {{- if .Values.hostAliases }}
@@ -43,7 +47,10 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.env }}
+          {{- if .Values.image.pullSecrets }}
+          imagePullSecrets:
+{{ toYaml .Values.image.pullSecrets | indent 10 }}
+          {{- end }}
           env:
 {{ toYaml .Values.env | indent 10 }}
           {{- end }}

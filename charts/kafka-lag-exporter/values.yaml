@@ -18,12 +18,14 @@ clusters: {}
 #    consumerProperties:
 #      security.protocol: SSL
 #      ssl.truststore.location: /path/to/my.truststore.jks
-#      ssl.trustore.password: mypwd
+#    consumerPropertiesNoQuotes:
+#      ssl.truststore.password: mypwd
 #    # https://kafka.apache.org/documentation/#adminclientconfigs
 #    adminClientProperties:
 #      security.protocol: SSL
 #      ssl.truststore.location: /path/to/my.truststore.jks
-#      ssl.trustore.password: mypwd
+#    adminClientPropertiesNoQuotes:
+#      ssl.truststore.password: mypwd
 #    labels:
 #      location: ny
 #      zone: "us-east"
@@ -113,6 +115,7 @@ image:
   # If digest is set it will be used instead of tag to specify the image
   # digest: sha256:0f6387aa011e6eb7952ea211ac139bf8613ad3ef6954a1a5d910676d293bd610
   pullPolicy: Always
+  pullSecrets: []
 securityContext: {}
   # allowPrivilegeEscalation: false
   # runAsUser: 1001
