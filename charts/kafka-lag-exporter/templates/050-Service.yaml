@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     jobLabel: {{ include "kafka-lag-exporter.fullname" . }}
+    {{- if .Values.service.additionalLabels }}
+{{ toYaml .Values.service.additionalLabels | indent 4 -}}
+    {{- end }}
   annotations:
     prometheus.io/path: /metrics
     prometheus.io/port: "{{ .Values.service.port }}"
