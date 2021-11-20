@@ -395,10 +395,10 @@ Current ACLs for resource `Topic:LITERAL:*`:
  	User:kafka-lag-exporter has Allow permission for operations: Describe from hosts: * 
 ```
 
-This can be added using the following command:
+This can be added using the following command (`authorizer-properties` depends on the Kafka installation):
 
 ```
-kafka-acls --add --allow-principal "User:kafka-lag-exporter" --operation DESCRIBE --group '*' --topic '*' --cluster
+kafka-acls --authorizer-properties "zookeeper.connect=localhost:2181" --add --allow-principal "User:kafka-lag-exporter" --operation DESCRIBE --group '*' --topic '*' --cluster
 ```
 
 ## Estimate Consumer Group Time Lag
