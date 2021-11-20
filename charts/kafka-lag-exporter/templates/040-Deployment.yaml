@@ -21,7 +21,7 @@ spec:
       {{- if .Values.podAnnotations }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/030-ConfigMap.yaml") . | sha256sum }}
-{{ toYaml .Values.podAnnotations | indent 8 }}
+{{ tpl (toYaml .Values.podAnnotations) . | indent 8 }}
       {{- end }}
     spec:
       {{- if or .Values.watchers.strimzi .Values.serviceAccount.create }}
