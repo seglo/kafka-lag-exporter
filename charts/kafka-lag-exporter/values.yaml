@@ -79,6 +79,9 @@ serviceAccount:
   ## The name of the service account will be generated based on the release name, use nameOverride to override
   ## with a static name.
   # nameOverride: my-serviceaccount
+  ## Annotations to add to the service account (e.g., add IAM role to the service)
+  # annotations:
+  #     iam.gke.io/gcp-service-account: gke-workload@my-gcp-project.iam.gserviceaccount.com
 
 ## You can use regex to control the metrics exposed by Prometheus endpoint.
 ## Any metric that matches one of the regex in the whitelist will be exposed.
