@@ -22,7 +22,7 @@ object Dependencies {
   private val log4jExclusionRule = ExclusionRule("log4j")
   private val slf4jExclusionRule = ExclusionRule("org.slf4j")
 
-  val LightbendConfig        = "com.typesafe"            %  "config"                       % "1.3.2"
+  val LightbendConfig        = "com.typesafe"            %  "config"                       % "1.3.4"
   val Kafka                  = "org.apache.kafka"        %% "kafka"                        % Version.Kafka excludeAll (jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
   val Akka                   = "com.typesafe.akka"       %% "akka-actor"                   % Version.Akka
   val AkkaTyped              = "com.typesafe.akka"       %% "akka-actor-typed"             % Version.Akka
