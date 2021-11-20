@@ -87,7 +87,7 @@ lazy val kafkaLagExporter =
         commitChartThisVersion,                 // Commit the Helm Chart
         tagRelease,
         githubReleaseDraft,                     // Create a GitHub release draft
-        publishChartsIndex,                     // Publish Helm Charts index
+//        publishChartsIndex,                     // Publish Helm Charts index
         setNextVersion,
         updateHelmChartNextVersion,             // Update the Helm Chart with the next snapshot version
         commitChartNextVersion,                 // Commit the Helm Chart
