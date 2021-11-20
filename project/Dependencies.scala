@@ -36,7 +36,7 @@ object Dependencies {
   val PrometheusHttpServer   = "io.prometheus"           %  "simpleclient_httpserver"      % Version.Prometheus
   val Fabric8Model           = "io.fabric8"              %  "kubernetes-model"             % Version.Fabric8
   val Fabric8Client          = "io.fabric8"              %  "kubernetes-client"            % Version.Fabric8
-  val ScalaJava8Compat       = "org.scala-lang.modules"  %% "scala-java8-compat"           % "0.9.1"
+  val ScalaJava8Compat       = "org.scala-lang.modules"  %% "scala-java8-compat"           % "1.0.2"
   val AkkaHttp               = "com.typesafe.akka"       %% "akka-http"                    % "10.1.14"
 
   /* Test */
