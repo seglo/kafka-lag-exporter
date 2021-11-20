@@ -1,7 +1,7 @@
 import sbt._
 
 object Version {
-  val Scala          = "2.12.15"
+  val Scala          = "2.13.7"
   val Akka           = "2.6.17"
   val Prometheus     = "0.12.0"
   val Fabric8        = "4.9.1"
