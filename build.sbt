@@ -79,7 +79,7 @@ lazy val kafkaLagExporter =
         updateHelmChartRelease,                 // Update the Helm Chart
         publishDockerImage,                     // Publish the Docker images used by the chart
         packageChart,                           // Package the Helm Chart
-        buildChartsIndex,                       // Build Helm Charts index
+//        buildChartsIndex,                       // Build Helm Charts index
         packageJavaApp,                         // Package the standalone Java App
         commitReleaseVersion,
         updateReadmeRelease,                    // Update the README.md with this version
