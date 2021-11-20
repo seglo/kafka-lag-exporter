@@ -22,7 +22,7 @@ object Dependencies {
   private val log4jExclusionRule = ExclusionRule("log4j")
   private val slf4jExclusionRule = ExclusionRule("org.slf4j")
 
-  val LightbendConfig        = "com.typesafe"            %  "config"                       % "1.3.2"
+  val LightbendConfig        = "com.typesafe"            %  "config"                       % "1.3.4"
   val Kafka                  = "org.apache.kafka"        %% "kafka"                        % Version.Kafka excludeAll (jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
   val Akka                   = "com.typesafe.akka"       %% "akka-actor"                   % Version.Akka
   val AkkaTyped              = "com.typesafe.akka"       %% "akka-actor-typed"             % Version.Akka
@@ -37,7 +37,7 @@ object Dependencies {
   val Fabric8Model           = "io.fabric8"              %  "kubernetes-model"             % Version.Fabric8
   val Fabric8Client          = "io.fabric8"              %  "kubernetes-client"            % Version.Fabric8
   val ScalaJava8Compat       = "org.scala-lang.modules"  %% "scala-java8-compat"           % "0.9.0"
-  val AkkaHttp               = "com.typesafe.akka"       %% "akka-http"                    % "10.1.11"
+  val AkkaHttp               = "com.typesafe.akka"       %% "akka-http"                    % "10.1.14"
 
   /* Test */
   val AkkaTypedTestKit       = "com.typesafe.akka"       %% "akka-actor-testkit-typed"  % Version.Akka           % Test
