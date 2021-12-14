@@ -1,6 +1,6 @@
 language: scala
 sudo: false
-jdk: oraclejdk11
+jdk: oraclejdk17
 dist: trusty
 cache:
   directories:
