@@ -52,7 +52,7 @@ lazy val kafkaLagExporter =
       // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
       dockerCommands := Seq(
         Cmd("FROM",           "redhat/ubi8"),
-        Cmd("RUN",            "yum -y install java-1.8.0-openjdk-headless && yum update -y && yum clean all -y"),
+        Cmd("RUN",            "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"),
         Cmd("RUN",            "useradd -r -m -u 1001 -g 0 kafkalagexporter"),
         Cmd("ADD",            "opt /opt"),
         Cmd("RUN",            "chgrp -R 0 /opt && chmod -R g=u /opt"),
