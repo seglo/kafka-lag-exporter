@@ -196,3 +196,5 @@ prometheus:
     #   targetLabels:
     #   - prometheus
     #   - app.kubernetes.io/name
+
+logPattern: "%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg %ex%n"

@@ -129,7 +129,7 @@ data:
         <variable name="KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL" value="{{ .Values.kafkaLogLevel }}" />
         <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
-                <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg %ex%n</pattern>
+                <pattern>{{ .Values.logPattern }}</pattern>
             </encoder>
         </appender>
         <logger name="org.apache.kafka" level="${KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL}"/>
