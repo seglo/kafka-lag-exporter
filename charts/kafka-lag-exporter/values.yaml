@@ -170,6 +170,13 @@ hostAliases: {}
 env: {}
   # - name: JAVA_OPTS
   #   value: "-Djava.security.auth.login.config=/var/run/my-secrets/jaasConfig"
+
+# Define references to configmaps or secrets to be populated as environment variables
+envFromConfigMapRefs: []
+# - 'configmap-a'
+envFromSecretRefs: []
+# - 'secret-a'
+
 podAnnotations: {}
   # foo: bar
 ## Readiness and liveness probe initial delay and timeout
