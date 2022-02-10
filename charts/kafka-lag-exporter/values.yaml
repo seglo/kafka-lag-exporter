@@ -189,6 +189,11 @@ prometheus:
   serviceMonitor:
     enabled: false
     interval: "30s"
+    # metricRelabelings:
+    #  - sourceLabels: [__name__]
+    #    regex: ^(process_|jvm_).*$
+    #    action: drop
+    # relabelings: []
     # service monitor label selectors: https://github.com/helm/charts/blob/f5a751f174263971fafd21eee4e35416d6612a3d/stable/prometheus-operator/templates/prometheus/prometheus.yaml#L74
     # additionalLabels:
     #   prometheus: k8s
