@@ -48,6 +48,7 @@ object LookupTable {
      */
     def lookup(offset: Long): Result = {
       def estimate(): Result = {
+        var extrapolated = false
         // search for two cells that contains the given offset
         val (left, right) = points
           .reverseIterator
@@ -60,6 +61,7 @@ object LookupTable {
           // offset is not between any two points in the table
           // extrapolate given largest trendline we have available
           .getOrElse {
+            extrapolated = true
             (points.head, points.last)
           }
 
@@ -69,7 +71,7 @@ object LookupTable {
         val Px = (right.time).toDouble
         val Dy = (right.offset - offset).toDouble
 
-        Prediction(Px - Dy * dx / dy)
+        Prediction(Px - Dy * dx / dy, extrapolated = extrapolated)
       }
 
       points.toList match {
@@ -79,6 +81,20 @@ object LookupTable {
         case _ => estimate()
 
       }
+    }
+
+    /**
+      * Return the size of the points table
+      */
+    def length(): Int = {
+      points.length
+    }
+
+    /**
+      * Return a dump of the points table
+      */
+    def dump(): List[Point] = {
+      points.toList
     }
 
     /**
@@ -96,6 +112,6 @@ object LookupTable {
     sealed trait Result
     case object TooFewPoints extends Result
     case object LagIsZero extends Result
-    final case class Prediction(time: Double) extends Result
+    final case class Prediction(time: Double, extrapolated: Boolean = false) extends Result
   }
 }

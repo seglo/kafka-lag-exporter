@@ -5,6 +5,7 @@
 package com.lightbend.kafkalagexporter
 
 import java.time.Clock
+import java.util.Date
 
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.Behaviors
@@ -173,13 +174,13 @@ object ConsumerGroupCollector {
         val evictedKeys = state.lastSnapshot.map(_.diff(snapshot)).getOrElse(MetricKeys())
 
         context.log.info("Updating lookup tables")
-        refreshLookupTable(state, snapshot, evictedKeys.tps)
+        refreshLookupTable(context.log, state, snapshot, evictedKeys.tps)
 
         reporters.foreach { reporter =>
           context.log.info("Reporting offsets")
           reportEarliestOffsetMetrics(config, reporter, snapshot)
           reportLatestOffsetMetrics(config, reporter, state.topicPartitionTables)
-          reportConsumerGroupMetrics(config, reporter, snapshot, state.topicPartitionTables)
+          reportConsumerGroupMetrics(context.log, config, reporter, snapshot, state.topicPartitionTables)
 
           context.log.info("Clearing evicted metrics")
           evictMetricsFromReporter(config, reporter, evictedKeys)
@@ -226,12 +227,24 @@ object ConsumerGroupCollector {
     /**
       * Refresh Lookup table.  Remove topic partitions that are no longer relevant and update tables with new Point's.
       */
-    private def refreshLookupTable(state: CollectorState, snapshot: OffsetsSnapshot, evictedTps: List[TopicPartition]): Unit = {
+    private def refreshLookupTable(log: Logger, state: CollectorState, snapshot: OffsetsSnapshot, evictedTps: List[TopicPartition]): Unit = {
       state.topicPartitionTables.clear(evictedTps)
-      for((tp, point) <- snapshot.latestOffsets) state.topicPartitionTables(tp).addPoint(point)
+      for((tp, point) <- snapshot.latestOffsets)
+      {
+        log.debug("topicPartitionTables - topic={} partition={} offset={} time={} ({}) table size={}", tp.topic, tp.partition.toString(), point.offset.toString(), new Date(point.time).toString(), point.time.toString(), state.topicPartitionTables(tp).length().toString())
+        state.topicPartitionTables(tp).addPoint(point)
+
+        if (log.isTraceEnabled())
+        {
+          log.trace("topicPartitionTables - Dumping the lookup table")
+          val points = state.topicPartitionTables(tp).dump()
+          points.foreach(point => log.trace("   offset={} time={} ({})", point.offset.toString(), new Date(point.time).toString(), point.time.toString()))
+        }
+      }
     }
 
     private def reportConsumerGroupMetrics(
+                                            log: Logger,
                                             config: CollectorConfig,
                                             reporter: ActorRef[MetricsSink.Message],
                                             offsetsSnapshot: OffsetsSnapshot,
@@ -245,7 +258,9 @@ object ConsumerGroupCollector {
           case Some(point) =>
             val groupOffset = point.offset.toDouble
             val timeLag = tables(gtp.tp).lookup(point.offset) match {
-              case Prediction(pxTime) => (point.time.toDouble - pxTime) / 1000
+              case Prediction(pxTime, extrapolated) =>
+                log.debug("clientId={} consumerId={} host={} id={} partition={} topic={} extrapolated={} lag={}", gtp.clientId, gtp.consumerId, gtp.host, gtp.id, gtp.partition.toString(), gtp.topic, extrapolated.toString(), ((point.time.toDouble - pxTime) / 1000).toInt.toString())
+                (point.time.toDouble - pxTime) / 1000
               case LagIsZero          => 0d
               case TooFewPoints       => Double.NaN
             }
