@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -141,6 +141,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
                                             adminClient: AdminKafkaClientContract)
                                            (implicit ec: ExecutionContext) extends KafkaClientContract {
   import KafkaClient._
+  import Domain._
 
   /**
     * Get a list of consumer groups
@@ -202,7 +203,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
     */
   def getEarliestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets] = Try {
     val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.beginningOffsets(topicPartitions.map(_.asKafka).asJava)
-    topicPartitions.map(tp => tp -> LookupTable.Point(offsets.get(tp.asKafka).toLong,now)).toMap
+    topicPartitions.map(tp => tp -> Point(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 
   /**
@@ -210,7 +211,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
     */
   def getLatestOffsets(now: Long, topicPartitions: Set[Domain.TopicPartition]): Try[PartitionOffsets] = Try {
     val offsets: util.Map[KafkaTopicPartition, lang.Long] = consumer.endOffsets(topicPartitions.map(_.asKafka).asJava)
-    topicPartitions.map(tp => tp -> LookupTable.Point(offsets.get(tp.asKafka).toLong,now)).toMap
+    topicPartitions.map(tp => tp -> Point(offsets.get(tp.asKafka).toLong,now)).toMap
   }
 
   /**
@@ -261,7 +262,7 @@ class KafkaClient private[kafkalagexporter](cluster: KafkaCluster,
       if (offsetResult == null)
         gtp -> None
       else
-        gtp -> Some(LookupTable.Point(offsetResult.offset(), now))
+        gtp -> Some(Point(offsetResult.offset(), now))
     }).toMap
 
   def close(): Unit = {

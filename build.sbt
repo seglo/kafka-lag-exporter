@@ -36,6 +36,7 @@ lazy val kafkaLagExporter =
         PrometheusHttpServer,
         ScalaJava8Compat,
         AkkaHttp,
+        ScalaRedis,
         Logback,
         ScalaTest,
         AkkaTypedTestKit,
@@ -51,7 +52,7 @@ lazy val kafkaLagExporter =
       // Based on best practices found in OpenShift Creating images guidelines
       // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
       dockerCommands := Seq(
-        Cmd("FROM",           "centos:8"),
+        Cmd("FROM",           "redhat/ubi8"),
         Cmd("RUN",            "yum -y install java-1.8.0-openjdk-headless && yum update -y && yum clean all -y"),
         Cmd("RUN",            "useradd -r -m -u 1001 -g 0 kafkalagexporter"),
         Cmd("ADD",            "opt /opt"),

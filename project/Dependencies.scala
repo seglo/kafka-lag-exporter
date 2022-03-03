@@ -38,6 +38,7 @@ object Dependencies {
   val Fabric8Client          = "io.fabric8"              %  "kubernetes-client"            % Version.Fabric8
   val ScalaJava8Compat       = "org.scala-lang.modules"  %% "scala-java8-compat"           % "1.0.2"
   val AkkaHttp               = "com.typesafe.akka"       %% "akka-http"                    % "10.2.7"
+  val ScalaRedis             = "net.debasishg"           %% "redisclient"                  % "3.41"
 
   /* Test */
   val AkkaTypedTestKit       = "com.typesafe.akka"       %% "akka-actor-testkit-typed"  % Version.Akka           % Test

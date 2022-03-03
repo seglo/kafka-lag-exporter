@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -62,15 +62,15 @@ object ConsumerGroupCollector {
     override def toString: String = {
       val earliestOffsetHeader = TpoFormat.format("Topic", "Partition", "Earliest")
       val earliestOffsetsStr = earliestOffsets.map {
-        case (TopicPartition(t, p), LookupTable.Point(offset, _)) => TpoFormat.format(t,p,offset)
+        case (TopicPartition(t, p), Point(offset, _)) => TpoFormat.format(t,p,offset)
       }
       val latestOffsetHeader = TpoFormat.format("Topic", "Partition", "Offset")
       val latestOffsetsStr = latestOffsets.map {
-        case (TopicPartition(t, p), LookupTable.Point(offset, _)) => TpoFormat.format(t,p,offset)
+        case (TopicPartition(t, p), Point(offset, _)) => TpoFormat.format(t,p,offset)
       }
       val lastGroupOffsetHeader = GtpFormat.format("Group", "Topic", "Partition", "Offset")
       val lastGroupOffsetsStr = lastGroupOffsets.map {
-        case (GroupTopicPartition(id, _, _, _, t, p), Some(LookupTable.Point(offset, _))) => GtpFormat.format(id, t, p, offset)
+        case (GroupTopicPartition(id, _, _, _, t, p), Some(Point(offset, _))) => GtpFormat.format(id, t, p, offset)
         case (GroupTopicPartition(id, _, _, _, t, p), None) => GtpFormat.format(id, t, p, "-")
       }
 
@@ -231,12 +231,22 @@ object ConsumerGroupCollector {
       state.topicPartitionTables.clear(evictedTps)
       for((tp, point) <- snapshot.latestOffsets)
       {
-        log.debug("topicPartitionTables - topic={} partition={} offset={} time={} ({}) table size={}", tp.topic, tp.partition.toString(), point.offset.toString(), new Date(point.time).toString(), point.time.toString(), state.topicPartitionTables(tp).length().toString())
+        log.info("topicPartitionTables - topic={} partition={} offset={} time={} ({}) table size={}", tp.topic, tp.partition.toString(), point.offset.toString(), new Date(point.time).toString(), point.time.toString(), state.topicPartitionTables(tp).length().toString())
         state.topicPartitionTables(tp).addPoint(point)
+        state.topicPartitionTables(tp).addRedisPoint(point)
+
+        state.topicPartitionTables(tp).mostRecentPoint() match {
+          case Right(point) => log.info("memory offset: {} memory time: {}",  point.offset, point.time)
+          case _ =>
+        }
+        state.topicPartitionTables(tp).mostRecentRedisPoint() match {
+          case Right(point) => log.info("redis offset: {} redis time: {}",  point.offset, point.time)
+          case _ =>
+        }
 
         if (log.isTraceEnabled())
         {
-          log.trace("topicPartitionTables - Dumping the lookup table")
+          log.info("topicPartitionTables - Dumping the lookup table")
           val points = state.topicPartitionTables(tp).dump()
           points.foreach(point => log.trace("   offset={} time={} ({})", point.offset.toString(), new Date(point.time).toString(), point.time.toString()))
         }

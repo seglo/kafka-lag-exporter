@@ -1,15 +1,30 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
 
 import scala.collection.mutable
+import com.redis._
 
 object LookupTable {
-  case class Point(offset: Long, time: Long)
-  case class Table(limit: Int, points: mutable.Queue[Point]) {
+  import Domain._
+  case class Table(tp: TopicPartition, limit: Int, points: mutable.Queue[Point]) {
     import Table._
+
+    val client = new RedisClient("localhost", 6379)
+    val key = "kafka-lag-exporter:" + tp.topic + ":" + tp.partition
+
+    def addRedisPoint(point: Point) {
+      if (client.zcount(key).get == limit) client.zremrangebyrank(key, 0, 0)
+      client.zadd(key, point.offset.toDouble, point.time)
+    }
+
+    def mostRecentRedisPoint(): Either[String, Point] = {
+      val r = client.zrangebyscoreWithScore(key = key, min = Double.NegativeInfinity, max = Double.PositiveInfinity, limit = Some((0, 1): (Int, Int)), sortAs = RedisClient.DESC).get
+      if (r.isEmpty) Left("No data in redis")
+      else Right(new Point(r.head._2.toLong, r.head._1.toLong))
+    }
 
     /**
      * Add the `Point` to the table.
@@ -107,7 +122,7 @@ object LookupTable {
   }
 
   object Table {
-    def apply(limit: Int): Table = Table(limit, mutable.Queue[Point]())
+    def apply(tp: TopicPartition, limit: Int): Table = Table(tp, limit, mutable.Queue[Point]())
 
     sealed trait Result
     case object TooFewPoints extends Result

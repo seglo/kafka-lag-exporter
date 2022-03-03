@@ -5,3 +5,6 @@ target
 *.iml
 application.conf
 !examples/standalone/application.conf
+.bloop
+.metals
+.vscode
