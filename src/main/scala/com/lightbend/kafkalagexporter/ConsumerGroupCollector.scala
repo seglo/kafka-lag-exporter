@@ -5,7 +5,6 @@
 package com.lightbend.kafkalagexporter
 
 import java.time.Clock
-import java.util.Date
 import com.redis._
 
 import akka.actor.Cancellable
@@ -13,7 +12,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import com.lightbend.kafkalagexporter.ConsumerGroupCollector.OffsetsSnapshot.MetricKeys
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
-import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints, InvalidLeftPoint, InvalidRightPoint}
+import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
+//import com.lightbend.kafkalagexporter.RedisLookupTable.RedisTable.{LagIsZero, Prediction, TooFewPoints}
+
 import org.slf4j.Logger
 
 import scala.collection.immutable
@@ -94,6 +95,8 @@ object ConsumerGroupCollector {
   final case class CollectorConfig(
                                     pollInterval: FiniteDuration,
                                     lookupTableSize: Int,
+                                    lookupTableResolution: FiniteDuration,
+                                    redis: RedisConfig,
                                     cluster: KafkaCluster,
                                     clock: Clock = Clock.systemUTC()
                                   )
@@ -114,21 +117,22 @@ object ConsumerGroupCollector {
 
       context.self ! Collect
 
-      context.log.info("Openning a connection to Redis")
-      val redisClient: RedisClient = new RedisClient("localhost", 6379)
+      if (config.redis.enabled) {
+        context.log.info("Openning a connection to Redis")
+        val redisClient: RedisClient = new RedisClient(database = config.redis.database, host = config.redis.host, port = config.redis.port, timeout = config.redis.timeout)
+      }
 
       val collectorState = CollectorState(
            topicPartitionTables = Domain.TopicPartitionTable(config.lookupTableSize))
-      collector(config, clientCreator(config.cluster), reporters, collectorState, redisClient)
+      collector(config, clientCreator(config.cluster), reporters, collectorState)
     }
   }.onFailure(SupervisorStrategy.restartWithBackoff(1 seconds, 10 seconds, 0.2))
 
   def collector(config: CollectorConfig,
                 client: KafkaClientContract,
                 reporters: List[ActorRef[MetricsSink.Message]],
-                state: CollectorState,
-                redisClient: RedisClient): Behavior[Message] =
-    (new CollectorBehavior).collector(config, client, reporters, state, redisClient)
+                state: CollectorState): Behavior[Message] =
+    (new CollectorBehavior).collector(config, client, reporters, state)
 
   // TODO: Ideally this wouldn't be in a class, like the other behaviors, but at this time there's no other way to
   // TODO: assert state transition changes. See `ConsumerGroupCollectorSpec` which uses mockito to assert the state
@@ -137,8 +141,7 @@ object ConsumerGroupCollector {
     def collector(config: CollectorConfig,
                   client: KafkaClientContract,
                   reporters: List[ActorRef[MetricsSink.Message]],
-                  state: CollectorState,
-                  redisClient: RedisClient): Behavior[Message] = Behaviors.receive {
+                  state: CollectorState): Behavior[Message] = Behaviors.receive {
       case (context, _: Collect) =>
         implicit val ec: ExecutionContextExecutor = context.executionContext
 
@@ -180,13 +183,13 @@ object ConsumerGroupCollector {
         val evictedKeys = state.lastSnapshot.map(_.diff(snapshot)).getOrElse(MetricKeys())
 
         context.log.info("Updating lookup tables")
-        refreshLookupTable(context.log, state.topicPartitionTables, snapshot, evictedKeys.tps, redisClient)
+        refreshLookupTable(state.topicPartitionTables, snapshot, evictedKeys.tps)
 
         reporters.foreach { reporter =>
           context.log.info("Reporting offsets")
           reportEarliestOffsetMetrics(config, reporter, snapshot)
           reportLatestOffsetMetrics(config, reporter, snapshot)
-          reportConsumerGroupMetrics(context.log, config, reporter, snapshot, state.topicPartitionTables, redisClient)
+          reportConsumerGroupMetrics(config, reporter, snapshot, state.topicPartitionTables)
 
           context.log.info("Clearing evicted metrics")
           evictMetricsFromReporter(config, reporter, evictedKeys)
@@ -198,7 +201,7 @@ object ConsumerGroupCollector {
           scheduledCollect = context.scheduleOnce(config.pollInterval, context.self, Collect)
         )
 
-        collector(config, client, reporters, newState, redisClient)
+        collector(config, client, reporters, newState)
 
       case (context, metaData: MetaData) =>
         context.log.debug("Received Meta data:\n{}", metaData)
@@ -233,51 +236,19 @@ object ConsumerGroupCollector {
     /**
       * Refresh Lookup table.  Remove topic partitions that are no longer relevant and update tables with new Point's.
       */
-    private def refreshLookupTable(log: Logger, topicPartitionTables: TopicPartitionTable, snapshot: OffsetsSnapshot, evictedTps: List[TopicPartition], redisClient: RedisClient): Unit = {
+    private def refreshLookupTable(topicPartitionTables: TopicPartitionTable, snapshot: OffsetsSnapshot, evictedTps: List[TopicPartition]): Unit = {
       topicPartitionTables.clear(evictedTps)
       for((tp, point) <- snapshot.latestOffsets)
       {
-        // log.info("topicPartitionTables - memory - topic={} partition={} offset={} time={} ({}) table size={}", tp.topic, tp.partition.toString(), point.offset.toString(), new Date(point.time).toString(), point.time.toString(), topicPartitionTables(tp).length().toString())
-        // log.info("topicPartitionTables - redis  - topic={} partition={} offset={} time={} ({}) table size={}", tp.topic, tp.partition.toString(), point.offset.toString(), new Date(point.time).toString(), point.time.toString(), topicPartitionTables(tp).length(redisClient).toString())
         topicPartitionTables(tp).addPoint(point)
-        topicPartitionTables(tp).addPoint(point, redisClient)
-
-        // topicPartitionTables(tp).mostRecentPoint() match {
-        //   case Right(point) => log.info("mostRecentPoint - memory offset: {} memory time: {}",  point.offset, point.time)
-        //   case _ =>
-        // }
-        // topicPartitionTables(tp).mostRecentPoint(redisClient) match {
-        //   case Right(point) => log.info("mostRecentPoint - redis offset:  {} redis time:  {}",  point.offset, point.time)
-        //   case _ =>
-        // }
-
-        // topicPartitionTables(tp).oldestPoint() match {
-        //   case Right(point) => log.info("oldestPoint -     memory offset: {} memory time: {}",  point.offset, point.time)
-        //   case _ =>
-        // }
-        // topicPartitionTables(tp).oldestPoint(redisClient) match {
-        //   case Right(point) => log.info("oldestPoint -     redis offset:  {} redis time:  {}",  point.offset, point.time)
-        //   case _ =>
-        // }
-
-        // //if (log.isTraceEnabled())
-        // //{
-        // log.info("topicPartitionTables - memory lookup table")
-        // topicPartitionTables(tp).dump().foreach(point => log.info("   offset={} time={} ({})", point.offset.toString(), new Date(point.time).toString(), point.time.toString()))
-        // 
-        // log.info("topicPartitionTables - redis lookup table")
-        // topicPartitionTables(tp).dump(redisClient).foreach(point => log.info("   offset={} time={} ({})", point.offset.toString(), new Date(point.time).toString(), point.time.toString()))
-        // //}
       }
     }
 
     private def reportConsumerGroupMetrics(
-                                            log: Logger,
                                             config: CollectorConfig,
                                             reporter: ActorRef[MetricsSink.Message],
                                             offsetsSnapshot: OffsetsSnapshot,
-                                            tables: TopicPartitionTable,
-                                            redisClient: RedisClient
+                                            tables: TopicPartitionTable
                                           ): Unit = {
       val groupLag: immutable.Iterable[GroupPartitionLag] = for {
         (gtp, groupPoint) <- offsetsSnapshot.lastGroupOffsets
@@ -285,15 +256,11 @@ object ConsumerGroupCollector {
       } yield {
         val (groupOffset, offsetLag, timeLag) = groupPoint match {
           case Some(point) =>
-            // log.info("clientId={} consumerId={} host={} id={} partition={} topic={} offset={}", gtp.clientId, gtp.consumerId, gtp.host, gtp.id, gtp.partition.toString(), gtp.topic, point.offset.toString())
             val groupOffset = point.offset.toDouble
-            val timeLag = tables(gtp.tp).lookup(point.offset, redisClient, log) match {
-              case Prediction(pxTime, extrapolated) => (point.time.toDouble - pxTime) / 1000
-                // log.info("  extrapolated={} point.time={} pxTime={} lag={}", extrapolated.toString(), point.time.toString, pxTime.toLong.toString(), ((point.time.toDouble - pxTime) / 1000).toLong.toString())
-              case LagIsZero => 0d
-              case TooFewPoints => Double.NaN
-              case InvalidLeftPoint => Double.NaN
-              case InvalidRightPoint => Double.NaN
+            val timeLag = tables(gtp.tp).lookup(point.offset) match {
+              case Prediction(pxTime) => (point.time.toDouble - pxTime) / 1000
+              case LagIsZero          => 0d
+              case TooFewPoints       => Double.NaN
             }
 
             val offsetLagCalc = mrp.offset - point.offset

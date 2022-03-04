@@ -60,6 +60,8 @@ object KafkaClusterManager {
         val config = ConsumerGroupCollector.CollectorConfig(
           appConfig.pollInterval,
           appConfig.lookupTableSize,
+          appConfig.lookupTableResolution,
+          appConfig.redis,
           cluster
         )
         val collector = context.spawn(

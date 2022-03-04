@@ -20,6 +20,7 @@ object AppConfig {
     val c = config.getConfig("kafka-lag-exporter")
     val pollInterval = c.getDuration("poll-interval").toScala
     val lookupTableSize = c.getInt("lookup-table-size")
+    val lookupTableResolution = c.getDuration("lookup-table-resolution").toScala
 
     val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
 
@@ -86,9 +87,19 @@ object AppConfig {
         labels
       )
     }
+
+   val redisConfig: RedisConfig = new RedisConfig(enabled = c.getBoolean("redis.enabled"),
+                                      database = c.getInt("redis.database"),
+                                      host = c.getString("redis.host"),
+                                      port = c.getInt("redis.port"),
+                                      timeout = c.getInt("redis.timeout"),
+                                      prefix = c.getString("redis.prefix"),
+                                      separator = c.getString(("redis.separator"))
+                                    )
+
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
 
-    AppConfig(pollInterval, lookupTableSize, sinkConfigs, clientGroupId, kafkaClientTimeout, clusters, strimziWatcher)
+    AppConfig(pollInterval, lookupTableSize, lookupTableResolution, sinkConfigs, clientGroupId, kafkaClientTimeout, clusters, redisConfig, strimziWatcher)
   }
 
   // Copied from Alpakka Kafka
@@ -145,23 +156,63 @@ final case class KafkaCluster(name: String, bootstrapBrokers: String,
   }
 }
 
-final case class AppConfig(pollInterval: FiniteDuration, lookupTableSize: Int, sinkConfigs: List[SinkConfig], clientGroupId: String,
-                           clientTimeout: FiniteDuration, clusters: List[KafkaCluster], strimziWatcher: Boolean) {
+object RedisConfig {
+  val EnabledDefault: Boolean = false
+  val DatabaseDefault: Int = 0
+  val HostDefault: String = "localhost"
+  val PortDefault: Int = 6379
+  val TimeoutDefault: Int = 60
+  val PrefixDefault: String =  "kafka-lag-exporter"
+  val SeparatorDefault: String =  ":"
+}
+
+final case class RedisConfig(enabled: Boolean = RedisConfig.EnabledDefault,
+                             database: Int = RedisConfig.DatabaseDefault,
+                             host: String = RedisConfig.HostDefault,
+                             port: Int = RedisConfig.PortDefault,
+                             timeout: Int = RedisConfig.TimeoutDefault,
+                             prefix: String = RedisConfig.PrefixDefault,
+                             separator: String = RedisConfig.SeparatorDefault) {
+  override def toString(): String = {
+    s"""|  Enabled: $enabled
+        |  Database: $database
+        |  Host: $host
+        |  Port: $port
+        |  Timeout: $timeout
+        |  Prefix: $prefix
+        |  Separator: $separator
+     """.stripMargin
+  }
+}
+
+final case class AppConfig(pollInterval: FiniteDuration, 
+                           lookupTableSize: Int, 
+                           lookupTableResolution: FiniteDuration, 
+                           sinkConfigs: List[SinkConfig], 
+                           clientGroupId: String, 
+                           clientTimeout: FiniteDuration, 
+                           clusters: List[KafkaCluster], 
+                           redis: RedisConfig, 
+                           strimziWatcher: Boolean) {
   override def toString(): String = {
     val clusterString =
       if (clusters.isEmpty)
         "  (none)"
       else clusters.map(_.toString).mkString("\n")
     val sinksString = sinkConfigs.mkString("")
+    val redisString = redis.toString()
     s"""
        |Poll interval: $pollInterval
        |Lookup table size: $lookupTableSize
+       |Lookup table resolution: $lookupTableResolution
        |Metrics whitelist: [${sinkConfigs.head.metricWhitelist.mkString(", ")}]
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
        |$sinksString
        |Statically defined Clusters:
        |$clusterString
+       |Redis:
+       |$redisString
        |Watchers:
        |  Strimzi: $strimziWatcher
      """.stripMargin
