@@ -4,7 +4,10 @@
 
 package com.lightbend.kafkalagexporter
 
+import com.redis.RedisClient
+
 object Domain {
+  import LookupTable._
   final case class TopicPartition(topic: String, partition: Int)
   final case class Point(offset: Long, time: Long)
 
@@ -34,21 +37,22 @@ object Domain {
     def apply(tuples: (TopicPartition, Point)*): PartitionOffsets = Map(tuples: _*)
   }
 
-  class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, LookupTable.Table]) {
-    def apply(tp: TopicPartition): LookupTable.Table = {
-      tables = tables.updated(tp, tables.getOrElse(tp, LookupTable.Table(tp, limit)))
-      tables(tp)
+  class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, Either[MemoryTable, RedisTable]], redisClient: Option[RedisClient]) {
+    def apply(tp: TopicPartition): Either[MemoryTable, RedisTable] = {
+        tables = tables.updated(tp, tables.getOrElse(tp, Table(tp, limit, redisClient)))
+        tables(tp)
     }
 
     def clear(evictedTps: List[TopicPartition]): Unit =
       tables = tables.filterKeys(tp => !evictedTps.contains(tp))
 
-    def all: Map[TopicPartition, LookupTable.Table] = tables
+    def all: Map[TopicPartition, Either[MemoryTable, RedisTable]] = tables
   }
 
   object TopicPartitionTable {
     def apply(limit: Int,
-              tables: Map[TopicPartition, LookupTable.Table] = Map.empty[TopicPartition, LookupTable.Table]): TopicPartitionTable =
-      new TopicPartitionTable(limit, tables)
+              tables: Map[TopicPartition, Either[MemoryTable, RedisTable]] = Map.empty[TopicPartition, Either[MemoryTable, RedisTable]],
+              redisClient: Option[RedisClient]): TopicPartitionTable =
+      new TopicPartitionTable(limit, tables, redisClient)
   }
 }
