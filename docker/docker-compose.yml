@@ -8,22 +8,19 @@ services:
     container_name: redis
     hostname: redis
     image: redis:3.2.4
-    # command: ["redis-server", "--appendonly", "yes"]
-    # volumes: 
-    #   - redis-data:/data
     ports:
       - "6379:6379"
   redis-commander:
-      container_name: redis-commander
-      hostname: redis-commander
-      image: rediscommander/redis-commander:latest
-      restart: always
-      environment:
-          - REDIS_HOSTS=local:redis:6379
-      ports:
-          - "8081:8081"
-      depends_on:
-          - redis
+    container_name: redis-commander
+    hostname: redis-commander
+    image: rediscommander/redis-commander:latest
+    restart: always
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
   zookeeper:
     image: wurstmeister/zookeeper:3.4.6
     ports:
@@ -45,49 +42,34 @@ services:
       JMX_PORT: 1099
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zookeeper
   kafka-producer-perf-test:
-    deploy:
-      resources:
-          limits:
-            cpus: 0.50
     image: wurstmeister/kafka:2.12-2.2.0
     command: >
       bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 1 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-producer-perf-test.sh --topic replicated-topic --num-records 100000000 --record-size 10 --throughput 10000 --producer-props bootstrap.servers=kafka:9092"
+      && kafka-producer-perf-test.sh --topic replicated-topic --num-records 100000000 --record-size 10 --throughput 2500 --producer-props bootstrap.servers=kafka:9092"
+    depends_on:
+      - kafka
   # each kafka-consumer-test has its own consumer.id so it can be differentiated by consumer group information easily.
-  consumer-group1-consumer1:
-    deploy:
-      resources:
-          limits:
-            cpus: 0.10
+  kafka-console-consumer-group1-consumer1:
     image: wurstmeister/kafka:2.12-2.2.0
     command: >
       bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 1 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
-  # consumer-group1-consumer2:
-  #   deploy:
-  #     resources:
-  #         limits:
-  #           cpus: 0.10
-  #   image: wurstmeister/kafka:2.12-2.2.0
-  #   command: >
-  #     bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 1 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-  #     && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-2 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
-  # consumer-group1-consumer3:
-  #   deploy:
-  #     resources:
-  #         limits:
-  #           cpus: 0.10
-  #   image: wurstmeister/kafka:2.12-2.2.0
-  #   command: >
-  #     bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 1 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-  #     && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-3 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
-  consumer-group2-consumer1:
-    deploy:
-      resources:
-          limits:
-            cpus: 0.03
+      && kafka-console-consumer.sh --consumer-property group.id=kafka-console-consumer-group1 --consumer-property client.id=kafka-console-consumer-group1-consumer1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+    depends_on:
+      - kafka
+  kafka-console-consumer-group1-consumer2:
     image: wurstmeister/kafka:2.12-2.2.0
     command: >
       bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 1 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group-two --consumer-property client.id=test-client-two-id-1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+      && kafka-console-consumer.sh --consumer-property group.id=kafka-console-consumer-group1 --consumer-property client.id=kafka-console-consumer-group1-consumer2 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+    depends_on:
+      - kafka
+  kafka-console-consumer-group2-consumer1:
+    image: wurstmeister/kafka:2.12-2.2.0
+    command: >
+      bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 1 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
+      && kafka-console-consumer.sh --consumer-property group.id=kafka-console-consumer-group2 --consumer-property client.id=kafka-console-consumer-group2-consumer1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+    depends_on:
+      - kafka
