@@ -12,7 +12,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import com.lightbend.kafkalagexporter.ConsumerGroupCollector.OffsetsSnapshot.MetricKeys
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
-import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
+import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints, OutOfOrder, NonMonotonic, Updated, Added, Skipped}
 
 import org.slf4j.Logger
 
@@ -246,14 +246,19 @@ object ConsumerGroupCollector {
       for((tp, point) <- snapshot.latestOffsets) {
         topicPartitionTables(tp) match {
           case Left(memory) =>
-            log.info("Adding point ({}, {}) to in-memory lookup table ({}, {})", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+            log.info("  Point ({}, {}) was added in the in-memory lookup table ({}, {})", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
             memory.addPoint(point)
           case Right(redis) =>
             redisClient match {
               case Some(client) =>
-                log.info("Adding point ({}, {}) to redis lookup table ({}, {})", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
-                redis.addPoint(point, client)
-              case None => log.error("Unable to add point ({}, {}) in the lookup table as the lookup table ({}, {}) is not in-memory nor in redis", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                redis.addPoint(point, client) match {
+                  case OutOfOrder => log.info("  Point ({}, {}) was not added in the redis lookup table ({}, {}) because the time is out of order", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                  case NonMonotonic => log.info("  Point ({}, {}) was not added in the redis lookup table ({}, {}) because it was not part of a monotonically increasing set", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                  case Updated => log.info("  Point ({}, {}) was updated in the redis lookup table ({}, {}) because the offset was the same", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                  case Added => log.info("  Point ({}, {}) was added in the redis lookup table ({}, {})", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                  case Skipped => log.info("  Point ({}, {}) was not added in the redis lookup table ({}, {}) because the last insert was too recent", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                }
+              case None => log.error("  Point ({}, {}) was not added in the lookup table as the lookup table ({}, {}) is not in-memory nor in redis", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
             }
         }
       }
