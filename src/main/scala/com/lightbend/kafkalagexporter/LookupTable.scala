@@ -12,9 +12,9 @@ object LookupTable {
 
   case class RedisTable(tp: TopicPartition,
                         limit: Int,
-                        redisClient: RedisClient) {
+                        redisConfig: RedisConfig) {
     import Table._
-    val key = "kafka-lag-exporter:" + tp.topic + ":" + tp.partition
+    val key = redisConfig.prefix + redisConfig.separator + tp.topic + redisConfig.separator + tp.partition
 
     def addPoint(point: Point,
                  redisClient: RedisClient): Unit = mostRecentPoint(redisClient) match {
@@ -204,11 +204,11 @@ object LookupTable {
   object Table {
     def apply(tp: TopicPartition,
               limit: Int,
-              redisClient: Option[RedisClient] = None): Either[MemoryTable, RedisTable] = {
-      redisClient match {
-        case Some(redisClient) => Right(RedisTable(tp, limit, redisClient))
-        case None => Left(MemoryTable(tp, limit, mutable.Queue[Point]()))
-      }
+              redisConfig: RedisConfig): Either[MemoryTable, RedisTable] = {
+      if (redisConfig.enabled)
+        Right(RedisTable(tp, limit, redisConfig))
+      else
+        Left(MemoryTable(tp, limit, mutable.Queue[Point]()))
     }
 
     sealed trait Result

@@ -4,8 +4,6 @@
 
 package com.lightbend.kafkalagexporter
 
-import com.redis.RedisClient
-
 object Domain {
   import LookupTable._
   final case class TopicPartition(topic: String, partition: Int)
@@ -37,9 +35,9 @@ object Domain {
     def apply(tuples: (TopicPartition, Point)*): PartitionOffsets = Map(tuples: _*)
   }
 
-  class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, Either[MemoryTable, RedisTable]], redisClient: Option[RedisClient]) {
+  class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, Either[MemoryTable, RedisTable]], redisConfig: RedisConfig) {
     def apply(tp: TopicPartition): Either[MemoryTable, RedisTable] = {
-        tables = tables.updated(tp, tables.getOrElse(tp, Table(tp, limit, redisClient)))
+        tables = tables.updated(tp, tables.getOrElse(tp, Table(tp, limit, redisConfig)))
         tables(tp)
     }
 
@@ -52,7 +50,7 @@ object Domain {
   object TopicPartitionTable {
     def apply(limit: Int,
               tables: Map[TopicPartition, Either[MemoryTable, RedisTable]] = Map.empty[TopicPartition, Either[MemoryTable, RedisTable]],
-              redisClient: Option[RedisClient]): TopicPartitionTable =
-      new TopicPartitionTable(limit, tables, redisClient)
+              redisConfig: RedisConfig): TopicPartitionTable =
+      new TopicPartitionTable(limit, tables, redisConfig)
   }
 }

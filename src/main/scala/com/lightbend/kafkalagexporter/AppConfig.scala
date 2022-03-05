@@ -20,7 +20,6 @@ object AppConfig {
     val c = config.getConfig("kafka-lag-exporter")
     val pollInterval = c.getDuration("poll-interval").toScala
     val lookupTableSize = c.getInt("lookup-table-size")
-    val lookupTableResolution = c.getDuration("lookup-table-resolution").toScala
 
     val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
 
@@ -89,17 +88,19 @@ object AppConfig {
     }
 
    val redisConfig: RedisConfig = new RedisConfig(enabled = c.getBoolean("redis.enabled"),
-                                      database = c.getInt("redis.database"),
-                                      host = c.getString("redis.host"),
-                                      port = c.getInt("redis.port"),
-                                      timeout = c.getInt("redis.timeout"),
-                                      prefix = c.getString("redis.prefix"),
-                                      separator = c.getString(("redis.separator"))
-                                    )
+                                                  database = c.getInt("redis.database"),
+                                                  host = c.getString("redis.host"),
+                                                  port = c.getInt("redis.port"),
+                                                  timeout = c.getInt("redis.timeout"),
+                                                  prefix = c.getString("redis.prefix"),
+                                                  separator = c.getString("redis.separator"),
+                                                  resolution = c.getDuration("redis.resolution").toScala,
+                                                  retention = c.getDuration("redis.retention").toScala,
+                                                  expiration = c.getDuration("redis.expiration").toScala)
 
     val strimziWatcher = c.getString("watchers.strimzi").toBoolean
 
-    AppConfig(pollInterval, lookupTableSize, lookupTableResolution, sinkConfigs, clientGroupId, kafkaClientTimeout, clusters, redisConfig, strimziWatcher)
+    AppConfig(pollInterval, lookupTableSize, sinkConfigs, clientGroupId, kafkaClientTimeout, clusters, redisConfig, strimziWatcher)
   }
 
   // Copied from Alpakka Kafka
@@ -164,6 +165,9 @@ object RedisConfig {
   val TimeoutDefault: Int = 60
   val PrefixDefault: String =  "kafka-lag-exporter"
   val SeparatorDefault: String =  ":"
+  val ResolutionDefault: Duration = Duration("1 minute")
+  val RetentionDefault: Duration = Duration("1 day")
+  val ExpirationDefault: Duration = Duration("7 days")
 }
 
 final case class RedisConfig(enabled: Boolean = RedisConfig.EnabledDefault,
@@ -172,7 +176,10 @@ final case class RedisConfig(enabled: Boolean = RedisConfig.EnabledDefault,
                              port: Int = RedisConfig.PortDefault,
                              timeout: Int = RedisConfig.TimeoutDefault,
                              prefix: String = RedisConfig.PrefixDefault,
-                             separator: String = RedisConfig.SeparatorDefault) {
+                             separator: String = RedisConfig.SeparatorDefault,
+                             resolution: Duration = RedisConfig.ResolutionDefault,
+                             retention: Duration = RedisConfig.RetentionDefault,
+                             expiration: Duration = RedisConfig.ExpirationDefault) {
   override def toString(): String = {
     s"""|  Enabled: $enabled
         |  Database: $database
@@ -181,13 +188,15 @@ final case class RedisConfig(enabled: Boolean = RedisConfig.EnabledDefault,
         |  Timeout: $timeout
         |  Prefix: $prefix
         |  Separator: $separator
+        |  Resolution: $resolution
+        |  Retention: $retention
+        |  Expiration: $expiration
      """.stripMargin
   }
 }
 
 final case class AppConfig(pollInterval: FiniteDuration, 
                            lookupTableSize: Int, 
-                           lookupTableResolution: FiniteDuration, 
                            sinkConfigs: List[SinkConfig], 
                            clientGroupId: String, 
                            clientTimeout: FiniteDuration, 
@@ -204,7 +213,6 @@ final case class AppConfig(pollInterval: FiniteDuration,
     s"""
        |Poll interval: $pollInterval
        |Lookup table size: $lookupTableSize
-       |Lookup table resolution: $lookupTableResolution
        |Metrics whitelist: [${sinkConfigs.head.metricWhitelist.mkString(", ")}]
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout

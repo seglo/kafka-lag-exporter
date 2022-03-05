@@ -23,13 +23,11 @@ object KafkaClusterManager {
   final case class ClusterRemoved(c: KafkaCluster) extends Message
   final case class NamedCreator(name: String, creator: () => MetricsSink)
 
-
   private val stopTimeout: Timeout = 3.seconds
 
-  def init(
-            appConfig: AppConfig,
-            metricsSinks: List[NamedCreator],
-            clientCreator: KafkaCluster => KafkaClientContract): Behavior[Message] = Behaviors.setup { context =>
+  def init(appConfig: AppConfig,
+           metricsSinks: List[NamedCreator],
+           clientCreator: KafkaCluster => KafkaClientContract): Behavior[Message] = Behaviors.setup { context =>
 
     context.log.info("Starting Kafka Lag Exporter with configuration: \n{}", appConfig)
 
@@ -47,12 +45,11 @@ object KafkaClusterManager {
     manager(appConfig, clientCreator, reporters, collectors = Map.empty, watchers)
   }
 
-  def manager(
-               appConfig: AppConfig,
-               clientCreator: KafkaCluster => KafkaClientContract,
-               reporters: List[ActorRef[MetricsSink.Message]],
-               collectors: Map[KafkaCluster, ActorRef[ConsumerGroupCollector.Message]],
-               watchers: Seq[ActorRef[Watcher.Message]]): Behavior[Message] =
+  def manager(appConfig: AppConfig,
+              clientCreator: KafkaCluster => KafkaClientContract,
+              reporters: List[ActorRef[MetricsSink.Message]],
+              collectors: Map[KafkaCluster, ActorRef[ConsumerGroupCollector.Message]],
+              watchers: Seq[ActorRef[Watcher.Message]]): Behavior[Message] =
     Behaviors.receive[Message] {
       case (context, ClusterAdded(cluster)) =>
         context.log.info(s"Cluster Added: $cluster")
@@ -60,7 +57,6 @@ object KafkaClusterManager {
         val config = ConsumerGroupCollector.CollectorConfig(
           appConfig.pollInterval,
           appConfig.lookupTableSize,
-          appConfig.lookupTableResolution,
           appConfig.redis,
           cluster
         )

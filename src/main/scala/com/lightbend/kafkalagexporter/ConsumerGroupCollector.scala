@@ -89,7 +89,6 @@ object ConsumerGroupCollector {
 
   final case class CollectorConfig(pollInterval: FiniteDuration,
                                    lookupTableSize: Int,
-                                   lookupTableResolution: FiniteDuration,
                                    redis: RedisConfig,
                                    cluster: KafkaCluster,
                                    clock: Clock = Clock.systemUTC())
@@ -115,7 +114,7 @@ object ConsumerGroupCollector {
         context.log.info("Openning a connection to Redis")
         redisClient = Some(new RedisClient(database = config.redis.database, host = config.redis.host, port = config.redis.port, timeout = config.redis.timeout))
       }
-      val collectorState = CollectorState(topicPartitionTables = TopicPartitionTable(limit = config.lookupTableSize, redisClient = redisClient))
+      val collectorState = CollectorState(topicPartitionTables = TopicPartitionTable(limit = config.lookupTableSize, redisConfig = config.redis))
       collector(config, clientCreator(config.cluster), reporters, collectorState, redisClient)
     }
   }.onFailure(SupervisorStrategy.restartWithBackoff(1 seconds, 10 seconds, 0.2))
@@ -176,13 +175,13 @@ object ConsumerGroupCollector {
         val evictedKeys = state.lastSnapshot.map(_.diff(snapshot)).getOrElse(MetricKeys())
 
         context.log.info("Updating lookup tables")
-        refreshLookupTable(state.topicPartitionTables, snapshot, evictedKeys.tps, redisClient, context.log)
+        refreshLookupTable(context.log, state.topicPartitionTables, snapshot, evictedKeys.tps, redisClient)
 
         reporters.foreach { reporter =>
           context.log.info("Reporting offsets")
           reportEarliestOffsetMetrics(config, reporter, snapshot)
           reportLatestOffsetMetrics(config, reporter, snapshot)
-          reportConsumerGroupMetrics(config, reporter, snapshot, state.topicPartitionTables, redisClient)
+          reportConsumerGroupMetrics(context.log, config, reporter, snapshot, state.topicPartitionTables, redisClient)
 
           context.log.info("Clearing evicted metrics")
           evictMetricsFromReporter(config, reporter, evictedKeys)
@@ -206,8 +205,8 @@ object ConsumerGroupCollector {
         Behaviors.stopped { () =>
           client.close()
           redisClient match {
-            case Some(redisClient) => redisClient.close()
-            case _ =>
+            case Some(client) => client.close()
+            case None =>
           }
           evictAllClusterMetrics(context.log, config, reporters, state)
           context.log.info("Gracefully stopped polling and Kafka client for cluster: {}", config.cluster.name)
@@ -216,8 +215,8 @@ object ConsumerGroupCollector {
         state.scheduledCollect.cancel()
         client.close()
         redisClient match {
-          case Some(redisClient) => redisClient.close()
-          case _ =>
+          case Some(client) => client.close()
+          case None =>
         }
         evictAllClusterMetrics(context.log, config, reporters, state)
         throw new Exception("A failure occurred while retrieving offsets.  Shutting down.", t)
@@ -226,9 +225,9 @@ object ConsumerGroupCollector {
     /**
       * Evict all metrics from reports before shutdown
       */
-    private def evictAllClusterMetrics(log: Logger, 
-                                       config: CollectorConfig, 
-                                       reporters: List[ActorRef[MetricsSink.Message]], 
+    private def evictAllClusterMetrics(log: Logger,
+                                       config: CollectorConfig,
+                                       reporters: List[ActorRef[MetricsSink.Message]],
                                        state: CollectorState) = {
       log.info("Clearing all metrics before shutdown")
       val metricKeys = state.lastSnapshot.map(_.metricKeys).getOrElse(MetricKeys())
@@ -238,30 +237,30 @@ object ConsumerGroupCollector {
     /**
       * Refresh Lookup table.  Remove topic partitions that are no longer relevant and update tables with new Point's.
       */
-    private def refreshLookupTable(topicPartitionTables: TopicPartitionTable, 
-                                   snapshot: OffsetsSnapshot, 
-                                   evictedTps: List[TopicPartition], 
-                                   redisClient: Option[RedisClient], 
-                                   log: Logger): Unit = {
+    private def refreshLookupTable(log: Logger,
+                                   topicPartitionTables: TopicPartitionTable,
+                                   snapshot: OffsetsSnapshot,
+                                   evictedTps: List[TopicPartition],
+                                   redisClient: Option[RedisClient]): Unit = {
       topicPartitionTables.clear(evictedTps)
       for((tp, point) <- snapshot.latestOffsets) {
         topicPartitionTables(tp) match {
           case Left(memory) =>
-            log.debug("Adding point to memory")
+            log.info("Adding point ({}, {}) to in-memory lookup table ({}, {})", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
             memory.addPoint(point)
-          case Right(redis) => {
+          case Right(redis) =>
             redisClient match {
-              case Some(redisClient) =>
-                log.debug("Adding point to redis")
-                redis.addPoint(point, redisClient)
-              case None =>
+              case Some(client) =>
+                log.info("Adding point ({}, {}) to redis lookup table ({}, {})", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                redis.addPoint(point, client)
+              case None => log.error("Unable to add point ({}, {}) in the lookup table as the lookup table ({}, {}) is not in-memory nor in redis", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
             }
-          }
         }
       }
     }
 
-    private def reportConsumerGroupMetrics(config: CollectorConfig,
+    private def reportConsumerGroupMetrics(log: Logger,
+                                           config: CollectorConfig,
                                            reporter: ActorRef[MetricsSink.Message],
                                            offsetsSnapshot: OffsetsSnapshot,
                                            tables: TopicPartitionTable,
@@ -274,11 +273,15 @@ object ConsumerGroupCollector {
           case Some(point) =>
             val groupOffset = point.offset.toDouble
             val timeLagResult = tables(gtp.tp) match {
-              case Left(memory) => memory.lookup(point.offset)
+              case Left(memory) =>
+                log.info("Find time lag for offset {} using the in-memory lookup table ({}, {})", point.offset.toString(), gtp.tp.topic, gtp.tp.partition.toString())
+                memory.lookup(point.offset)
               case Right(redis) => {
                 redisClient match {
-                  case Some(redisClient) => redis.lookup(point.offset, redisClient)
-                  case None =>
+                  case Some(client) =>
+                    log.info("Find time lag for offset {} using the redis lookup table ({}, {})", point.offset.toString(), gtp.tp.topic, gtp.tp.partition.toString())
+                    redis.lookup(point.offset, client)
+                  case None => log.error("Unable to find the time lag for offset {} as the lookup table ({}, {}) is not in-memory nor in redis", point.offset.toString(), gtp.tp.topic, gtp.tp.partition.toString())
                 }
               }
             }
