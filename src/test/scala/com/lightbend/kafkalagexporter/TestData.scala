@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -26,5 +26,5 @@ trait TestData {
   val gtp2 = GroupTopicPartition(groupId, clientId, consumerId, "/127.0.0.3", topicPartition2.topic, topicPartition2.partition)
   val gt2p0 = GroupTopicPartition(groupId, clientId, consumerId, "/127.0.0.4", topic2Partition0.topic, topic2Partition0.partition)
   val lookupTableOnePoint = LookupTable.Table(20)
-  lookupTableOnePoint.addPoint(LookupTable.Point(100, 100))
+  lookupTableOnePoint.addPoint(Point(100, 100))
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -52,10 +52,10 @@ class KafkaClientSpec extends AnyFreeSpec with Matchers with TestData with Mocki
         val groupOffsets = client.getGroupOffsets(0, groups, gtps).futureValue
 
         groupOffsets.size shouldEqual 4
-        groupOffsets(gtp0_0) shouldEqual Some(LookupTable.Point(0, 0))
+        groupOffsets(gtp0_0) shouldEqual Some(Domain.Point(0, 0))
         groupOffsets(gtp1_0) shouldEqual None // missing partition
         groupOffsets(gtp2_0) shouldEqual None // missing partition
-        groupOffsets(gtp0_1) shouldEqual Some(LookupTable.Point(1, 0))
+        groupOffsets(gtp0_1) shouldEqual Some(Domain.Point(1, 0))
 
       }
 
@@ -84,8 +84,8 @@ class KafkaClientSpec extends AnyFreeSpec with Matchers with TestData with Mocki
 
         val groupOffsets = client.getGroupOffsets(0, groups, gtps).futureValue
 
-        groupOffsets(gtp0_0) shouldEqual Some(LookupTable.Point(0, 0))
-        groupOffsets(gtp0_1) shouldEqual Some(LookupTable.Point(1, 0))
+        groupOffsets(gtp0_0) shouldEqual Some(Domain.Point(0, 0))
+        groupOffsets(gtp0_1) shouldEqual Some(Domain.Point(1, 0))
       }
 
       "returns no offsets when a null offset is returned" in {
@@ -110,8 +110,8 @@ class KafkaClientSpec extends AnyFreeSpec with Matchers with TestData with Mocki
 
       // create offsetMap with missing partition 2
       val offsetMap = GroupOffsets(
-        gtp0 -> Some(LookupTable.Point(0, 0)),
-        gtp1 -> Some(LookupTable.Point(0, 0))
+        gtp0 -> Some(Domain.Point(0, 0)),
+        gtp1 -> Some(Domain.Point(0, 0))
       )
 
       val groupOffsets = client.getOffsetOrZero(List(gtp0, gtp1, gtp2), offsetMap)

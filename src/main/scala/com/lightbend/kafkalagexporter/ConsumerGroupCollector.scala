@@ -12,7 +12,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import com.lightbend.kafkalagexporter.ConsumerGroupCollector.OffsetsSnapshot.MetricKeys
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
-import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints, OutOfOrder, NonMonotonic, Updated, Added, Skipped}
+import com.lightbend.kafkalagexporter.LookupTable.Table.{Inserted, LagIsZero, NonMonotonic, OutOfOrder, Prediction, TooFewPoints, UpdatedRetention, UpdatedSameOffset}
 
 import org.slf4j.Logger
 
@@ -123,7 +123,7 @@ object ConsumerGroupCollector {
                 client: KafkaClientContract,
                 reporters: List[ActorRef[MetricsSink.Message]],
                 state: CollectorState,
-                redisClient: Option[RedisClient]): Behavior[Message] = (new CollectorBehavior).collector(config, client, reporters, state, redisClient)
+                redisClient: Option[RedisClient] = None): Behavior[Message] = (new CollectorBehavior).collector(config, client, reporters, state, redisClient)
 
   // TODO: Ideally this wouldn't be in a class, like the other behaviors, but at this time there's no other way to
   // TODO: assert state transition changes. See `ConsumerGroupCollectorSpec` which uses mockito to assert the state
@@ -133,7 +133,7 @@ object ConsumerGroupCollector {
                   client: KafkaClientContract,
                   reporters: List[ActorRef[MetricsSink.Message]],
                   state: CollectorState,
-                  redisClient: Option[RedisClient]): Behavior[Message] = Behaviors.receive {
+                  redisClient: Option[RedisClient] = None): Behavior[Message] = Behaviors.receive {
       case (context, _: Collect) =>
         implicit val ec: ExecutionContextExecutor = context.executionContext
 
@@ -252,11 +252,11 @@ object ConsumerGroupCollector {
             redisClient match {
               case Some(client) =>
                 redis.addPoint(point, client) match {
-                  case OutOfOrder => log.info("  Point ({}, {}) was not added in the redis lookup table ({}, {}) because the time is out of order", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                  case Inserted => log.info("  Point ({}, {}) was added in the redis lookup table ({}, {})", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
                   case NonMonotonic => log.info("  Point ({}, {}) was not added in the redis lookup table ({}, {}) because it was not part of a monotonically increasing set", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
-                  case Updated => log.info("  Point ({}, {}) was updated in the redis lookup table ({}, {}) because the offset was the same", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
-                  case Added => log.info("  Point ({}, {}) was added in the redis lookup table ({}, {})", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
-                  case Skipped => log.info("  Point ({}, {}) was not added in the redis lookup table ({}, {}) because the last insert was too recent", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                  case OutOfOrder => log.info("  Point ({}, {}) was not added in the redis lookup table ({}, {}) because the time is older than the previous point", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                  case UpdatedRetention => log.info("  Point ({}, {}) was updated in the redis lookup table ({}, {}) because the last insert was too recent", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
+                  case UpdatedSameOffset => log.info("  Point ({}, {}) was updated in the redis lookup table ({}, {}) because the offset was the same", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
                 }
               case None => log.error("  Point ({}, {}) was not added in the lookup table as the lookup table ({}, {}) is not in-memory nor in redis", point.offset.toString(), point.time.toString(), tp.topic, tp.partition.toString())
             }
@@ -272,7 +272,7 @@ object ConsumerGroupCollector {
                                            redisClient: Option[RedisClient]): Unit = {
       val groupLag: immutable.Iterable[GroupPartitionLag] = for {
         (gtp, groupPoint) <- offsetsSnapshot.lastGroupOffsets
-        (_, mrp) <- offsetsSnapshot.latestOffsets
+        (_, mrp) <- offsetsSnapshot.latestOffsets.filterKeys(_ == gtp.tp)
       } yield {
         val (groupOffset, offsetLag, timeLag) = groupPoint match {
           case Some(point) =>

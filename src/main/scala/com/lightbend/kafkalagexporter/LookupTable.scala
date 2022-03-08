@@ -44,22 +44,24 @@ object LookupTable {
           redisClient.zremrangebyscore(key = pointsKey, start = point.offset, end = point.offset)
           redisClient.zadd(pointsKey, point.offset.toDouble, point.time)
           expireKeys(redisClient)
-          Updated
+          UpdatedSameOffset
         // the table is empty or we filtered thru previous cases on the most recent point
         case _ =>
           // dequeue oldest point if we've hit the limit
           removeExpiredPoints(redisClient)
           val currentTimestamp: Long = Clock.systemUTC().instant().toEpochMilli()
-          val lastUpdated = redisClient.get(lastUpdatedKey).getOrElse("0")
-          toLong(lastUpdated) match {
-            case Some(l) if currentTimestamp - l < redisConfig.resolution.toMillis => 
+          val lastUpdatedTimestamp = redisClient.get(lastUpdatedKey).getOrElse("0")
+          toLong(lastUpdatedTimestamp) match {
+            case Some(lastUpdatedTimestamp) if currentTimestamp - lastUpdatedTimestamp < redisConfig.resolution.toMillis => 
+              redisClient.zremrangebyscore(key = pointsKey, start = point.offset, end = point.offset)
+              redisClient.zadd(pointsKey, point.offset.toDouble, point.time)
               expireKeys(redisClient)
-              Skipped // Last point was too recent, delaying the insert
+              UpdatedRetention
             case _ =>
               redisClient.zadd(pointsKey, point.offset.toDouble, point.time)
               redisClient.set(lastUpdatedKey, currentTimestamp.toString())
               expireKeys(redisClient)
-              Added
+              Inserted
           }
       }
     }
@@ -159,8 +161,7 @@ object LookupTable {
     }
   }
 
-  case class MemoryTable(tp: TopicPartition,
-                         limit: Int,
+  case class MemoryTable(limit: Int,
                          points: mutable.Queue[Point]) {
     import Table._
 
@@ -249,8 +250,11 @@ object LookupTable {
       if (redisConfig.enabled)
         Right(RedisTable(tp, redisConfig))
       else
-        Left(MemoryTable(tp, limit, mutable.Queue[Point]()))
+        Left(MemoryTable(limit, mutable.Queue[Point]()))
     }
+
+    def apply(tp: TopicPartition, redisConfig: RedisConfig): RedisTable = RedisTable(tp, redisConfig)
+    def apply(limit: Int): MemoryTable = MemoryTable(limit, mutable.Queue[Point]())
 
     sealed trait Result
     case object TooFewPoints extends Result
@@ -262,8 +266,8 @@ object LookupTable {
     sealed trait PointResult
     case object OutOfOrder extends PointResult
     case object NonMonotonic extends PointResult
-    case object Updated extends PointResult
-    case object Added extends PointResult
-    case object Skipped extends PointResult
+    case object UpdatedSameOffset extends PointResult
+    case object Inserted extends PointResult
+    case object UpdatedRetention extends PointResult
   }
 }

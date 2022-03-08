@@ -35,7 +35,7 @@ object Domain {
     def apply(tuples: (TopicPartition, Point)*): PartitionOffsets = Map(tuples: _*)
   }
 
-  class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, Either[MemoryTable, RedisTable]], redisConfig: RedisConfig) {
+  class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, Either[MemoryTable, RedisTable]], redisConfig: RedisConfig = RedisConfig(false)) {
     def apply(tp: TopicPartition): Either[MemoryTable, RedisTable] = {
         tables = tables.updated(tp, tables.getOrElse(tp, Table(tp, limit, redisConfig)))
         tables(tp)
@@ -50,7 +50,7 @@ object Domain {
   object TopicPartitionTable {
     def apply(limit: Int,
               tables: Map[TopicPartition, Either[MemoryTable, RedisTable]] = Map.empty[TopicPartition, Either[MemoryTable, RedisTable]],
-              redisConfig: RedisConfig): TopicPartitionTable =
+              redisConfig: RedisConfig = RedisConfig(false)): TopicPartitionTable =
       new TopicPartitionTable(limit, tables, redisConfig)
   }
 }

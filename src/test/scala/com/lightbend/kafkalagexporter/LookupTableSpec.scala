@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2022 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -11,6 +11,8 @@ import org.scalatest.matchers.should.Matchers
 class LookupTableSpec extends AnyFreeSpec with Matchers {
 
   import com.lightbend.kafkalagexporter.LookupTable._
+  import com.lightbend.kafkalagexporter.Domain._
+
 
   "LookupTable" - {
     "lookupOffset" - {
