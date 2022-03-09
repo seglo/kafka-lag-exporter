@@ -81,7 +81,7 @@ class AppConfigSpec extends AnyFreeSpec with Matchers {
 
     "should handle the empty config case" in {
       val appConfig = AppConfig(loadConfig(""))
-      appConfig.clustersGlobalLabels() should equal(Map.empty)
+      appConfig.clustersGlobalLabels() should equal(Map("localhost" -> Map.empty))
     }
   }
 

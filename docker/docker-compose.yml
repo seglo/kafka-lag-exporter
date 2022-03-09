@@ -21,37 +21,27 @@ services:
       - "8081:8081"
     depends_on:
       - redis
-  kafka-ui:
-    image: provectuslabs/kafka-ui
-    container_name: kafka-ui
-    ports:
-      - "8080:8080"
-    restart: always
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
   zookeeper:
+    container_name: zookeeper
+    hostname: zookeeper
     image: wurstmeister/zookeeper:3.4.6
     ports:
       - "2181:2181"
   kafka:
+    container_name: kafka
+    hostname: kafka
     image: wurstmeister/kafka:2.12-2.2.0
     ports:
       - "9094:9094"
       - "1099:1099"
     environment:
-      HOSTNAME_COMMAND: "docker info | grep ^Name: | cut -d' ' -f 2"
-      PORT_COMMAND: "docker port `hostname` 9094 | cut -d: -f 2"
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:_{PORT_COMMAND}
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
       KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.rmi.port=1099"
       JMX_PORT: 1099
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - zookeeper
   kafka-producer-topic1:

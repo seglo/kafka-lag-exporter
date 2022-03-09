@@ -9,7 +9,7 @@ object Domain {
   final case class TopicPartition(topic: String, partition: Int)
   final case class Point(offset: Long, time: Long)
 
-  // Once upon a time I had a nested data structure for all these types, but I found that a flat datastructure
+  // Once upon a time I had a nested data structure for all these types, but I found that a flat data structure
   // is much easier to work with, at the sacrifice of some duplication.
   final case class GroupTopicPartition(
                                         id: String,
@@ -35,7 +35,7 @@ object Domain {
     def apply(tuples: (TopicPartition, Point)*): PartitionOffsets = Map(tuples: _*)
   }
 
-  class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, Either[MemoryTable, RedisTable]], redisConfig: RedisConfig = RedisConfig(false)) {
+  class TopicPartitionTable private(limit: Int, var tables: Map[TopicPartition, Either[MemoryTable, RedisTable]], redisConfig: RedisConfig = RedisConfig(enabled=false)) {
     def apply(tp: TopicPartition): Either[MemoryTable, RedisTable] = {
         tables = tables.updated(tp, tables.getOrElse(tp, Table(tp, limit, redisConfig)))
         tables(tp)
@@ -50,7 +50,7 @@ object Domain {
   object TopicPartitionTable {
     def apply(limit: Int,
               tables: Map[TopicPartition, Either[MemoryTable, RedisTable]] = Map.empty[TopicPartition, Either[MemoryTable, RedisTable]],
-              redisConfig: RedisConfig = RedisConfig(false)): TopicPartitionTable =
+              redisConfig: RedisConfig = RedisConfig(enabled=false)): TopicPartitionTable =
       new TopicPartitionTable(limit, tables, redisConfig)
   }
 }

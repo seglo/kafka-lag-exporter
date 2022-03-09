@@ -15,8 +15,8 @@ object LookupTable {
   case class RedisTable(tp: TopicPartition,
                         redisConfig: RedisConfig) {
     import Table._
-    val pointsKey = redisConfig.prefix + redisConfig.separator + tp.topic + redisConfig.separator + tp.partition + redisConfig.separator + "points"
-    val lastUpdatedKey = redisConfig.prefix + redisConfig.separator + tp.topic + redisConfig.separator + tp.partition + redisConfig.separator + "updated"
+    private val pointsKey: String = redisConfig.prefix + redisConfig.separator + tp.topic + redisConfig.separator + tp.partition + redisConfig.separator + "points"
+    private val lastUpdatedKey: String = redisConfig.prefix + redisConfig.separator + tp.topic + redisConfig.separator + tp.partition + redisConfig.separator + "updated"
 
     def toLong(s: String):Option[Long] = {
       try {
@@ -26,7 +26,7 @@ object LookupTable {
       }
     }
 
-    def expireKeys(redisClient: RedisClient) {
+    def expireKeys(redisClient: RedisClient): Unit = {
       redisClient.expire(pointsKey, redisConfig.expiration.toSeconds.toInt)
       redisClient.expire(lastUpdatedKey, redisConfig.expiration.toSeconds.toInt)
     }
@@ -49,7 +49,7 @@ object LookupTable {
         case _ =>
           // dequeue oldest point if we've hit the limit
           removeExpiredPoints(redisClient)
-          val currentTimestamp: Long = Clock.systemUTC().instant().toEpochMilli()
+          val currentTimestamp: Long = Clock.systemUTC().instant().toEpochMilli
           val lastUpdatedTimestamp = redisClient.get(lastUpdatedKey).getOrElse("0")
           toLong(lastUpdatedTimestamp) match {
             case Some(lastUpdatedTimestamp) if currentTimestamp - lastUpdatedTimestamp < redisConfig.resolution.toMillis => 
@@ -59,7 +59,7 @@ object LookupTable {
               UpdatedRetention
             case _ =>
               redisClient.zadd(pointsKey, point.offset.toDouble, point.time)
-              redisClient.set(lastUpdatedKey, currentTimestamp.toString())
+              redisClient.set(lastUpdatedKey, currentTimestamp.toString)
               expireKeys(redisClient)
               Inserted
           }
@@ -75,7 +75,7 @@ object LookupTable {
           // unexpected situation where the redis result is None
           case None => return InvalidLeftPoint
           // find the Point that contains the offset
-          case Some(List((time, offset))) if (extrapolated == false) => new Point(offset.toLong, time.toLong)
+          case Some(List((time, offset))) if !extrapolated => Point(offset.toLong, time.toLong)
           // offset is not between any two points in the table
           // extrapolate given largest trendline we have available
           case _ =>
@@ -90,7 +90,7 @@ object LookupTable {
           // unexpected situation where the redis result is None
           case None => return InvalidRightPoint
           // find the Point that contains the offset
-          case Some(List((time, offset))) if (extrapolated == false) => new Point(offset.toLong, time.toLong)
+          case Some(List((time, offset))) if !extrapolated => Point(offset.toLong, time.toLong)
           // offset is not between any two points in the table
           // extrapolate given largest trendline we have available
           case _ =>
@@ -109,7 +109,7 @@ object LookupTable {
           if (offset == mrp.offset) return LagIsZero
         case _ =>
       }
-      if (length(redisClient) < 2) return TooFewPoints
+      if (length(redisClient) < 2) TooFewPoints
       else estimate()
     }
 
@@ -119,7 +119,7 @@ object LookupTable {
         // linear interpolation, solve for the x intercept given y (val), slope (dy/dx), and starting point (right)
         val dx = (right.time - left.time).toDouble
         val dy = (right.offset - left.offset).toDouble
-        val Px = (right.time).toDouble
+        val Px = right.time.toDouble
         val Dy = (right.offset - offset).toDouble
 
         Prediction(Px - Dy * dx / dy)
@@ -128,18 +128,18 @@ object LookupTable {
     def mostRecentPoint(redisClient: RedisClient): Either[String, Point] = {
       val r = redisClient.zrangeWithScore(key = pointsKey, start = 0, end = 0, sortAs = RedisClient.DESC).get
       if (r.isEmpty) Left("No data in redis")
-      else Right(new Point(r.head._2.toLong, r.head._1.toLong))
+      else Right(Point(r.head._2.toLong, r.head._1.toLong))
     }
 
     def oldestPoint(redisClient: RedisClient): Either[String, Point] = {
       val r = redisClient.zrangeWithScore(key = pointsKey, start = 0, end = 0, sortAs = RedisClient.ASC).get
       if (r.isEmpty) Left("No data in redis")
-      else Right(new Point(r.head._2.toLong, r.head._1.toLong))
+      else Right(Point(r.head._2.toLong, r.head._1.toLong))
     }
 
-    def removeExpiredPoints(redisClient: RedisClient) {
-      val currentTimestamp: Long = Clock.systemUTC().instant().toEpochMilli()
-      val loop = new Breaks;
+    def removeExpiredPoints(redisClient: RedisClient): Unit = {
+      val currentTimestamp: Long = Clock.systemUTC().instant().toEpochMilli
+      val loop = new Breaks
       loop.breakable {
         for (_ <- (0: Long) until length(redisClient)) {
           oldestPoint(redisClient) match {
@@ -156,7 +156,7 @@ object LookupTable {
       redisClient.zcount(pointsKey).getOrElse(0)
     }
 
-    def removeOldestPoint(redisClient: RedisClient) {
+    def removeOldestPoint(redisClient: RedisClient): Unit = {
       redisClient.zremrangebyrank(pointsKey, 0, 0)
     }
   }
@@ -220,7 +220,7 @@ object LookupTable {
         // linear interpolation, solve for the x intercept given y (val), slope (dy/dx), and starting point (right)
         val dx = (right.time - left.time).toDouble
         val dy = (right.offset - left.offset).toDouble
-        val Px = (right.time).toDouble
+        val Px = right.time.toDouble
         val Dy = (right.offset - offset).toDouble
 
         Prediction(Px - Dy * dx / dy)
