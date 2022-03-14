@@ -1,0 +1,37 @@
+name: Release charts
+on:
+  push:
+    branches:
+      - main
+jobs:
+  release:
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install helm
+        run: |
+          wget https://get.helm.sh/helm-v3.7.1-linux-amd64.tar.gz
+          tar -zxvf helm-v3.7.1-linux-amd64.tar.gz
+          mv linux-amd64/helm .
+      - name: Install helm-gcs
+        run: |
+          ./helm plugin install https://github.com/hayorov/helm-gcs.git
+          ./helm plugin update gcs
+      - name: Place GCP credentials
+        run: |
+          echo $SHARED_SERVICES_AUTH_JSON > credentials.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=credentials.json" >> $GITHUB_ENV
+        env:
+          SHARED_SERVICES_AUTH_JSON: ${{ secrets.SHARED_SERVICES_AUTH_JSON }}
+      - name: Push kafka-lag-exporter chart
+        run: |
+          # idempotent repo setup
+          ./helm gcs init gs://figure-shared-services-helm-charts/charts
+          ./helm repo add kafka-lag-exporter gs://figure-shared-services-helm-charts/charts
+          # build and push chart
+          # TODO the plan here is to use the same value for the application and chart version
+          # the underlying problem is that we need to pull the kafka-lag-exporter Cargo.toml version
+          # it would be best to pull that value with a cargo command rather than needing to sed init
+          # for now it's just listed here directly
+          ./helm package charts/kafka-lag-exporter --version 0.6.9 --app-version 0.6.9
+          ./helm gcs push kafka-lag-exporter-0.6.9.tgz kafka-lag-exporter
