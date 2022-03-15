@@ -33,5 +33,5 @@ jobs:
           # the underlying problem is that we need to pull the kafka-lag-exporter Cargo.toml version
           # it would be best to pull that value with a cargo command rather than needing to sed init
           # for now it's just listed here directly
-          ./helm package charts/kafka-lag-exporter --version 0.6.9 --app-version 0.6.9
-          ./helm gcs push kafka-lag-exporter-0.6.9.tgz kafka-lag-exporter
+          ./helm package charts/kafka-lag-exporter --version 0.6.9.1 --app-version 0.6.9.1
+          ./helm gcs push kafka-lag-exporter-0.6.9.1.tgz kafka-lag-exporter
