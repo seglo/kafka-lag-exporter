@@ -1,5 +1,5 @@
 import Dependencies._
-import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
+import com.typesafe.sbt.packager.docker.{Cmd, DockerPermissionStrategy, ExecCmd}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import ReleaseTransformations._
 import ReleasePlugin.autoImport._
@@ -37,6 +37,7 @@ lazy val kafkaLagExporter =
         ScalaJava8Compat,
         AkkaHttp,
         Logback,
+        IAMAuthLib,
         ScalaTest,
         AkkaTypedTestKit,
         MockitoScala,
@@ -48,14 +49,15 @@ lazy val kafkaLagExporter =
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),
       dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("lightbend")),
       dockerUpdateLatest := true,
+      dockerPermissionStrategy := DockerPermissionStrategy.Run,
       // Based on best practices found in OpenShift Creating images guidelines
       // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
       dockerCommands := Seq(
-        Cmd("FROM",           "centos:8"),
-        Cmd("RUN",            "yum -y install java-1.8.0-openjdk-headless && yum update -y && yum clean all -y"),
-        Cmd("RUN",            "useradd -r -m -u 1001 -g 0 kafkalagexporter"),
+        Cmd("FROM",           "redhat/ubi8"),
+        Cmd("RUN",            "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"),
+        Cmd("RUN",            "useradd -r -m -u 1001 kafkalagexporter"),
         Cmd("ADD",            "opt /opt"),
-        Cmd("RUN",            "chgrp -R 0 /opt && chmod -R g=u /opt"),
+        Cmd("RUN",            "chgrp -R 1001 /opt && chmod -R g=u /opt && chmod +x /opt/docker/bin/kafka-lag-exporter"),
         Cmd("WORKDIR",        "/opt/docker"),
         Cmd("USER",           "1001"),
         ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter",
