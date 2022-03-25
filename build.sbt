@@ -202,7 +202,7 @@ lazy val packageChart = ReleaseStep(action = st => {
 lazy val buildChartsIndex = ReleaseStep(action = st => {
   val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
   exec(
-    s"./scripts/build_charts_index.sh https://github.com/lightbend/kafka-lag-exporter/releases/download/v$releaseVersion/ https://lightbend.github.io/kafka-lag-exporter/index.yaml",
+    s"./scripts/build_charts_index.sh https://github.com/lightbend/kafka-lag-exporter/releases/download/v$releaseVersion/ https://seanglover.com/kafka-lag-exporter/repo/index.yaml",
     "Error while building Helm Charts index")
   st
 })
