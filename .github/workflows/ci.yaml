@@ -36,7 +36,7 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6
 
-      - name: Run tests
+      - name: Publish docker image locally
         run: sbt docker:publishLocal
 
       - name: Print logs on failure
@@ -90,7 +90,7 @@ jobs:
           git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
           git checkout scratch
 
-      - name: Run tests
+      - name: Lint and package
         run: |-
           ./scripts/lint_chart.sh
           ./scripts/package_chart.sh

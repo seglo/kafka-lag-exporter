@@ -1,10 +1,14 @@
-[![Build Status](https://travis-ci.com/lightbend/kafka-lag-exporter.svg?branch=master)](https://app.travis-ci.com/github/lightbend/kafka-lag-exporter)
-![GitHub release](https://img.shields.io/github/v/release/lightbend/kafka-lag-exporter?include_prereleases)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/lightbend/kafka-lag-exporter/blob/master/LICENSE.txt)
+Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][gh-actions] [![license-badge][]][license]
+==================
 
-# Kafka Lag Exporter
+[gh-release]:          https://github.com/seglo/kafka-lag-exporter/releases
+[gh-release-badge]:    https://img.shields.io/github/v/release/lightbend/kafka-lag-exporter?include_prereleases
+[gh-actions]:          https://github.com/seglo/kafka-lag-exporter/actions
+[gh-actions-badge]:    https://github.com/seglo/kafka-lag-exporter/workflows/CI/badge.svg?branch=master
+[license]:             https://github.com/seglo/kafka-lag-exporter/blob/master/LICENSE.txt
+[license-badge]:       https://img.shields.io/badge/License-Apache%202.0-blue.svg
 
-> Monitor Kafka Consumer Group Latency with Kafka Lag Exporter
+Monitor Kafka Consumer Group Latency with Kafka Lag Exporter
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
