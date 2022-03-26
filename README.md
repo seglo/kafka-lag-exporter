@@ -17,6 +17,8 @@ It can run anywhere, but it provides features to run easily on [Kubernetes](http
 Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html) application written in [Scala](https://www.scala-lang.org/).
 Kafka Lag Exporter is maintained by [@seglo](https://github.com/seglo) and a community of contributors.
 
+_Kafka Lag Exporter interpolates latency based on observed latest committed offset measurements of consumer groups._
+
 ![Interpolation](./docs/interpolation-sm.png)
 
 For more information about Kafka Lag Exporter's features see Lightbend's blog post:
