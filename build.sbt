@@ -51,8 +51,8 @@ lazy val kafkaLagExporter =
       // Based on best practices found in OpenShift Creating images guidelines
       // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
       dockerCommands := Seq(
-        Cmd("FROM",           "centos:8"),
-        Cmd("RUN",            "yum -y install java-1.8.0-openjdk-headless && yum update -y && yum clean all -y"),
+        Cmd("FROM",           "redhat/ubi8"),
+        Cmd("RUN",            "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"),
         Cmd("RUN",            "useradd -r -m -u 1001 -g 0 kafkalagexporter"),
         Cmd("ADD",            "opt /opt"),
         Cmd("RUN",            "chgrp -R 0 /opt && chmod -R g=u /opt"),
@@ -111,10 +111,10 @@ lazy val commonSettings = Seq(
     "-language:_",
     "-unchecked"
   ),
-  maintainer := "sean.glover@lightbend.com",
+  maintainer := "sean@seanglover.com",
   scalacOptions in (Compile, console) := (scalacOptions in (Global)).value.filter(_ == "-Ywarn-unused-import"),
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-  organizationName := "Lightbend Inc. <http://www.lightbend.com>",
+  organizationName := "Lightbend Inc. <http://www.lightbend.com> ",
   startYear := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
 )
