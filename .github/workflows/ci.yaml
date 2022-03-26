@@ -11,38 +11,6 @@ on:
 
 
 jobs:
-  build-docker:
-    name: Build Docker Image
-    runs-on: ubuntu-18.04
-    strategy:
-      fail-fast: false
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Checkout GitHub merge
-        if: github.event.pull_request
-        run: |-
-          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
-          git checkout scratch
-
-      - name: Setup Scala with Java ${{ matrix.java-version }}
-        uses: olafurpg/setup-scala@v13
-        with:
-          java-version: openjdk@1.17
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6
-
-      - name: Publish docker image locally
-        run: sbt docker:publishLocal
-
-      - name: Print logs on failure
-        if: ${{ failure() }}
-        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
-
   test:
     name: Build and Test
     runs-on: ubuntu-18.04
@@ -75,6 +43,38 @@ jobs:
         if: ${{ failure() }}
         run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
 
+  build-docker:
+    name: Build Docker Image
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Setup Scala with Java ${{ matrix.java-version }}
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6
+
+      - name: Publish docker image locally
+        run: sbt docker:publishLocal
+
+      - name: Print logs on failure
+        if: ${{ failure() }}
+        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+        
   helm-chart:
     name: Package Helm Chart
     runs-on: ubuntu-18.04
