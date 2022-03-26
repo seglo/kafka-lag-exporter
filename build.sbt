@@ -8,9 +8,6 @@ import sbt.IO
 
 import scala.sys.process._
 
-// for Alpakka Kafka snapshots
-resolvers += Resolver.bintrayRepo("akka", "snapshots")
-
 lazy val kafkaLagExporter =
   Project(id = "kafka-lag-exporter", base = file("."))
     .enablePlugins(AutomateHeaderPlugin)
@@ -114,7 +111,7 @@ lazy val commonSettings = Seq(
   maintainer := "sean@seanglover.com",
   scalacOptions in (Compile, console) := (scalacOptions in (Global)).value.filter(_ == "-Ywarn-unused-import"),
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-  organizationName := "Lightbend Inc. <http://www.lightbend.com> ",
+  organizationName := "Lightbend Inc. <http://www.lightbend.com> (2018-2022), Sean Glover (2022+)",
   startYear := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
 )
