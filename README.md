@@ -1,16 +1,34 @@
-[![Build Status](https://travis-ci.com/lightbend/kafka-lag-exporter.svg?branch=master)](https://app.travis-ci.com/github/lightbend/kafka-lag-exporter)
-![GitHub release](https://img.shields.io/github/v/release/lightbend/kafka-lag-exporter?include_prereleases)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/lightbend/kafka-lag-exporter/blob/master/LICENSE.txt)
+Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][gh-actions] [![license-badge][]][license]
+==================
 
-# Kafka Lag Exporter
+[gh-release]:          https://github.com/seglo/kafka-lag-exporter/releases
+[gh-release-badge]:    https://img.shields.io/github/v/release/lightbend/kafka-lag-exporter?include_prereleases
+[gh-actions]:          https://github.com/seglo/kafka-lag-exporter/actions
+[gh-actions-badge]:    https://github.com/seglo/kafka-lag-exporter/workflows/CI/badge.svg?branch=master
+[license]:             https://github.com/seglo/kafka-lag-exporter/blob/master/LICENSE.txt
+[license-badge]:       https://img.shields.io/badge/License-Apache%202.0-blue.svg
 
 > Monitor Kafka Consumer Group Latency with Kafka Lag Exporter
+
+## Overview
+
+Kafka Lag Exporter makes it easy to view the offset lag and calculate an estimate of latency (residence time) of your [Apache Kafka](https://kafka.apache.org/) consumer groups.
+It can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/) clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) monitoring stack. 
+Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html) application written in [Scala](https://www.scala-lang.org/).
+Kafka Lag Exporter is maintained by [@seglo](https://github.com/seglo) and a community of contributors.
+
+_Kafka Lag Exporter interpolates latency based on observed latest committed offset measurements of consumer groups._
+
+![Interpolation](./docs/interpolation-sm.png)
+
+For more information about Kafka Lag Exporter's features see Lightbend's blog post:
+[Monitor Kafka Consumer Group Latency with Kafka Lag Exporter](https://www.lightbend.com/blog/monitor-kafka-consumer-group-latency-with-kafka-lag-exporter).
+
+## Contents
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
-- [Introduction](#introduction)
 - [Metrics](#metrics)
   - [Labels](#labels)
 - [Run on Kubernetes](#run-on-kubernetes)
@@ -26,7 +44,6 @@
   - [Run as Docker Image](#run-as-docker-image)
 - [Troubleshooting](#troubleshooting)
 - [Required Permissions for Kafka ACL](#required-permissions-for-kafka-acl)
-- [Estimate Consumer Group Time Lag](#estimate-consumer-group-time-lag)
 - [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher)
 - [Monitoring with Grafana](#monitoring-with-grafana)
 - [Filtering Metrics without Prometheus Server](#filtering-metrics-without-prometheus-server)
@@ -41,19 +58,6 @@
 - [Change log](#change-log)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-## Introduction
-
-Kafka Lag Exporter makes it easy to view the latency (residence time) of your [Apache Kafka](https://kafka.apache.org/)
-consumer groups. It can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/)
-clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/)
-monitoring stack. Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html)
-application written in [Scala](https://www.scala-lang.org/).
-
-For more information about Kafka Lag Exporter's features see Lightbend's blog post:
-[Monitor Kafka Consumer Group Latency with Kafka Lag Exporter](https://www.lightbend.com/blog/monitor-kafka-consumer-group-latency-with-kafka-lag-exporter).
-
-_Kafka Lag Exporter is maintained by [@seglo](https://github.com/seglo) and a community of contributors. It is not covered by support under the [Lightbend subscription](https://www.lightbend.com/subscription)._
 
 ## Metrics
 
@@ -149,7 +153,9 @@ file of the accompanying Helm Chart.
 
 ### Install with Helm
 
-You can install the chart from the chart repository ( index file location: https://seanglover.com/kafka-lag-exporter/repo/index.yaml ).
+You can install the chart from the chart repository at either:index file location: 
+* [https://seanglover.com/kafka-lag-exporter/repo/index.yaml](https://seanglover.com/kafka-lag-exporter/repo/index.yaml)
+* [https://seglo.github.io/kafka-lag-exporter/repo/index.yaml](https://seglo.github.io/kafka-lag-exporter/repo/index.yaml)
 
 ```
 helm repo add kafka-lag-exporter https://seanglover.com/kafka-lag-exporter/repo/
@@ -400,36 +406,6 @@ This can be added using the following command (`authorizer-properties` depends o
 ```
 kafka-acls --authorizer-properties "zookeeper.connect=localhost:2181" --add --allow-principal "User:kafka-lag-exporter" --operation DESCRIBE --group '*' --topic '*' --cluster
 ```
-
-## Estimate Consumer Group Time Lag
-
-One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag (wait time).  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.
-
-For example, a topic with two consumer groups may have different lag characteristics.  Application A is a consumer which performs CPU intensive (and slow) business logic on each message it receives. It’s distributed across many consumer group members to handle the high load, but since its processing throughput is slower it takes longer to process each message per partition.   Meanwhile Application B is a consumer which performs a simple ETL operation to land streaming data in another system, such as an HDFS data lake.  It may have similar offset lag to Application A, but because it has a higher processing throughput its lag in time may be significantly less.
-
-It’s easier to build monitoring alerts using a time lag measurement than an offset lag measurement, because latency is best described in requirements as a unit of time.
-
-There are several ways to calculate time lag. The easiest way would be to parse the message timestamp and subtract it from the current time. However, this requires us to actually poll for messages in each partition that we wish to calculate time lag for. We must download the message payload and parse this information out of a `ConsumerRecord`. This is an expensive operation to perform and will likely not scale well in the general use case where messages can be of any size (though less than 1MB, unless default broker config is changed) and the number of partitions for any given topic could range into to thousands. However, it would be an interesting feature to explore in the future. It would also be possible to instrument the Kafka consuming application itself to report this metric since it can readily sample messages it's already consuming for their timestamp property and perform the calculation, but this requires each Kafka consuming application to opt into this implementation in order for it to be monitored. Another way to determine time lag is to estimate it based on consumer group lag information we already have available.
-
-Kafka Lag Exporter estimates time lag by either interpolation or extrapolation of the timestamp of when the last consumed offset was first produced.  We begin by retrieving the source data from Kafka.  We poll the last produced offset for all partitions in all consumer groups and store the offset (x) and current time (y) as a coordinate in a table (the interpolation table) for each partition.  This information is retrieved as a metadata call using the `KafkaConsumer` `endOffsets` call and does not require us to actually poll for messages.  The Kafka Consumer Group coordinator will return the last produced offsets for all the partitions we are subscribed to (the set of all partitions of all consumer groups).  Similarly, we use the Kafka `AdminClient`’s `listConsumerGroupOffsets` API to poll for consumer group metadata from all consumer groups to get the last consumed offset for each partition in a consumer group.
-
-Once we’ve built up an interpolation table of at least two values we can begin estimating time lag by performing the following operations (some edge cases are omitted for clarity) for each last consumed offset of each partition.
-
-1. Lookup interpolation table for a consumer group partition
-2. Find two points within the table that contain the last consumed offset
-  1. If there are no two points that contain the last consumed offset then use the first and last points as input to the interpolation formula.  This is the extrapolation use case.
-3. Interpolate inside (or extrapolate outside) the two points from the table we picked to predict a timestamp for when the last consumed message was first produced.
-4. Take the difference of the time of the last consumed offset (~ the current time) and the predicted timestamp to find the time lag.
-
-Below you will find a diagram that demonstrates the interpolation use case.
-
-![Interpolation](./docs/interpolation.png)
-
-The extrapolation use case uses different points in the interpolation table (the first and last points), but the calculation is the same.
-
-![Extrapolation](./docs/extrapolation.png)
-
-Interpolation is always desirable because we can be more assured that the prediction will be more accurate because we’re plotting a point within two points of our existing dataset.  Extrapolation will always be less accurate because we’re predicting points that may be a fair distance away from our dataset.
 
 ## Strimzi Kafka Cluster Watcher
 
