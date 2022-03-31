@@ -245,6 +245,8 @@ It is possible to report (either one, multiple or all):
   - to graphite via the config `kafka-lag-exporter.reporters.graphite`
   - as prometheus via the config `kafka-lag-exporter.reporters.prometheus`
 
+You must also specify the active reporters in the `kafka-lag-exporter.sinks` config.
+
 See section below for more information.
 
 ### Configuration
@@ -262,7 +264,8 @@ General Configuration (`kafka-lag-exporter{}`)
 | `reporters.influxdb.database` | `kafka_lag_exporter` | The influxdb database to send metrics to                                                                                              |
 | `reporters.influxdb.username` | None                 | The influxdb username to connect (if not set, username will be empty)                                                                 |
 | `reporters.influxdb.password` | None                 | The influxdb password to connect (if not set, password will be empty)                                                                 |
-| `reporters.influxdb.async`    | `true`               | Flag to enable influxdb async **non-blocking** write mode to send metrics                                                             |
+| `reporters.influxdb.async`    | `true`               | Flag to enable influxdb async **non-blocking** write mode to send metrics      
+| `sinks`                       | `["PrometheusEndpointSink"]` | Specify which reporters must be used to send metrics. Possible values are: `PrometheusEndpointSink`, `InfluxDBPusherSink`, `GraphiteEndpointSink`.  (if not set, only Prometheus is activated)     
 | `poll-interval`               | `30 seconds`         | How often to poll Kafka for latest and group offsets                                                                                  |
 | `lookup-table-size`           | `60`                 | The maximum window size of the look up table **per partition**                                                                        |
 | `client-group-id`             | `kafkalagexporter`   | Consumer group id of kafka-lag-exporter's client connections                                                                          |
