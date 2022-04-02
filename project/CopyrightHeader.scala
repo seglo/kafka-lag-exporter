@@ -1,6 +1,3 @@
-/*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
- */
 import de.heikoseeberger.sbtheader.{CommentCreator, HeaderPlugin}
 import sbt._
 
@@ -21,11 +18,12 @@ object CopyrightHeader extends AutoPlugin {
     })
 
   val CurrentYear = java.time.Year.now.getValue.toString
-  val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
+  val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) Sean Glover <.*>".r
   val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*".r
 
   def headerFor(year: String): String =
-    s"Copyright (C) $year Lightbend Inc. <https://www.lightbend.com>"
+    s"""Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+       |Copyright (C) $year Sean Glover <https://seanglover.com>""".stripMargin
 
   private def lightbendCommentCreator(commentCreator: CommentCreator) = new CommentCreator() {
 
