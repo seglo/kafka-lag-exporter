@@ -15,7 +15,7 @@ EXISTING_INDEX=$(mktemp /tmp/index.yaml.XXXXXX)
 REMOTE_CODE=$(curl -s -L -w "%{http_code}" $REMOTE_INDEX_URL -o $EXISTING_INDEX)
 if [ $REMOTE_CODE -eq 200 ]; then
   echo Adding new packages to existing index
-  helm repo index --merge $EXISTING_INDEX --url $REMOTE_URL_BASE CHARTS_DIR
+  helm repo index --merge $EXISTING_INDEX --url $REMOTE_URL_BASE $CHARTS_DIR
 else
   echo Creating new index
   helm repo index --url $REMOTE_URL_BASE $CHARTS_DIR
