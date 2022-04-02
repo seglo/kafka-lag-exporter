@@ -41,6 +41,10 @@ spec:
       serviceAccountName: {{ include "kafka-lag-exporter.fullname" . }}-serviceaccount
       {{- end }}
       {{- end }}
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{ toYaml .Values.image.pullSecrets | indent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- if .Values.image.digest }}
@@ -49,10 +53,6 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.image.pullSecrets }}
-          imagePullSecrets:
-{{ toYaml .Values.image.pullSecrets | indent 10 }}
-          {{- end }}
           {{- if .Values.env }}
           env:
 {{ toYaml .Values.env | indent 10 }}
