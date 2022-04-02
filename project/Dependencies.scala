@@ -7,6 +7,7 @@ object Version {
   val Fabric8        = "4.9.1"
   val Kafka          = "2.5.0"
   val Testcontainers = "1.16.2"
+  val IAMAuth        = "1.1.3"
 }
 
 object Dependencies {
@@ -38,6 +39,7 @@ object Dependencies {
   val Fabric8Client          = "io.fabric8"              %  "kubernetes-client"            % Version.Fabric8
   val ScalaJava8Compat       = "org.scala-lang.modules"  %% "scala-java8-compat"           % "1.0.2"
   val AkkaHttp               = "com.typesafe.akka"       %% "akka-http"                    % "10.2.7"
+  val IAMAuthLib             = "software.amazon.msk"     %  "aws-msk-iam-auth"             % Version.IAMAuth
 
   /* Test */
   val AkkaTypedTestKit       = "com.typesafe.akka"       %% "akka-actor-testkit-typed"  % Version.Akka           % Test
