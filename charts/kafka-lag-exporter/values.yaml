@@ -170,8 +170,26 @@ hostAliases: {}
 env: {}
   # - name: JAVA_OPTS
   #   value: "-Djava.security.auth.login.config=/var/run/my-secrets/jaasConfig"
+
+# Define references to configmaps or secrets to be populated as environment variables
+envFromConfigMapRefs: []
+# - 'configmap-a'
+envFromSecretRefs: []
+# - 'secret-a'
+
 podAnnotations: {}
   # foo: bar
+
+## Extra labels for the pod
+## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podExtraLabels: {}
+  # foo: bar
+
+## Extra labels for the deployment
+## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+deploymentExtraLabels: {}
+  # foo: bar
+
 ## Readiness and liveness probe initial delay and timeout
 ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 readinessProbeInitialDelay: 30
