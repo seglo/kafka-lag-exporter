@@ -1,5 +1,5 @@
 import Dependencies._
-import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
+import com.typesafe.sbt.packager.docker.{Cmd, DockerPermissionStrategy, ExecCmd}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import ReleaseTransformations._
 import ReleasePlugin.autoImport._
@@ -7,9 +7,6 @@ import ReleaseKeys._
 import sbt.IO
 
 import scala.sys.process._
-
-// for Alpakka Kafka snapshots
-resolvers += Resolver.bintrayRepo("akka", "snapshots")
 
 lazy val kafkaLagExporter =
   Project(id = "kafka-lag-exporter", base = file("."))
@@ -37,6 +34,7 @@ lazy val kafkaLagExporter =
         ScalaJava8Compat,
         AkkaHttp,
         Logback,
+        IAMAuthLib,
         ScalaTest,
         AkkaTypedTestKit,
         MockitoScala,
@@ -48,14 +46,15 @@ lazy val kafkaLagExporter =
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),
       dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("lightbend")),
       dockerUpdateLatest := true,
+      dockerPermissionStrategy := DockerPermissionStrategy.Run,
       // Based on best practices found in OpenShift Creating images guidelines
       // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
       dockerCommands := Seq(
-        Cmd("FROM",           "centos:8"),
-        Cmd("RUN",            "yum -y install java-1.8.0-openjdk-headless && yum update -y && yum clean all -y"),
-        Cmd("RUN",            "useradd -r -m -u 1001 -g 0 kafkalagexporter"),
+        Cmd("FROM",           "redhat/ubi8"),
+        Cmd("RUN",            "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"),
+        Cmd("RUN",            "useradd -r -m -u 1001 kafkalagexporter"),
         Cmd("ADD",            "opt /opt"),
-        Cmd("RUN",            "chgrp -R 0 /opt && chmod -R g=u /opt"),
+        Cmd("RUN",            "chgrp -R 1001 /opt && chmod -R g=u /opt && chmod +x /opt/docker/bin/kafka-lag-exporter"),
         Cmd("WORKDIR",        "/opt/docker"),
         Cmd("USER",           "1001"),
         ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter",
@@ -111,10 +110,10 @@ lazy val commonSettings = Seq(
     "-language:_",
     "-unchecked"
   ),
-  maintainer := "sean.glover@lightbend.com",
+  maintainer := "sean@seanglover.com",
   scalacOptions in (Compile, console) := (scalacOptions in (Global)).value.filter(_ == "-Ywarn-unused-import"),
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-  organizationName := "Lightbend Inc. <http://www.lightbend.com>",
+  organizationName := "Lightbend Inc. <http://www.lightbend.com> (2018-2022), Sean Glover (2022+)",
   startYear := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
 )
@@ -200,7 +199,7 @@ lazy val packageChart = ReleaseStep(action = st => {
 lazy val buildChartsIndex = ReleaseStep(action = st => {
   val (releaseVersion, _) = st.get(versions).getOrElse(sys.error("No versions are set! Was this release part executed before inquireVersions?"))
   exec(
-    s"./scripts/build_charts_index.sh https://github.com/lightbend/kafka-lag-exporter/releases/download/v$releaseVersion/ https://lightbend.github.io/kafka-lag-exporter/index.yaml",
+    s"./scripts/build_charts_index.sh https://github.com/lightbend/kafka-lag-exporter/releases/download/v$releaseVersion/ https://seanglover.com/kafka-lag-exporter/repo/index.yaml",
     "Error while building Helm Charts index")
   st
 })
