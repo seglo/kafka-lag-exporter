@@ -21,9 +21,9 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
-        {{ - if .Values.podExtraLabels }}
-        {{ - tpl (toYaml .Values.podExtraLabels) . | nindent 8 }}
-        {{ - end }}
+        {{- if .Values.podExtraLabels }}
+        {{- tpl (toYaml .Values.podExtraLabels) . | nindent 8 }}
+        {{- end }}
       {{- if .Values.podAnnotations }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/030-ConfigMap.yaml") . | sha256sum }}
