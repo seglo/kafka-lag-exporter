@@ -219,3 +219,18 @@ prometheus:
     #   targetLabels:
     #   - prometheus
     #   - app.kubernetes.io/name
+
+# Allow alert rules to be configured for Prometheus Alertmanager
+prometheusRule:
+  enabled: false
+#  List of rules that can be used in Prometheus Alertmanager
+  rules: []
+#    - alert: ConsumerGroupLagHigh
+#      annotations:
+#        message: '{{ $labels.group }} on cluster {{ $labels.cluster_name }} is lagging on topic {{ $labels.topic }}'
+#      expr: 'max by (cluster_name, group, topic) (kafka_consumergroup_group_lag_seconds{cluster_name=~"my-cluster", group=~"consumergroup.A"} ) < Inf > 180'
+#      for: 5m
+#      labels:
+#        severity: medium
+
+logPattern: "%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg %ex%n"
