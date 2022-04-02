@@ -1,5 +1,7 @@
 /*
- * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
+ * 
+Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+Copyright (C) 2020-2022 Sean Glover <https://seanglover.com>
  */
 
 package com.lightbend.kafkalagexporter.integration
