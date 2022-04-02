@@ -2,7 +2,7 @@ import sbt._
 
 object Version {
   val Scala          = "2.12.15"
-  val Akka           = "2.6.17"
+  val Akka           = "2.6.19"
   val Prometheus     = "0.15.0"
   val Fabric8        = "4.9.1"
   val Kafka          = "2.5.0"
@@ -31,19 +31,19 @@ object Dependencies {
   val AkkaStreams            = "com.typesafe.akka"       %% "akka-stream"                  % Version.Akka
   val AkkaStreamsProtobuf    = "com.typesafe.akka"       %% "akka-protobuf"                % Version.Akka
   val AkkaInfluxDB           = "com.lightbend.akka"      %% "akka-stream-alpakka-influxdb" % "3.0.3"
-  val Logback                = "ch.qos.logback"          %  "logback-classic"              % "1.2.7"
+  val Logback                = "ch.qos.logback"          %  "logback-classic"              % "1.2.11"
   val Prometheus             = "io.prometheus"           %  "simpleclient"                 % Version.Prometheus
   val PrometheusHotSpot      = "io.prometheus"           %  "simpleclient_hotspot"         % Version.Prometheus
   val PrometheusHttpServer   = "io.prometheus"           %  "simpleclient_httpserver"      % Version.Prometheus
   val Fabric8Model           = "io.fabric8"              %  "kubernetes-model"             % Version.Fabric8
   val Fabric8Client          = "io.fabric8"              %  "kubernetes-client"            % Version.Fabric8
   val ScalaJava8Compat       = "org.scala-lang.modules"  %% "scala-java8-compat"           % "1.0.2"
-  val AkkaHttp               = "com.typesafe.akka"       %% "akka-http"                    % "10.2.7"
+  val AkkaHttp               = "com.typesafe.akka"       %% "akka-http"                    % "10.2.9"
   val IAMAuthLib             = "software.amazon.msk"     %  "aws-msk-iam-auth"             % Version.IAMAuth
 
   /* Test */
   val AkkaTypedTestKit       = "com.typesafe.akka"       %% "akka-actor-testkit-typed"  % Version.Akka           % Test
-  val ScalaTest              = "org.scalatest"           %% "scalatest"                 % "3.2.10"                % Test
+  val ScalaTest              = "org.scalatest"           %% "scalatest"                 % "3.2.11"                % Test
   val AkkaStreamsTestKit     = "com.typesafe.akka"       %% "akka-stream-testkit"       % Version.Akka           % Test
   val MockitoScala           = "org.mockito"             %% "mockito-scala"             % "1.16.46"               % Test
   val AlpakkaKafkaTestKit    = "com.typesafe.akka"       %% "akka-stream-kafka-testkit" % "2.0.7"                % Test excludeAll(jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
