@@ -47,13 +47,15 @@ lazy val kafkaLagExporter =
       dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("lightbend")),
       dockerUpdateLatest := true,
       dockerPermissionStrategy := DockerPermissionStrategy.Run,
+      dockerExposedPorts := Seq(8000),
       // Based on best practices found in OpenShift Creating images guidelines
       // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
       dockerCommands := Seq(
         Cmd("FROM",           "redhat/ubi8"),
         Cmd("RUN",            "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"),
         Cmd("RUN",            "useradd -r -m -u 1001 kafkalagexporter"),
-        Cmd("ADD",            "opt /opt"),
+        Cmd("ADD",            "1/opt /opt"),
+        Cmd("ADD",            "2/opt /opt"),
         Cmd("RUN",            "chgrp -R 1001 /opt && chmod -R g=u /opt && chmod +x /opt/docker/bin/kafka-lag-exporter"),
         Cmd("WORKDIR",        "/opt/docker"),
         Cmd("USER",           "1001"),
