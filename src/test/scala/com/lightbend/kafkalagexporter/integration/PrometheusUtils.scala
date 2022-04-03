@@ -5,10 +5,14 @@
 
 package com.lightbend.kafkalagexporter.integration
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.lightbend.kafkalagexporter.MetricsSink.GaugeDefinition
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
@@ -16,7 +20,10 @@ import scala.util.matching.Regex
 /**
  * Test utilities to parse the Prometheus health endpoint to assert metrics in integration tests.
  */
-trait PrometheusUtils { self: SpecBase =>
+trait PrometheusUtils extends ScalaFutures with Matchers {
+  implicit val system: ActorSystem
+  val log: Logger
+
   private val http = Http()
 
   def scrape(port: Int, rules: Rule*)(implicit ec: ExecutionContext): Future[List[Result]] = {
