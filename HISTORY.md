@@ -1,7 +1,7 @@
 
 ## Historical Change Log
 
-**For new change log entries see [CHANGELOG.md](CHANGELOG.md)**
+*For new change log entries see [CHANGELOG.md](CHANGELOG.md)*
 
 0.6.8
 
