@@ -43,6 +43,8 @@ abstract class SpecBase(val exporterPort: Int)
 
   val clusterName = "default"
 
+  val exporterHostPort = s"localhost:$exporterPort"
+
   def config: Config = ConfigFactory.parseString(s"""
                                             |kafka-lag-exporter {
                                             |  reporters.prometheus.port = $exporterPort

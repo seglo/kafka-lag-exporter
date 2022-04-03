@@ -26,8 +26,8 @@ trait PrometheusUtils extends ScalaFutures with Matchers {
 
   private val http = Http()
 
-  def scrape(port: Int, rules: Rule*)(implicit ec: ExecutionContext): Future[List[Result]] = {
-    val request = HttpRequest(uri = s"http://localhost:$port/metrics")
+  def scrape(hostPort: String, rules: Rule*)(implicit ec: ExecutionContext): Future[List[Result]] = {
+    val request = HttpRequest(uri = s"http://$hostPort/metrics")
     for {
       HttpResponse(StatusCodes.OK, _, entity, _) <- http.singleRequest(request)
       body <- Unmarshal(entity).to[String]
@@ -41,18 +41,18 @@ trait PrometheusUtils extends ScalaFutures with Matchers {
     }
   }
 
-  def scrapeAndAssert(port: Int, description: String, rules: Rule*)
+  def scrapeAndAssert(hostPort: String, description: String, rules: Rule*)
                      (implicit ec: ExecutionContext): Unit =
-    scrapeAndAssert(port, description, _.assert(), rules: _*)
+    scrapeAndAssert(hostPort, description, _.assert(), rules: _*)
 
-  def scrapeAndAssertDne(port: Int, description: String, rules: Rule*)
+  def scrapeAndAssertDne(hostPort: String, description: String, rules: Rule*)
                         (implicit ec: ExecutionContext): Unit =
-    scrapeAndAssert(port, description, _.assertDne(), rules: _*)
+    scrapeAndAssert(hostPort, description, _.assertDne(), rules: _*)
 
 
-  private def scrapeAndAssert(port: Int, description: String, resultF: Result => Unit, rules: Rule*)
+  private def scrapeAndAssert(hostPort: String, description: String, resultF: Result => Unit, rules: Rule*)
                              (implicit ec: ExecutionContext): Unit = {
-    val results = scrape(port, rules: _*).futureValue
+    val results = scrape(hostPort, rules: _*).futureValue
     log.debug("Start: {}", description)
     results.foreach(resultF)
     log.debug("End (Successful): {}", description)

@@ -34,11 +34,11 @@ class MetricsEvictionSpec extends SpecBase(exporterPort = ExporterPorts.MetricsE
       simulator.consumeElements(offsetsToCommit)
       simulator.shutdown()
 
-      eventually(scrapeAndAssert(exporterPort, "Assert offset-based metrics", rules: _*))
+      eventually(scrapeAndAssert(exporterHostPort, "Assert offset-based metrics", rules: _*))
 
       adminClient.deleteConsumerGroups(List(group).asJava)
 
-      eventually(scrapeAndAssertDne(exporterPort, "Assert offset-based metrics no longer exist", rules: _*))
+      eventually(scrapeAndAssertDne(exporterHostPort, "Assert offset-based metrics no longer exist", rules: _*))
     }
   }
 }

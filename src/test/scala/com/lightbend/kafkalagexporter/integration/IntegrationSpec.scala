@@ -39,7 +39,7 @@ class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationS
         simulator.produceElements(totalOffsets)
         simulator.consumeElements(offsetsToCommit)
 
-        eventually(scrapeAndAssert(exporterPort, "Assert offset-based metrics", rules: _*))
+        eventually(scrapeAndAssert(exporterHostPort, "Assert offset-based metrics", rules: _*))
 
         simulator.shutdown()
       }
@@ -68,7 +68,7 @@ class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationS
       val isIncreasingRule = Rule.create(TimeLagMetric, isIncreasing, clusterName, group, topic, partition)
 
       (1 to 3).foreach { i =>
-        eventually(scrapeAndAssert(exporterPort, s"Assert lag in time metrics are increasing ($i)", isIncreasingRule))
+        eventually(scrapeAndAssert(exporterHostPort, s"Assert lag in time metrics are increasing ($i)", isIncreasingRule))
       }
 
       testKit.stop(simulatorActor)
@@ -77,7 +77,7 @@ class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationS
     "report poll time metric greater than 0 ms" in {
       assertAllStagesStopped {
         val rule = Rule.create(PollTimeMetric, (actual: String) => actual.toDouble should be > 0d, clusterName)
-        eventually(scrapeAndAssert(exporterPort, "Assert poll time metric", rule))
+        eventually(scrapeAndAssert(exporterHostPort, "Assert poll time metric", rule))
       }
     }
   }

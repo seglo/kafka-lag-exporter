@@ -32,11 +32,11 @@ class MetricsEvictionOnFailureSpec extends SpecBase(exporterPort = ExporterPorts
       simulator.consumeElements(offsetsToCommit)
       simulator.shutdown()
 
-      eventually(scrapeAndAssert(exporterPort, "Assert offset-based metrics", rules: _*))
+      eventually(scrapeAndAssert(exporterHostPort, "Assert offset-based metrics", rules: _*))
 
       stopKafka()
 
-      eventually(scrapeAndAssertDne(exporterPort, "Assert offset-based metrics no longer exist", rules: _*))
+      eventually(scrapeAndAssertDne(exporterHostPort, "Assert offset-based metrics no longer exist", rules: _*))
     }
   }
 }

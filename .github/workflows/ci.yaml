@@ -42,6 +42,45 @@ jobs:
       - name: Print logs on failure
         if: ${{ failure() }}
         run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+  minikube-test:
+    name: End to end test on Minikube
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Setup Scala with Java ${{ matrix.java-version }}
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6
+
+      - name: Setup Minikube
+        if: github.event.pull_request
+        run: |-
+          sbt docker:publishLocal
+          minikube image load seglo/kafka-lag-exporter:latest
+
+          helm repo add strimzi https://strimzi.io/charts/
+          helm install strimzi strimzi/strimzi-kafka-operator
+          kubectl apply -f ./examples/strimzi-kafka-cluster.yaml
+
+          sbt testOnly *.MinikubeIntegrationSpec
+      - name: Print logs on failure
+        if: ${{ failure() }}
+        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
 
   build-docker:
     name: Build Docker Image
