@@ -67,6 +67,9 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6
 
+      - name: Start minikube
+        uses: medyagh/setup-minikube@master
+
       - name: Setup Minikube
         if: github.event.pull_request
         run: |-

@@ -7,7 +7,11 @@ package com.lightbend.kafkalagexporter.integration
 
 import com.lightbend.kafkalagexporter.Metrics._
 
-class MetricsEvictionOnFailureSpec extends SpecBase(exporterPort = ExporterPorts.MetricsEvictionOnFailureSpec) {
+import scala.concurrent.duration.DurationInt
+
+class MetricsEvictionOnFailureSpec extends LocalSpecBase(exporterPort = ExporterPorts.MetricsEvictionOnFailureSpec) with LagSim {
+  implicit val patience: PatienceConfig = PatienceConfig(30.seconds, 2.second)
+
   "kafka lag exporter" should {
     "not report metrics for group members or partitions after a failure" in {
       val group = createGroupId(1)

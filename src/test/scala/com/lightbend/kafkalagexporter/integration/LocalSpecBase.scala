@@ -19,20 +19,15 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-abstract class SpecBase(val exporterPort: Int)
+abstract class LocalSpecBase(val exporterPort: Int)
   extends ScalatestKafkaSpec(-1)
     with AnyWordSpecLike
     with BeforeAndAfterEach
     with TestcontainersKafkaPerClassLike
-    with Matchers
-    with ScalaFutures
     with Eventually
-    with PrometheusUtils
-    with LagSim {
+    with PrometheusUtils {
 
   private[this] val log: Logger = LoggerFactory.getLogger(getClass)
-
-  implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 2 second)
 
   override val testcontainersSettings = KafkaTestkitTestcontainersSettings(system)
     .withConfigureKafka { brokerContainers =>

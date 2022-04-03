@@ -6,14 +6,37 @@
 package com.lightbend.kafkalagexporter.integration
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.kafka.testkit.scaladsl.KafkaSpec
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.lightbend.kafkalagexporter.Metrics._
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
-class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationSpec) {
+class LocalIntegrationSpec extends LocalSpecBase(exporterPort = ExporterPorts.LocalIntegrationSpec) with IntegrationSpec
+class MiniKubeIntegrationSpec extends MinikubeSpecBase with IntegrationSpec {
+  override implicit val patience: PatienceConfig = PatienceConfig(90.seconds, 2.second)
+}
+
+trait IntegrationSpec extends KafkaSpec
+  with AnyWordSpecLike
+  with BeforeAndAfterEach
+  with Matchers
+  with ScalaFutures
+  with Eventually
+  with PrometheusUtils
+  with LagSim {
+
+  def exporterHostPort: String
+
+  implicit val patience: PatienceConfig = PatienceConfig(30.seconds, 2.second)
 
   "kafka lag exporter" should {
+    val clusterName = "default"
     val group = createGroupId(1)
     val partition = "0"
 
