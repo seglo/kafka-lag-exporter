@@ -1,11 +1,15 @@
 import Dependencies._
-import com.typesafe.sbt.packager.docker.{Cmd, DockerPermissionStrategy, ExecCmd}
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
-import ReleaseTransformations._
 import ReleasePlugin.autoImport._
 import ReleaseKeys._
+import ReleaseTransformations._
+import com.typesafe.sbt.packager.docker.{Cmd, DockerPermissionStrategy, ExecCmd}
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
+import com.typesafe.sbt.packager.docker.DockerApiVersion
+import com.typesafe.sbt.packager.docker.DockerPlugin.UnixSeparatorChar
 import sbt.IO
 
+import java.time.format.DateTimeFormatter
+import java.time.Instant
 import scala.sys.process._
 
 lazy val kafkaLagExporter =
@@ -16,7 +20,6 @@ lazy val kafkaLagExporter =
     .settings(commonSettings)
     .settings(
       name := "kafka-lag-exporter",
-      description := "Kafka lag exporter finds and reports Kafka consumer group lag metrics",
       libraryDependencies ++= Vector(
         LightbendConfig,
         Kafka,
@@ -43,26 +46,52 @@ lazy val kafkaLagExporter =
         TestcontainersKafka,
         TestcontainersInfluxDb
       ),
+      dockerApiVersion := Some(DockerApiVersion(1, 41)),
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY")).orElse(None),
-      dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("lightbend")),
+      dockerUsername := Option(System.getenv("DOCKER_USERNAME")).orElse(Some("seglo")),
       dockerUpdateLatest := true,
-      dockerPermissionStrategy := DockerPermissionStrategy.Run,
+      dockerPermissionStrategy := DockerPermissionStrategy.None,
       dockerExposedPorts := Seq(8000),
       // Based on best practices found in OpenShift Creating images guidelines
-      // https://docs.openshift.com/container-platform/3.10/creating_images/guidelines.html
-      dockerCommands := Seq(
-        Cmd("FROM",           "redhat/ubi8"),
-        Cmd("RUN",            "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"),
-        Cmd("RUN",            "useradd -r -m -u 1001 kafkalagexporter"),
-        Cmd("ADD",            "1/opt /opt"),
-        Cmd("ADD",            "2/opt /opt"),
-        Cmd("RUN",            "chgrp -R 1001 /opt && chmod -R g=u /opt && chmod +x /opt/docker/bin/kafka-lag-exporter"),
-        Cmd("WORKDIR",        "/opt/docker"),
-        Cmd("USER",           "1001"),
-        ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter",
-                                "-Dconfig.file=/opt/docker/conf/application.conf",
-                                "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"),
-      ),
+      // https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html
+      dockerCommands := {
+        // OCI Image Spec Annotations
+        // https://github.com/opencontainers/image-spec/blob/main/annotations.md
+        val labels = Map(
+          "org.opencontainers.image.title" -> name.value,
+          "org.opencontainers.image.description" -> description.value,
+          "org.opencontainers.image.vendor" -> organizationName.value,
+          "org.opencontainers.image.created" -> DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
+          "org.opencontainers.image.authors" -> maintainer.value,
+          "org.opencontainers.image.url" -> homepage.value.get.toString,
+          "org.opencontainers.image.version" -> version.value,
+          "org.opencontainers.image.licenses" -> licenses.value.map(l => l._1 + ": " + l._2).mkString(", ")
+        ).map(l => Cmd("LABEL", l._1 + "=\"" + l._2 + "\""))
+        val dockerBaseDirectory = (Docker / defaultLinuxInstallLocation).value
+        val layerIdsAscending = (Docker / dockerLayerMappings).value.map(_.layerId).distinct.sortWith { (a, b) =>
+          // Make the None (unspecified) layer the last layer
+          a.getOrElse(Int.MaxValue) < b.getOrElse(Int.MaxValue)
+        }
+        val layerCopy = layerIdsAscending.map { layerId =>
+          val files = dockerBaseDirectory.split(UnixSeparatorChar)(1)
+          val path = layerId.map(i => s"$i/$files").getOrElse(s"$files")
+          Cmd("COPY", s"$path /$files")
+        }
+        Seq(
+          Cmd("FROM",           "redhat/ubi8")) ++
+          labels ++ Seq(
+          Cmd("RUN",            "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"),
+          Cmd("RUN",            "useradd -r -m -u 1001 kafkalagexporter")) ++
+          layerCopy ++ Seq(
+          Cmd("RUN",            "chgrp -R 1001 /opt && chmod -R g=u /opt && chmod +x /opt/docker/bin/kafka-lag-exporter"),
+          Cmd("WORKDIR",        "/opt/docker"),
+          Cmd("USER",           "1001")) ++
+          dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++ Seq(
+          ExecCmd("CMD",        "/opt/docker/bin/kafka-lag-exporter",
+            "-Dconfig.file=/opt/docker/conf/application.conf",
+            "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"),
+        )
+      },
       updateHelmChart := {
         import scala.sys.process._
         val repo = dockerAlias.value.withTag(None).toString
@@ -98,7 +127,15 @@ lazy val kafkaLagExporter =
     )
 
 lazy val commonSettings = Seq(
+  description := "Kafka lag exporter finds and reports Kafka consumer group lag metrics",
   organization := "com.lightbend.kafkalagexporter",
+  organizationName := "Lightbend Inc. <http://www.lightbend.com> (2018-2022), Sean Glover <https://seanglover.com/> (2022+)",
+  organizationHomepage := Some(url("https://seanglover.com/")),
+  homepage := Some(url("https://github.com/seglo/kafka-lag-exporter")),
+  maintainer := "sean@seanglover.com",
+  licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+  scmInfo := Some(ScmInfo(homepage.value.get, "git@github.com:seglo/kafka-lag-exporter.git")),
+  developers += Developer("contributors", "Contributors", maintainer.value, organizationHomepage.value.get),
   scalaVersion := Version.Scala,
   scalacOptions ++= Seq(
     "-encoding", "UTF-8",
@@ -112,12 +149,8 @@ lazy val commonSettings = Seq(
     "-language:_",
     "-unchecked"
   ),
-  maintainer := "sean@seanglover.com",
   scalacOptions in (Compile, console) := (scalacOptions in (Global)).value.filter(_ == "-Ywarn-unused-import"),
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-  organizationName := "Lightbend Inc. <http://www.lightbend.com> (2018-2022), Sean Glover (2022+)",
-  startYear := Some(2020),
-  licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
 )
 
 lazy val updateHelmChart = taskKey[Unit]("Update Helm Chart")
