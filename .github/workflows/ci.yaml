@@ -9,7 +9,6 @@ on:
       - release-*
     tags-ignore: [ v.* ]
 
-
 jobs:
   test:
     name: Build and Test
@@ -37,7 +36,90 @@ jobs:
         uses: coursier/cache-action@v6
 
       - name: Run tests
-        run: sbt test
+        run: sbt ";scalafmtCheckAll;Test/test"
+
+      - name: Print logs on failure
+        if: ${{ failure() }}
+        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+
+  local-test:
+    name: Integration tests using Testcontainers
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Setup Scala with Java ${{ matrix.java-version }}
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6
+
+      - name: Run tests
+        run: sbt "IntegrationTest/testOnly com.lightbend.kafkalagexporter.integration.testcontainers.*"
+
+      - name: Print logs on failure
+        if: ${{ failure() }}
+        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+
+  minikube-test:
+    name: Integration tests using Minikube
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Setup Scala with Java ${{ matrix.java-version }}
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6
+
+      - name: Start minikube
+        uses: medyagh/setup-minikube@master
+
+      - name: Setup Minikube
+        if: github.event.pull_request
+        run: |-
+          sbt docker:publishLocal
+          echo Minikube image loading..
+          minikube image load seglo/kafka-lag-exporter:latest
+
+          echo Install Strimzi and Kafka cluster..
+          helm repo add strimzi https://strimzi.io/charts/
+          helm install strimzi strimzi/strimzi-kafka-operator
+          kubectl apply -f ./examples/k8s/strimzi-kafka-cluster.yaml
+          kubectl wait kafka/strimzi-kafka-cluster --for=condition=Ready --timeout=300s
+
+          echo Running pods..
+          kubectl get po -A
+
+      - name: Run tests
+        run: sbt "IntegrationTest/testOnly com.lightbend.kafkalagexporter.integration.minikube.*"
 
       - name: Print logs on failure
         if: ${{ failure() }}

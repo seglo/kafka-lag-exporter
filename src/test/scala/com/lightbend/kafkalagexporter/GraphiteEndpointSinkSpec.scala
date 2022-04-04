@@ -19,9 +19,11 @@ class GraphiteEndpointSinkTest extends FixtureAnyFreeSpec with Matchers {
     import java.net.ServerSocket
     val server = new ServerSocket(0)
     var line = ""
-    override def run() : Unit = {
+    override def run(): Unit = {
       val connection = server.accept
-      val input = new BufferedReader(new InputStreamReader(connection.getInputStream))
+      val input = new BufferedReader(
+        new InputStreamReader(connection.getInputStream)
+      )
       line = input.readLine()
       server.close();
     }
@@ -43,11 +45,34 @@ class GraphiteEndpointSinkTest extends FixtureAnyFreeSpec with Matchers {
         "reporters.graphite.host" -> "localhost",
         "reporters.graphite.port" -> fixture.server.server.getLocalPort()
       )
-      val sink = GraphiteEndpointSink(new GraphiteEndpointConfig("GraphiteEndpointSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(properties.asJava)), Map("cluster" -> Map.empty))
-      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster", "group", 100))
-      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster", "group", 1))
+      val sink = GraphiteEndpointSink(
+        new GraphiteEndpointConfig(
+          "GraphiteEndpointSink",
+          List("kafka_consumergroup_group_max_lag"),
+          ConfigFactory.parseMap(properties.asJava)
+        ),
+        Map("cluster" -> Map.empty)
+      )
+      sink.report(
+        Metrics.GroupValueMessage(
+          Metrics.MaxGroupOffsetLagMetric,
+          "cluster",
+          "group",
+          100
+        )
+      )
+      sink.report(
+        Metrics.GroupValueMessage(
+          Metrics.MaxGroupTimeLagMetric,
+          "cluster",
+          "group",
+          1
+        )
+      )
       fixture.server.join()
-      fixture.server.line should startWith ("cluster.group.kafka_consumergroup_group_max_lag 100.0 ")
+      fixture.server.line should startWith(
+        "cluster.group.kafka_consumergroup_group_max_lag 100.0 "
+      )
     }
 
   }
