@@ -19,6 +19,7 @@ lazy val kafkaLagExporter =
     .enablePlugins(DockerPlugin)
     .configs(IntegrationTest.extend(Test))
     .settings(Defaults.itSettings)
+    .settings(inConfig(IntegrationTest)(org.scalafmt.sbt.ScalafmtPlugin.scalafmtConfigSettings))
     .settings(headerSettings(IntegrationTest))
     .settings(commonSettings)
     .settings(
