@@ -17,14 +17,15 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
-trait IntegrationSpec extends KafkaSpec
-  with AnyWordSpecLike
-  with BeforeAndAfterEach
-  with Matchers
-  with ScalaFutures
-  with Eventually
-  with PrometheusUtils
-  with LagSim {
+trait IntegrationSpec
+    extends KafkaSpec
+    with AnyWordSpecLike
+    with BeforeAndAfterEach
+    with Matchers
+    with ScalaFutures
+    with Eventually
+    with PrometheusUtils
+    with LagSim {
 
   def exporterHostPort: String
 
@@ -43,21 +44,74 @@ trait IntegrationSpec extends KafkaSpec
         val totalOffsets = 10
 
         val rules = List(
-          Rule.create(LatestOffsetMetric, (actual: String) => actual shouldBe (totalOffsets + 1).toDouble.toString, clusterName, topic, partition),
-          Rule.create(EarliestOffsetMetric, (actual: String) => actual shouldBe 0.toDouble.toString, clusterName, topic, partition),
-          Rule.create(LastGroupOffsetMetric, (actual: String) => actual shouldBe offsetsToCommit.toDouble.toString, clusterName, group, topic, partition),
-          Rule.create(OffsetLagMetric, (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group, topic, partition),
+          Rule.create(
+            LatestOffsetMetric,
+            (actual: String) =>
+              actual shouldBe (totalOffsets + 1).toDouble.toString,
+            clusterName,
+            topic,
+            partition
+          ),
+          Rule.create(
+            EarliestOffsetMetric,
+            (actual: String) => actual shouldBe 0.toDouble.toString,
+            clusterName,
+            topic,
+            partition
+          ),
+          Rule.create(
+            LastGroupOffsetMetric,
+            (actual: String) =>
+              actual shouldBe offsetsToCommit.toDouble.toString,
+            clusterName,
+            group,
+            topic,
+            partition
+          ),
+          Rule.create(
+            OffsetLagMetric,
+            (actual: String) =>
+              actual shouldBe (offsetsToCommit + 1).toDouble.toString,
+            clusterName,
+            group,
+            topic,
+            partition
+          ),
           // TODO: update test so we can assert actual lag in time.  keep producer running for more than two polling cycles.
-          Rule.create(TimeLagMetric, (_: String) => (), clusterName, group, topic, partition),
-          Rule.create(MaxGroupOffsetLagMetric, (actual: String) => actual shouldBe (offsetsToCommit + 1).toDouble.toString, clusterName, group),
-          Rule.create(MaxGroupTimeLagMetric, (_: String) => (), clusterName, group)
+          Rule.create(
+            TimeLagMetric,
+            (_: String) => (),
+            clusterName,
+            group,
+            topic,
+            partition
+          ),
+          Rule.create(
+            MaxGroupOffsetLagMetric,
+            (actual: String) =>
+              actual shouldBe (offsetsToCommit + 1).toDouble.toString,
+            clusterName,
+            group
+          ),
+          Rule.create(
+            MaxGroupTimeLagMetric,
+            (_: String) => (),
+            clusterName,
+            group
+          )
         )
 
         val simulator = new LagSimulator(topic, group)
         simulator.produceElements(totalOffsets)
         simulator.consumeElements(offsetsToCommit)
 
-        eventually(scrapeAndAssert(exporterHostPort, "Assert offset-based metrics", rules: _*))
+        eventually(
+          scrapeAndAssert(
+            exporterHostPort,
+            "Assert offset-based metrics",
+            rules: _*
+          )
+        )
 
         simulator.shutdown()
       }
@@ -69,7 +123,8 @@ trait IntegrationSpec extends KafkaSpec
       val testKit = ActorTestKit()
 
       val simulator = new LagSimulator(topic, group)
-      val simulatorActor = testKit.spawn(lagSimActor(simulator), "app-simulator")
+      val simulatorActor =
+        testKit.spawn(lagSimActor(simulator), "app-simulator")
 
       simulatorActor ! Tick(10, 5)
 
@@ -83,10 +138,23 @@ trait IntegrationSpec extends KafkaSpec
         lastLagInTime = parsedDouble
       }
 
-      val isIncreasingRule = Rule.create(TimeLagMetric, isIncreasing, clusterName, group, topic, partition)
+      val isIncreasingRule = Rule.create(
+        TimeLagMetric,
+        isIncreasing,
+        clusterName,
+        group,
+        topic,
+        partition
+      )
 
       (1 to 3).foreach { i =>
-        eventually(scrapeAndAssert(exporterHostPort, s"Assert lag in time metrics are increasing ($i)", isIncreasingRule))
+        eventually(
+          scrapeAndAssert(
+            exporterHostPort,
+            s"Assert lag in time metrics are increasing ($i)",
+            isIncreasingRule
+          )
+        )
       }
 
       testKit.stop(simulatorActor)
@@ -94,8 +162,14 @@ trait IntegrationSpec extends KafkaSpec
 
     "report poll time metric greater than 0 ms" in {
       assertAllStagesStopped {
-        val rule = Rule.create(PollTimeMetric, (actual: String) => actual.toDouble should be > 0d, clusterName)
-        eventually(scrapeAndAssert(exporterHostPort, "Assert poll time metric", rule))
+        val rule = Rule.create(
+          PollTimeMetric,
+          (actual: String) => actual.toDouble should be > 0d,
+          clusterName
+        )
+        eventually(
+          scrapeAndAssert(exporterHostPort, "Assert poll time metric", rule)
+        )
       }
     }
   }

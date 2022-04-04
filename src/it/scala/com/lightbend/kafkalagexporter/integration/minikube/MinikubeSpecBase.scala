@@ -16,7 +16,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.sys.process._
 import scala.util.Random
 
-abstract class MinikubeSpecBase extends KafkaSpec(-1)
+abstract class MinikubeSpecBase
+    extends KafkaSpec(-1)
     with AnyWordSpecLike
     with BeforeAndAfterAll
     with Matchers
@@ -42,10 +43,13 @@ abstract class MinikubeSpecBase extends KafkaSpec(-1)
   override def createGroupId(suffix: Int): String = s"group-$suffix-$rnd"
   override def createTopicName(suffix: Int): String = s"topic-$suffix-$rnd"
 
-  def exporterHostPort: String = getNodePortForService("kafka-lag-exporter-service")
+  def exporterHostPort: String = getNodePortForService(
+    "kafka-lag-exporter-service"
+  )
 
   def getNodePortForService(service: String): String = {
-    val nodePort = s"./examples/k8s/scripts/get_nodeport_for_service.sh $service".!!.trim
+    val nodePort =
+      s"./examples/k8s/scripts/get_nodeport_for_service.sh $service".!!.trim
     log.info(s"NodePort host and port for service '$service': $nodePort")
     nodePort
   }
@@ -55,4 +59,3 @@ abstract class MinikubeSpecBase extends KafkaSpec(-1)
 
   def uninstall(): Unit = "helm uninstall kafka-lag-exporter".!
 }
-

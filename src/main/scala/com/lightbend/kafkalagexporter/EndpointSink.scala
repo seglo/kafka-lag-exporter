@@ -5,7 +5,10 @@
 
 package com.lightbend.kafkalagexporter
 
-import com.lightbend.kafkalagexporter.EndpointSink.{ClusterGlobalLabels, ClusterName}
+import com.lightbend.kafkalagexporter.EndpointSink.{
+  ClusterGlobalLabels,
+  ClusterName
+}
 import io.prometheus.client.hotspot.DefaultExports
 
 object EndpointSink {
@@ -14,7 +17,8 @@ object EndpointSink {
   type ClusterGlobalLabels = Map[ClusterName, GlobalLabels]
 }
 
-abstract class EndpointSink (clusterGlobalLabels: ClusterGlobalLabels) extends MetricsSink {
+abstract class EndpointSink(clusterGlobalLabels: ClusterGlobalLabels)
+    extends MetricsSink {
   DefaultExports.initialize()
 
   private[kafkalagexporter] val globalLabelNames: List[String] = {
@@ -22,7 +26,8 @@ abstract class EndpointSink (clusterGlobalLabels: ClusterGlobalLabels) extends M
   }
 
   def getGlobalLabelValuesOrDefault(clusterName: ClusterName): List[String] = {
-    val globalLabelValuesForCluster = clusterGlobalLabels.getOrElse(clusterName, Map.empty)
+    val globalLabelValuesForCluster =
+      clusterGlobalLabels.getOrElse(clusterName, Map.empty)
     globalLabelNames.map(l => globalLabelValuesForCluster.getOrElse(l, ""))
   }
 }

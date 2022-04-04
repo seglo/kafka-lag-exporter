@@ -18,7 +18,8 @@ import org.testcontainers.utility.DockerImageName
 
 import scala.jdk.CollectionConverters._
 
-class InfluxDBPusherSinkSpec extends FixtureAnyFreeSpec
+class InfluxDBPusherSinkSpec
+    extends FixtureAnyFreeSpec
     with Matchers
     with BeforeAndAfterAll
     with TryValues
@@ -71,35 +72,94 @@ class InfluxDBPusherSinkSpec extends FixtureAnyFreeSpec
   "InfluxDBPusherSinkImpl should" - {
 
     "create database" in { fixture =>
-      val _ = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(fixture.properties.asJava)), Map("cluster" -> Map.empty))
+      val _ = InfluxDBPusherSink(
+        new InfluxDBPusherSinkConfig(
+          "InfluxDBPusherSink",
+          List("kafka_consumergroup_group_max_lag"),
+          ConfigFactory.parseMap(fixture.properties.asJava)
+        ),
+        Map("cluster" -> Map.empty)
+      )
       val query = "SHOW DATABASES"
 
       eventually { doQuery(query) should include("kafka_lag_exporter") }
     }
 
     "report metrics which match the regex" in { fixture =>
-      val sink = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(fixture.properties.asJava)), Map("cluster" -> Map.empty))
-      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster_test", "group_test", 100))
-      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupTimeLagMetric, "cluster_test", "group_test", 101))
-
-      val whitelist_query = "SELECT * FROM kafka_consumergroup_group_max_lag"
-      val blacklist_query = "SELECT * FROM kafka_consumergroup_group_max_lag_seconds"
-
-      eventually { doQuery(whitelist_query) should (include("cluster_test") and include("group_test") and include("100")) }
-      eventually { doQuery(blacklist_query) should (not include("cluster_test") and not include("group_test") and not include("101")) }
-    }
-
-    "should get the correct global label names and values as tags" in { fixture =>
-      val clustersGlobalValuesMap = Map(
-        "cluster_test" -> Map("environment" -> "integration")
+      val sink = InfluxDBPusherSink(
+        new InfluxDBPusherSinkConfig(
+          "InfluxDBPusherSink",
+          List("kafka_consumergroup_group_max_lag"),
+          ConfigFactory.parseMap(fixture.properties.asJava)
+        ),
+        Map("cluster" -> Map.empty)
+      )
+      sink.report(
+        Metrics.GroupValueMessage(
+          Metrics.MaxGroupOffsetLagMetric,
+          "cluster_test",
+          "group_test",
+          100
+        )
+      )
+      sink.report(
+        Metrics.GroupValueMessage(
+          Metrics.MaxGroupTimeLagMetric,
+          "cluster_test",
+          "group_test",
+          101
+        )
       )
 
-      val sink = InfluxDBPusherSink(new InfluxDBPusherSinkConfig("InfluxDBPusherSink", List("kafka_consumergroup_group_max_lag"), ConfigFactory.parseMap(mapAsJavaMap(fixture.properties))), clustersGlobalValuesMap)
-      sink.report(Metrics.GroupValueMessage(Metrics.MaxGroupOffsetLagMetric, "cluster_test", "group_test", 100))
+      val whitelist_query = "SELECT * FROM kafka_consumergroup_group_max_lag"
+      val blacklist_query =
+        "SELECT * FROM kafka_consumergroup_group_max_lag_seconds"
 
-      val tagQuery = "SELECT * FROM kafka_consumergroup_group_max_lag where environment='integration'"
-      
-      eventually { doQuery(tagQuery) should (include("cluster_test") and include("group_test") and include("100") and include("environment") and include("integration"))}
+      eventually {
+        doQuery(whitelist_query) should (include("cluster_test") and include(
+          "group_test"
+        ) and include("100"))
+      }
+      eventually {
+        doQuery(
+          blacklist_query
+        ) should (not include ("cluster_test") and not include ("group_test") and not include ("101"))
+      }
+    }
+
+    "should get the correct global label names and values as tags" in {
+      fixture =>
+        val clustersGlobalValuesMap = Map(
+          "cluster_test" -> Map("environment" -> "integration")
+        )
+
+        val sink = InfluxDBPusherSink(
+          new InfluxDBPusherSinkConfig(
+            "InfluxDBPusherSink",
+            List("kafka_consumergroup_group_max_lag"),
+            ConfigFactory.parseMap(mapAsJavaMap(fixture.properties))
+          ),
+          clustersGlobalValuesMap
+        )
+        sink.report(
+          Metrics.GroupValueMessage(
+            Metrics.MaxGroupOffsetLagMetric,
+            "cluster_test",
+            "group_test",
+            100
+          )
+        )
+
+        val tagQuery =
+          "SELECT * FROM kafka_consumergroup_group_max_lag where environment='integration'"
+
+        eventually {
+          doQuery(tagQuery) should (include("cluster_test") and include(
+            "group_test"
+          ) and include("100") and include("environment") and include(
+            "integration"
+          ))
+        }
     }
   }
 }

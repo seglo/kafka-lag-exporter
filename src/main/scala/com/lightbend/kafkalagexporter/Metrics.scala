@@ -17,7 +17,12 @@ object Metrics {
       )
   }
 
-  final case class ClusterValueMessage(definition: GaugeDefinition, clusterName: String, value: Double) extends ClusterMessage with MetricValue
+  final case class ClusterValueMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      value: Double
+  ) extends ClusterMessage
+      with MetricValue
 
   sealed trait TopicPartitionMessage extends Message with Metric {
     def definition: GaugeDefinition
@@ -31,8 +36,19 @@ object Metrics {
       )
   }
 
-  final case class TopicPartitionValueMessage(definition: GaugeDefinition, clusterName: String, topicPartition: Domain.TopicPartition, value: Double) extends TopicPartitionMessage with MetricValue
-  final case class TopicPartitionRemoveMetricMessage(definition: GaugeDefinition, clusterName: String, topicPartition: Domain.TopicPartition) extends TopicPartitionMessage with RemoveMetric
+  final case class TopicPartitionValueMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      topicPartition: Domain.TopicPartition,
+      value: Double
+  ) extends TopicPartitionMessage
+      with MetricValue
+  final case class TopicPartitionRemoveMetricMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      topicPartition: Domain.TopicPartition
+  ) extends TopicPartitionMessage
+      with RemoveMetric
 
   sealed trait GroupMessage extends Message with Metric {
     def definition: GaugeDefinition
@@ -45,8 +61,19 @@ object Metrics {
       )
   }
 
-  final case class GroupValueMessage(definition: GaugeDefinition, clusterName: String, group: String, value: Double) extends GroupMessage with MetricValue
-  final case class GroupRemoveMetricMessage(definition: GaugeDefinition, clusterName: String, group: String) extends GroupMessage with RemoveMetric
+  final case class GroupValueMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      group: String,
+      value: Double
+  ) extends GroupMessage
+      with MetricValue
+  final case class GroupRemoveMetricMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      group: String
+  ) extends GroupMessage
+      with RemoveMetric
 
   sealed trait GroupPartitionMessage extends Message with Metric {
     def definition: GaugeDefinition
@@ -60,11 +87,23 @@ object Metrics {
         gtp.partition.toString,
         gtp.host,
         gtp.consumerId,
-        gtp.clientId)
+        gtp.clientId
+      )
   }
 
-  final case class GroupPartitionValueMessage(definition: GaugeDefinition, clusterName: String, gtp: Domain.GroupTopicPartition, value: Double) extends GroupPartitionMessage with MetricValue
-  final case class GroupPartitionRemoveMetricMessage(definition: GaugeDefinition, clusterName: String, gtp: Domain.GroupTopicPartition) extends GroupPartitionMessage with RemoveMetric
+  final case class GroupPartitionValueMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      gtp: Domain.GroupTopicPartition,
+      value: Double
+  ) extends GroupPartitionMessage
+      with MetricValue
+  final case class GroupPartitionRemoveMetricMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      gtp: Domain.GroupTopicPartition
+  ) extends GroupPartitionMessage
+      with RemoveMetric
 
   sealed trait GroupTopicMessage extends Message with Metric {
     def definition: GaugeDefinition
@@ -79,8 +118,21 @@ object Metrics {
       )
   }
 
-  final case class GroupTopicValueMessage(definition: GaugeDefinition, clusterName: String, group: String, topic: String, value: Double) extends GroupTopicMessage with MetricValue
-  final case class GroupTopicRemoveMetricMessage(definition: GaugeDefinition, clusterName: String, group: String, topic: String) extends GroupTopicMessage with RemoveMetric
+  final case class GroupTopicValueMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      group: String,
+      topic: String,
+      value: Double
+  ) extends GroupTopicMessage
+      with MetricValue
+  final case class GroupTopicRemoveMetricMessage(
+      definition: GaugeDefinition,
+      clusterName: String,
+      group: String,
+      topic: String
+  ) extends GroupTopicMessage
+      with RemoveMetric
 
   val topicPartitionLabels = List("cluster_name", "topic", "partition")
 
@@ -100,7 +152,6 @@ object Metrics {
 
   val ClusterLabels = List("cluster_name")
 
-
   val MaxGroupOffsetLagMetric = GaugeDefinition(
     "kafka_consumergroup_group_max_lag",
     "Max group offset lag",
@@ -119,7 +170,15 @@ object Metrics {
     groupLabels
   )
 
-  val groupPartitionLabels = List("cluster_name", "group", "topic", "partition", "member_host", "consumer_id", "client_id")
+  val groupPartitionLabels = List(
+    "cluster_name",
+    "group",
+    "topic",
+    "partition",
+    "member_host",
+    "consumer_id",
+    "client_id"
+  )
 
   val LastGroupOffsetMetric = GaugeDefinition(
     "kafka_consumergroup_group_offset",
