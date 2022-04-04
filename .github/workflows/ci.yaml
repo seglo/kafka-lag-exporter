@@ -103,7 +103,6 @@ jobs:
         uses: medyagh/setup-minikube@master
 
       - name: Setup Minikube
-        if: github.event.pull_request
         run: |-
           sbt docker:publishLocal
           echo Minikube image loading..
