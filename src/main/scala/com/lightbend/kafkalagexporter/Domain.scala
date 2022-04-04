@@ -50,7 +50,7 @@ object Domain {
     }
 
     def clear(evictedTps: List[TopicPartition]): Unit =
-      tables = tables.filterKeys(tp => !evictedTps.contains(tp))
+      tables = tables.filter { case (tp, _) => !evictedTps.contains(tp) }
 
     def all: Map[TopicPartition, LookupTable.Table] = tables
   }

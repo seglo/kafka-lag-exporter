@@ -5,13 +5,13 @@
 
 package com.lightbend.kafkalagexporter
 
-import com.lightbend.kafkalagexporter.MetricsSink._
 import com.lightbend.kafkalagexporter.EndpointSink.ClusterGlobalLabels
-import java.net.Socket
+import com.lightbend.kafkalagexporter.MetricsSink._
 import java.io.PrintWriter
-import scala.util.{Try, Success, Failure}
-
+import java.net.Socket
 import scala.util.Try
+import scala.util.Failure
+import scala.util.Success
 
 object GraphiteEndpointSink {
 
