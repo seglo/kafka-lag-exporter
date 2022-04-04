@@ -42,7 +42,7 @@ jobs:
       - name: Print logs on failure
         if: ${{ failure() }}
         run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
-        
+
   local-test:
     name: Integration tests using Testcontainers
     runs-on: ubuntu-18.04
@@ -69,7 +69,7 @@ jobs:
         uses: coursier/cache-action@v6
 
       - name: Run tests
-        run: sbt "IntegrationTest/testOnly com.lightbend.kafkalagexporter.integration.testcontainers.*
+        run: sbt "IntegrationTest/testOnly com.lightbend.kafkalagexporter.integration.testcontainers.*"
 
       - name: Print logs on failure
         if: ${{ failure() }}
@@ -107,15 +107,20 @@ jobs:
         if: github.event.pull_request
         run: |-
           sbt docker:publishLocal
+          echo Minikube image load
           minikube image load seglo/kafka-lag-exporter:latest
 
+          echo Install Strimzi and Kafka cluster
           helm repo add strimzi https://strimzi.io/charts/
           helm install strimzi strimzi/strimzi-kafka-operator
           kubectl apply -f ./examples/k8s/strimzi-kafka-cluster.yaml
           kubectl wait kafka/strimzi-kafka-cluster --for=condition=Ready --timeout=300s
 
+          echo Running pods
+          kubectl get po -A
+
       - name: Run tests
-        run: sbt "IntegrationTest/testOnly com.lightbend.kafkalagexporter.integration.minikube.*
+        run: sbt "IntegrationTest/testOnly com.lightbend.kafkalagexporter.integration.minikube.*"
 
       - name: Print logs on failure
         if: ${{ failure() }}
