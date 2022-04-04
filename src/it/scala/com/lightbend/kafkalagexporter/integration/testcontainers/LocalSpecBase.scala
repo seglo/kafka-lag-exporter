@@ -3,36 +3,28 @@
  * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
-package com.lightbend.kafkalagexporter.integration
+package com.lightbend.kafkalagexporter.integration.testcontainers
 
 import akka.actor.typed.ActorSystem
 import akka.kafka.testkit.KafkaTestkitTestcontainersSettings
 import akka.kafka.testkit.scaladsl.{ScalatestKafkaSpec, TestcontainersKafkaPerClassLike}
+import com.lightbend.kafkalagexporter.integration.PrometheusUtils
 import com.lightbend.kafkalagexporter.{KafkaClusterManager, MainApp}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-abstract class SpecBase(val exporterPort: Int)
+abstract class LocalSpecBase(val exporterPort: Int)
   extends ScalatestKafkaSpec(-1)
     with AnyWordSpecLike
     with BeforeAndAfterEach
     with TestcontainersKafkaPerClassLike
-    with Matchers
-    with ScalaFutures
     with Eventually
-    with PrometheusUtils
-    with LagSim {
-
-  private[this] val log: Logger = LoggerFactory.getLogger(getClass)
-
-  implicit val patience: PatienceConfig = PatienceConfig(30 seconds, 2 second)
+    with PrometheusUtils {
 
   override val testcontainersSettings = KafkaTestkitTestcontainersSettings(system)
     .withConfigureKafka { brokerContainers =>
@@ -42,6 +34,8 @@ abstract class SpecBase(val exporterPort: Int)
   var kafkaLagExporter: ActorSystem[KafkaClusterManager.Message] = _
 
   val clusterName = "default"
+
+  val exporterHostPort = s"localhost:$exporterPort"
 
   def config: Config = ConfigFactory.parseString(s"""
                                             |kafka-lag-exporter {

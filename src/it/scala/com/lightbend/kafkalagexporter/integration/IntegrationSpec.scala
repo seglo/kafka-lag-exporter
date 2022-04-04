@@ -6,14 +6,32 @@
 package com.lightbend.kafkalagexporter.integration
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.kafka.testkit.scaladsl.KafkaSpec
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.lightbend.kafkalagexporter.Metrics._
-
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
-class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationSpec) {
+trait IntegrationSpec extends KafkaSpec
+  with AnyWordSpecLike
+  with BeforeAndAfterEach
+  with Matchers
+  with ScalaFutures
+  with Eventually
+  with PrometheusUtils
+  with LagSim {
+
+  def exporterHostPort: String
+
+  implicit val patience: PatienceConfig = PatienceConfig(30.seconds, 2.second)
 
   "kafka lag exporter" should {
+    val clusterName = "default"
     val group = createGroupId(1)
     val partition = "0"
 
@@ -39,7 +57,7 @@ class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationS
         simulator.produceElements(totalOffsets)
         simulator.consumeElements(offsetsToCommit)
 
-        eventually(scrapeAndAssert(exporterPort, "Assert offset-based metrics", rules: _*))
+        eventually(scrapeAndAssert(exporterHostPort, "Assert offset-based metrics", rules: _*))
 
         simulator.shutdown()
       }
@@ -68,7 +86,7 @@ class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationS
       val isIncreasingRule = Rule.create(TimeLagMetric, isIncreasing, clusterName, group, topic, partition)
 
       (1 to 3).foreach { i =>
-        eventually(scrapeAndAssert(exporterPort, s"Assert lag in time metrics are increasing ($i)", isIncreasingRule))
+        eventually(scrapeAndAssert(exporterHostPort, s"Assert lag in time metrics are increasing ($i)", isIncreasingRule))
       }
 
       testKit.stop(simulatorActor)
@@ -77,7 +95,7 @@ class IntegrationSpec extends SpecBase(exporterPort = ExporterPorts.IntegrationS
     "report poll time metric greater than 0 ms" in {
       assertAllStagesStopped {
         val rule = Rule.create(PollTimeMetric, (actual: String) => actual.toDouble should be > 0d, clusterName)
-        eventually(scrapeAndAssert(exporterPort, "Assert poll time metric", rule))
+        eventually(scrapeAndAssert(exporterHostPort, "Assert poll time metric", rule))
       }
     }
   }

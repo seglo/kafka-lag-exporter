@@ -5,10 +5,14 @@
 
 package com.lightbend.kafkalagexporter.integration
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.lightbend.kafkalagexporter.MetricsSink.GaugeDefinition
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
@@ -16,11 +20,14 @@ import scala.util.matching.Regex
 /**
  * Test utilities to parse the Prometheus health endpoint to assert metrics in integration tests.
  */
-trait PrometheusUtils { self: SpecBase =>
+trait PrometheusUtils extends ScalaFutures with Matchers {
+  implicit val system: ActorSystem
+  val log: Logger
+
   private val http = Http()
 
-  def scrape(port: Int, rules: Rule*)(implicit ec: ExecutionContext): Future[List[Result]] = {
-    val request = HttpRequest(uri = s"http://localhost:$port/metrics")
+  def scrape(hostPort: String, rules: Rule*)(implicit ec: ExecutionContext): Future[List[Result]] = {
+    val request = HttpRequest(uri = s"http://$hostPort/metrics")
     for {
       HttpResponse(StatusCodes.OK, _, entity, _) <- http.singleRequest(request)
       body <- Unmarshal(entity).to[String]
@@ -34,18 +41,18 @@ trait PrometheusUtils { self: SpecBase =>
     }
   }
 
-  def scrapeAndAssert(port: Int, description: String, rules: Rule*)
+  def scrapeAndAssert(hostPort: String, description: String, rules: Rule*)
                      (implicit ec: ExecutionContext): Unit =
-    scrapeAndAssert(port, description, _.assert(), rules: _*)
+    scrapeAndAssert(hostPort, description, _.assert(), rules: _*)
 
-  def scrapeAndAssertDne(port: Int, description: String, rules: Rule*)
+  def scrapeAndAssertDne(hostPort: String, description: String, rules: Rule*)
                         (implicit ec: ExecutionContext): Unit =
-    scrapeAndAssert(port, description, _.assertDne(), rules: _*)
+    scrapeAndAssert(hostPort, description, _.assertDne(), rules: _*)
 
 
-  private def scrapeAndAssert(port: Int, description: String, resultF: Result => Unit, rules: Rule*)
+  private def scrapeAndAssert(hostPort: String, description: String, resultF: Result => Unit, rules: Rule*)
                              (implicit ec: ExecutionContext): Unit = {
-    val results = scrape(port, rules: _*).futureValue
+    val results = scrape(hostPort, rules: _*).futureValue
     log.debug("Start: {}", description)
     results.foreach(resultF)
     log.debug("End (Successful): {}", description)

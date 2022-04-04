@@ -1,0 +1,13 @@
+clusters:
+  - name: "default"
+    bootstrapBrokers: "strimzi-kafka-cluster-kafka-bootstrap.default.svc.cluster.local:9092"
+pollIntervalSeconds: 1
+service:
+  type: NodePort
+rootLogLevel: INFO
+kafkaLagExporterLogLevel: DEBUG
+kafkaLogLevel: INFO
+akkaLogLevel: DEBUG
+image:
+  tag: latest
+  pullPolicy: Never

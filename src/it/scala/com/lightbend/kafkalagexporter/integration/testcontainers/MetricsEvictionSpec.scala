@@ -3,13 +3,19 @@
  * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
-package com.lightbend.kafkalagexporter.integration
+package com.lightbend.kafkalagexporter.integration.testcontainers
 
 import com.lightbend.kafkalagexporter.Metrics._
+import com.lightbend.kafkalagexporter.integration.{ExporterPorts, LagSim}
 
-class MetricsEvictionOnFailureSpec extends SpecBase(exporterPort = ExporterPorts.MetricsEvictionOnFailureSpec) {
+import scala.concurrent.duration.DurationInt
+import scala.jdk.CollectionConverters._
+
+class MetricsEvictionSpec extends LocalSpecBase(exporterPort = ExporterPorts.MetricsEvictionSpec) with LagSim {
+  implicit val patience: PatienceConfig = PatienceConfig(30.seconds, 2.second)
+
   "kafka lag exporter" should {
-    "not report metrics for group members or partitions after a failure" in {
+    "not report metrics for group members or partitions that no longer exist" in {
       val group = createGroupId(1)
       val partition = "0"
       val topic = createTopic(1, 1, 1)
@@ -32,11 +38,11 @@ class MetricsEvictionOnFailureSpec extends SpecBase(exporterPort = ExporterPorts
       simulator.consumeElements(offsetsToCommit)
       simulator.shutdown()
 
-      eventually(scrapeAndAssert(exporterPort, "Assert offset-based metrics", rules: _*))
+      eventually(scrapeAndAssert(exporterHostPort, "Assert offset-based metrics", rules: _*))
 
-      stopKafka()
+      adminClient.deleteConsumerGroups(List(group).asJava)
 
-      eventually(scrapeAndAssertDne(exporterPort, "Assert offset-based metrics no longer exist", rules: _*))
+      eventually(scrapeAndAssertDne(exporterHostPort, "Assert offset-based metrics no longer exist", rules: _*))
     }
   }
 }
