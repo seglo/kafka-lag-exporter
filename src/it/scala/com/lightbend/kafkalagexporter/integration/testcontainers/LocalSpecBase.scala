@@ -14,7 +14,6 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -26,8 +25,6 @@ abstract class LocalSpecBase(val exporterPort: Int)
     with TestcontainersKafkaPerClassLike
     with Eventually
     with PrometheusUtils {
-
-  private[this] val log: Logger = LoggerFactory.getLogger(getClass)
 
   override val testcontainersSettings = KafkaTestkitTestcontainersSettings(system)
     .withConfigureKafka { brokerContainers =>

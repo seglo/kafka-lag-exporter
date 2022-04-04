@@ -9,12 +9,11 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.kafka.testkit.scaladsl.KafkaSpec
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.lightbend.kafkalagexporter.Metrics._
-import com.lightbend.kafkalagexporter.integration.minikube.MinikubeSpecBase
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
 

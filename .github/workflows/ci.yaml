@@ -9,7 +9,6 @@ on:
       - release-*
     tags-ignore: [ v.* ]
 
-
 jobs:
   test:
     name: Build and Test
@@ -107,16 +106,16 @@ jobs:
         if: github.event.pull_request
         run: |-
           sbt docker:publishLocal
-          echo Minikube image load
+          echo Minikube image loading..
           minikube image load seglo/kafka-lag-exporter:latest
 
-          echo Install Strimzi and Kafka cluster
+          echo Install Strimzi and Kafka cluster..
           helm repo add strimzi https://strimzi.io/charts/
           helm install strimzi strimzi/strimzi-kafka-operator
           kubectl apply -f ./examples/k8s/strimzi-kafka-cluster.yaml
           kubectl wait kafka/strimzi-kafka-cluster --for=condition=Ready --timeout=300s
 
-          echo Running pods
+          echo Running pods..
           kubectl get po -A
 
       - name: Run tests
