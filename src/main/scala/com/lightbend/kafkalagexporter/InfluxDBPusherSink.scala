@@ -19,16 +19,23 @@ import com.typesafe.scalalogging.Logger
 
 import scala.util.Try
 
-object InfluxDBPusherSink
-{
-  def apply(sinkConfig: InfluxDBPusherSinkConfig, clusterGlobalLabels: ClusterGlobalLabels): MetricsSink =
-    {
+object InfluxDBPusherSink {
+  def apply(
+      sinkConfig: InfluxDBPusherSinkConfig,
+      clusterGlobalLabels: ClusterGlobalLabels
+  ): MetricsSink = {
     Try(new InfluxDBPusherSink(sinkConfig, clusterGlobalLabels))
-      .fold(t => throw new IOException("Could not create Influx DB Pusher Sink", t), sink => sink)
+      .fold(
+        t => throw new IOException("Could not create Influx DB Pusher Sink", t),
+        sink => sink
+      )
   }
 }
 
-class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGlobalLabels: ClusterGlobalLabels) extends EndpointSink(clusterGlobalLabels) {
+class InfluxDBPusherSink private (
+    sinkConfig: InfluxDBPusherSinkConfig,
+    clusterGlobalLabels: ClusterGlobalLabels
+) extends EndpointSink(clusterGlobalLabels) {
 
   val logger = Logger("InfluxDBPusherSink")
   val influxDB = connect()
@@ -50,7 +57,7 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
         writeAsync(point)
       else
         writeSync(point)
-     } catch {
+    } catch {
       case t: Throwable =>
         handlingFailure(t)
     }
@@ -62,9 +69,9 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
 
   def writeSync(point: Point): Unit = {
     val batchPoints = BatchPoints
-                .database(sinkConfig.database)
-                .consistency(ConsistencyLevel.ALL)
-                .build()
+      .database(sinkConfig.database)
+      .consistency(ConsistencyLevel.ALL)
+      .build()
 
     batchPoints.point(point)
     influxDB.write(batchPoints)
@@ -72,8 +79,10 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
 
   def buildPoint(m: MetricValue): Point = {
     val point = Point.measurement(m.definition.name)
-    for(globalLabels <- clusterGlobalLabels.get(m.clusterName);
-        (tagName, tagValue) <- globalLabels)
+    for (
+      globalLabels <- clusterGlobalLabels.get(m.clusterName);
+      (tagName, tagValue) <- globalLabels
+    )
       point.tag(tagName, tagValue)
     val fields = m.definition.labels zip m.labels
     fields.foreach { field => point.tag(field._1, field._2) }
@@ -89,44 +98,49 @@ class InfluxDBPusherSink private(sinkConfig: InfluxDBPusherSinkConfig, clusterGl
   def enableBatching(): Unit = {
     if (sinkConfig.async) {
       influxDB.setDatabase(sinkConfig.database)
-      influxDB.enableBatch(BatchOptions.DEFAULTS.exceptionHandler(createExceptionHandler()))
+      influxDB.enableBatch(
+        BatchOptions.DEFAULTS.exceptionHandler(createExceptionHandler())
+      )
     }
   }
 
-  def connect(): InfluxDB =
-  {
+  def connect(): InfluxDB = {
     val url = sinkConfig.endpoint + ":" + sinkConfig.port
-    if (!sinkConfig.username.isEmpty) InfluxDBFactory.connect(url, sinkConfig.username, sinkConfig.password)
+    if (!sinkConfig.username.isEmpty)
+      InfluxDBFactory.connect(url, sinkConfig.username, sinkConfig.password)
     else InfluxDBFactory.connect(url)
   }
 
-  def createDatabase() =
-  {
-    influxDB.query(new Query("CREATE DATABASE " + sinkConfig.database, sinkConfig.database), successQueryHandler(), failQueryHandler())
+  def createDatabase() = {
+    influxDB.query(
+      new Query("CREATE DATABASE " + sinkConfig.database, sinkConfig.database),
+      successQueryHandler(),
+      failQueryHandler()
+    )
   }
 
-  def successQueryHandler(): Consumer[QueryResult] =
-  {
+  def successQueryHandler(): Consumer[QueryResult] = {
     new Consumer[QueryResult] {
-      override def accept(result:QueryResult): Unit = {
+      override def accept(result: QueryResult): Unit = {
         logger.info(result.toString())
       }
     }
   }
 
-  def failQueryHandler(): Consumer[Throwable] =
-  {
+  def failQueryHandler(): Consumer[Throwable] = {
     new Consumer[Throwable] {
-      override def accept(throwable:Throwable): Unit = {
+      override def accept(throwable: Throwable): Unit = {
         handlingFailure(throwable)
       }
     }
   }
 
-  def createExceptionHandler(): BiConsumer[Iterable[Point], Throwable] =
-  {
+  def createExceptionHandler(): BiConsumer[Iterable[Point], Throwable] = {
     new BiConsumer[Iterable[Point], Throwable] {
-      override def accept(failedPoints:Iterable[Point], throwable:Throwable): Unit = {
+      override def accept(
+          failedPoints: Iterable[Point],
+          throwable: Throwable
+      ): Unit = {
         handlingFailure(throwable)
       }
     }

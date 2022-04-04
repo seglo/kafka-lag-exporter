@@ -12,21 +12,26 @@ import com.lightbend.kafkalagexporter.{KafkaCluster, KafkaClusterManager}
 object StrimziClusterWatcher {
   val name: String = "strimzi"
 
-  def init(handler: ActorRef[KafkaClusterManager.Message]): Behavior[Watcher.Message] = Behaviors.setup { context =>
+  def init(
+      handler: ActorRef[KafkaClusterManager.Message]
+  ): Behavior[Watcher.Message] = Behaviors.setup { context =>
     val watcher = new Watcher.Events {
-      override def added(cluster: KafkaCluster): Unit = handler ! KafkaClusterManager.ClusterAdded(cluster)
-      override def removed(cluster: KafkaCluster): Unit = handler ! KafkaClusterManager.ClusterAdded(cluster)
-      override def error(e: Throwable): Unit = context.log.error(e.getMessage, e)
+      override def added(cluster: KafkaCluster): Unit =
+        handler ! KafkaClusterManager.ClusterAdded(cluster)
+      override def removed(cluster: KafkaCluster): Unit =
+        handler ! KafkaClusterManager.ClusterAdded(cluster)
+      override def error(e: Throwable): Unit =
+        context.log.error(e.getMessage, e)
     }
     val client = StrimziClient(watcher)
     watch(client)
   }
 
-  def watch(client: Watcher.Client): Behaviors.Receive[Watcher.Message] = Behaviors.receive {
-    case (context, _: Watcher.Stop) =>
+  def watch(client: Watcher.Client): Behaviors.Receive[Watcher.Message] =
+    Behaviors.receive { case (context, _: Watcher.Stop) =>
       Behaviors.stopped { () =>
         client.close()
         context.log.info("Gracefully stopped StrimziKafkaWatcher")
       }
-  }
+    }
 }

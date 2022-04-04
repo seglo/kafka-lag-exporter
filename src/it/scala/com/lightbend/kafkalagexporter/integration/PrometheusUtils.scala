@@ -17,16 +17,18 @@ import org.slf4j.Logger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
 
-/**
- * Test utilities to parse the Prometheus health endpoint to assert metrics in integration tests.
- */
+/** Test utilities to parse the Prometheus health endpoint to assert metrics in
+  * integration tests.
+  */
 trait PrometheusUtils extends ScalaFutures with Matchers {
   implicit val system: ActorSystem
   val log: Logger
 
   private val http = Http()
 
-  def scrape(hostPort: String, rules: Rule*)(implicit ec: ExecutionContext): Future[List[Result]] = {
+  def scrape(hostPort: String, rules: Rule*)(implicit
+      ec: ExecutionContext
+  ): Future[List[Result]] = {
     val request = HttpRequest(uri = s"http://$hostPort/metrics")
     for {
       HttpResponse(StatusCodes.OK, _, entity, _) <- http.singleRequest(request)
@@ -41,17 +43,22 @@ trait PrometheusUtils extends ScalaFutures with Matchers {
     }
   }
 
-  def scrapeAndAssert(hostPort: String, description: String, rules: Rule*)
-                     (implicit ec: ExecutionContext): Unit =
+  def scrapeAndAssert(hostPort: String, description: String, rules: Rule*)(
+      implicit ec: ExecutionContext
+  ): Unit =
     scrapeAndAssert(hostPort, description, _.assert(), rules: _*)
 
-  def scrapeAndAssertDne(hostPort: String, description: String, rules: Rule*)
-                        (implicit ec: ExecutionContext): Unit =
+  def scrapeAndAssertDne(hostPort: String, description: String, rules: Rule*)(
+      implicit ec: ExecutionContext
+  ): Unit =
     scrapeAndAssert(hostPort, description, _.assertDne(), rules: _*)
 
-
-  private def scrapeAndAssert(hostPort: String, description: String, resultF: Result => Unit, rules: Rule*)
-                             (implicit ec: ExecutionContext): Unit = {
+  private def scrapeAndAssert(
+      hostPort: String,
+      description: String,
+      resultF: Result => Unit,
+      rules: Rule*
+  )(implicit ec: ExecutionContext): Unit = {
     val results = scrape(hostPort, rules: _*).futureValue
     log.debug("Start: {}", description)
     results.foreach(resultF)
@@ -59,9 +66,16 @@ trait PrometheusUtils extends ScalaFutures with Matchers {
   }
 
   object Rule {
-    def create(definition: GaugeDefinition, assertion: String => _, labelValues: String*): Rule = {
+    def create(
+        definition: GaugeDefinition,
+        assertion: String => _,
+        labelValues: String*
+    ): Rule = {
       val name = definition.name
-      val labels = definition.labels.zip(labelValues).map { case (k, v) => s"""$k="$v""""}.mkString(",")
+      val labels = definition.labels
+        .zip(labelValues)
+        .map { case (k, v) => s"""$k="$v"""" }
+        .mkString(",")
       /*
        * Ex)
        * kafka_consumergroup_group_lag\{cluster_name="default",group="group-1-2",topic="topic-1-1",partition="0".*\}\s+(-?.+)
