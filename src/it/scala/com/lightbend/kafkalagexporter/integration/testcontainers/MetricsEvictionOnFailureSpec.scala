@@ -3,9 +3,10 @@
  * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
-package com.lightbend.kafkalagexporter.integration
+package com.lightbend.kafkalagexporter.integration.testcontainers
 
 import com.lightbend.kafkalagexporter.Metrics._
+import com.lightbend.kafkalagexporter.integration.{ExporterPorts, LagSim}
 
 import scala.concurrent.duration.DurationInt
 

@@ -17,6 +17,9 @@ lazy val kafkaLagExporter =
     .enablePlugins(AutomateHeaderPlugin)
     .enablePlugins(JavaAppPackaging)
     .enablePlugins(DockerPlugin)
+    .configs(IntegrationTest.extend(Test))
+    .settings(Defaults.itSettings)
+    .settings(headerSettings(IntegrationTest))
     .settings(commonSettings)
     .settings(
       name := "kafka-lag-exporter",

@@ -3,16 +3,16 @@
  * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
-package com.lightbend.kafkalagexporter.integration
+package com.lightbend.kafkalagexporter.integration.testcontainers
 
 import akka.actor.typed.ActorSystem
 import akka.kafka.testkit.KafkaTestkitTestcontainersSettings
 import akka.kafka.testkit.scaladsl.{ScalatestKafkaSpec, TestcontainersKafkaPerClassLike}
+import com.lightbend.kafkalagexporter.integration.PrometheusUtils
 import com.lightbend.kafkalagexporter.{KafkaClusterManager, MainApp}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.{Logger, LoggerFactory}
 

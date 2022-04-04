@@ -3,17 +3,16 @@
  * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
-package com.lightbend.kafkalagexporter.integration
+package com.lightbend.kafkalagexporter.integration.minikube
 
 import akka.kafka.testkit.scaladsl.KafkaSpec
+import com.lightbend.kafkalagexporter.integration.PrometheusUtils
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time._
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.duration._
 import scala.sys.process._
 import scala.util.Random
 

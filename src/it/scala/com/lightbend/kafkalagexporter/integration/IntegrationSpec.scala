@@ -9,6 +9,7 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.kafka.testkit.scaladsl.KafkaSpec
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import com.lightbend.kafkalagexporter.Metrics._
+import com.lightbend.kafkalagexporter.integration.minikube.MinikubeSpecBase
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
@@ -16,11 +17,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
-
-class LocalIntegrationSpec extends LocalSpecBase(exporterPort = ExporterPorts.LocalIntegrationSpec) with IntegrationSpec
-class MiniKubeIntegrationSpec extends MinikubeSpecBase with IntegrationSpec {
-  override implicit val patience: PatienceConfig = PatienceConfig(90.seconds, 2.second)
-}
 
 trait IntegrationSpec extends KafkaSpec
   with AnyWordSpecLike

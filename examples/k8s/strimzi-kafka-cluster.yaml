@@ -32,6 +32,4 @@ spec:
     replicas: 3
     storage:
       type: ephemeral
-  entityOperator:
-    topicOperator: {}
-    userOperator: {}
+  entityOperator: {}
