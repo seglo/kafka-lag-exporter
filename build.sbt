@@ -129,26 +129,20 @@ lazy val kafkaLagExporter =
         lintHelmChart, // Lint the Helm Chart for errors
         checkSnapshotDependencies,
         inquireVersions,
-        runClean,
-        runTest,
+//        runClean,
+//        runTest,
         setReleaseVersion,
         updateHelmChartRelease, // Update the Helm Chart
         publishDockerImage, // Publish the Docker images used by the chart
         packageChart, // Package the Helm Chart
-//        buildChartsIndex,                       // Build Helm Charts index
+// FIX       buildChartsIndex,                       // Build Helm Charts index
         packageJavaApp, // Package the standalone Java App
-        commitReleaseVersion,
         updateReadmeRelease, // Update the README.md with this version
-        commitReadmeVersion, // Commit the README.md
-        commitChartThisVersion, // Commit the Helm Chart
-        tagRelease,
-        githubReleaseDraft, // Create a GitHub release draft
-//        publishChartsIndex,                     // Publish Helm Charts index
+// FIX       githubReleaseDraft, // Create a GitHub release draft
+// FIX       publishChartsIndex,                     // Publish Helm Charts index
         setNextVersion,
         updateHelmChartNextVersion, // Update the Helm Chart with the next snapshot version
-        commitChartNextVersion, // Commit the Helm Chart
-        commitNextVersion,
-        pushChanges
+
       )
     )
 
