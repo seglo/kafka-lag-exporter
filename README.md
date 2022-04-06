@@ -16,7 +16,7 @@ Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][g
 
 Kafka Lag Exporter makes it easy to view the offset lag and calculate an estimate of latency (residence time) of your [Apache Kafka](https://kafka.apache.org/) consumer groups.
 It can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/) clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) monitoring stack. 
-Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html) application written in [Scala](https://www.scala-lang.org/).\
+Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html) application written in [Scala](https://www.scala-lang.org/).
 
 Kafka Lag Exporter is maintained by [Sean Glover](https://seanglover.com) ([@seglo](https://github.com/seglo)) and a community of contributors.
 If you like using this project and would like to support its development, please consider a donation using [Patreon][patreon].
