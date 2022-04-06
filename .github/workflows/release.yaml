@@ -56,8 +56,11 @@ jobs:
       - name: Push GitHub release artifact
         uses: softprops/action-gh-release@v1
         with:
-          files: .helm-release-packages/kafka-lag-exporter-*.tgz
+          prerelease: true
+          files: |
+            .helm-release-packages/kafka-lag-exporter-*.tgz
+            target/universal/kafka-lag-exporter-*.zip
 
       - name: Print logs on failure
         if: ${{ failure() }}
-        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+        run: find . -name "*.log" -exec ./scripts/cat_log.sh {} \;

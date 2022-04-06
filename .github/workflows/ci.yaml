@@ -7,7 +7,7 @@ on:
       - master
       - main
       - release-*
-    tags-ignore: [ v.* ]
+    tags-ignore: [ '**' ]
 
 jobs:
   test:
@@ -40,7 +40,7 @@ jobs:
 
       - name: Print logs on failure
         if: ${{ failure() }}
-        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+        run: find . -name "*.log" -exec ./scripts/cat_log.sh {} \;
 
   local-test:
     name: Integration tests using Testcontainers
@@ -72,7 +72,7 @@ jobs:
 
       - name: Print logs on failure
         if: ${{ failure() }}
-        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+        run: find . -name "*.log" -exec ./scripts/cat_log.sh {} \;
 
   minikube-test:
     name: Integration tests using Minikube
@@ -122,7 +122,7 @@ jobs:
 
       - name: Print logs on failure
         if: ${{ failure() }}
-        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+        run: find . -name "*.log" -exec ./scripts/cat_log.sh {} \;
 
   build-docker:
     name: Build Docker Image
@@ -154,7 +154,7 @@ jobs:
 
       - name: Print logs on failure
         if: ${{ failure() }}
-        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;
+        run: find . -name "*.log" -exec ./scripts/cat_log.sh {} \;
 
   helm-chart:
     name: Package Helm Chart
