@@ -1,4 +1,4 @@
-Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][gh-actions] [![license-badge][]][license]
+Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][gh-actions] [![license-badge][]][license] [![patreon-badge][]][patreon]
 ==================
 
 [gh-release]:          https://github.com/seglo/kafka-lag-exporter/releases
@@ -7,6 +7,8 @@ Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][g
 [gh-actions-badge]:    https://github.com/seglo/kafka-lag-exporter/workflows/CI/badge.svg?branch=master
 [license]:             https://github.com/seglo/kafka-lag-exporter/blob/master/LICENSE.txt
 [license-badge]:       https://img.shields.io/badge/License-Apache%202.0-blue.svg
+[patreon]:             https://www.patreon.com/seglo
+[patreon-badge]:       https://img.shields.io/badge/patreon-sponsor-ff69b4.svg
 
 > Monitor Kafka Consumer Group Latency with Kafka Lag Exporter
 
@@ -14,8 +16,10 @@ Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][g
 
 Kafka Lag Exporter makes it easy to view the offset lag and calculate an estimate of latency (residence time) of your [Apache Kafka](https://kafka.apache.org/) consumer groups.
 It can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/) clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) monitoring stack. 
-Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html) application written in [Scala](https://www.scala-lang.org/).
-Kafka Lag Exporter is maintained by [@seglo](https://github.com/seglo) and a community of contributors.
+Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html) application written in [Scala](https://www.scala-lang.org/).\
+
+Kafka Lag Exporter is maintained by [Sean Glover](https://seanglover.com) ([@seglo](https://github.com/seglo)) and a community of contributors.
+If you like using this project and would like to support its development, please consider a donation using [Patreon][patreon].
 
 _Kafka Lag Exporter interpolates latency based on observed latest committed offset measurements of consumer groups._
 
