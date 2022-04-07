@@ -58,7 +58,7 @@ jobs:
         with:
           prerelease: true
           files: |
-            .helm-release-packages/kafka-lag-exporter-*.tgz
+            repo/kafka-lag-exporter-*.tgz
             target/universal/kafka-lag-exporter-*.zip
 
       - name: Print logs on failure

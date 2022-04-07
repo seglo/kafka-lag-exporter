@@ -138,7 +138,6 @@ lazy val kafkaLagExporter =
         buildChartsIndex,                       // Build Helm Charts index
         packageJavaApp, // Package the standalone Java App
         updateReadmeRelease, // Update the README.md with this version
-//        publishChartsIndex,                     // Publish Helm Charts index
         setNextVersion,
         updateHelmChartNextVersion, // Update the Helm Chart with the next snapshot version
       )
@@ -258,16 +257,8 @@ lazy val buildChartsIndex = ReleaseStep(action = st => {
       )
     )
   exec(
-    s"./scripts/build_charts_index.sh https://github.com/lightbend/kafka-lag-exporter/releases/download/v$releaseVersion/ https://seglo.github.com/kafka-lag-exporter/repo/index.yaml",
+    s"./scripts/build_charts_index.sh https://github.com/seglo/kafka-lag-exporter/releases/download/v$releaseVersion/ https://seglo.github.io/kafka-lag-exporter/repo/index.yaml",
     "Error while building Helm Charts index"
-  )
-  st
-})
-
-lazy val publishChartsIndex = ReleaseStep(action = st => {
-  exec(
-    "./scripts/publish_charts_index.sh",
-    "Error while publishing Helm Charts index"
   )
   st
 })

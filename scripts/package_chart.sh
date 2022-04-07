@@ -6,7 +6,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 cd $DIR/..
 
-CHARTS_DIR=".helm-release-packages"
+CHARTS_DIR="repo"
 
 # Bundle Kafka Lag Exporter Helm Chart into a tarball artifact.  The `helm package` command will output the artifact
 # in the CHARTS_DIR.

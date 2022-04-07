@@ -21,4 +21,5 @@ else
   helm repo index --url $REMOTE_URL_BASE $CHARTS_DIR
 fi
 
+cat "${EXISTING_INDEX}"
 rm "${EXISTING_INDEX}"
