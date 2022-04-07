@@ -1,37 +1,48 @@
 apiVersion: v1
 entries:
   kafka-lag-exporter:
-    - apiVersion: v1
-      appVersion: 0.6.8
-      created: "2021-11-20T16:28:19.592829653-05:00"
-      description: Kafka Lag Exporter
-      digest: 51f25a2773f35752877ffc82287879438b96807428272070e8b0bc2e07e05b9b
-      maintainers:
-        - name: Sean Glover
-      name: kafka-lag-exporter
-      urls:
-        - https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.8/kafka-lag-exporter-0.6.8.tgz
-      version: 0.6.8
-    - apiVersion: v1
-      appVersion: 0.6.7
-      created: "2021-03-22T14:59:15.303865309-04:00"
-      description: Kafka Lag Exporter
-      digest: 4f4b9dd2a34b0c792c93e74720c74598b6f1e707dbe1803969fca8d9f808cdb8
-      maintainers:
-        - name: Sean Glover
-      name: kafka-lag-exporter
-      urls:
-        - https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.7/kafka-lag-exporter-0.6.7.tgz
-      version: 0.6.7
-    - apiVersion: v1
-      appVersion: 0.6.6
-      created: "2021-01-30T15:20:40.271299784-05:00"
-      description: Kafka Lag Exporter
-      digest: c769b028b64852a30f88dbc81141cbc1ab42013b4307a4586f1b45110ae74f4c
-      maintainers:
-        - name: Sean Glover
-      name: kafka-lag-exporter
-      urls:
-        - https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.6/kafka-lag-exporter-0.6.6.tgz
-      version: 0.6.6
-generated: "2021-03-22T14:59:15.302643188-04:00"
+  - apiVersion: v1
+    appVersion: 0.7.0
+    created: "2022-04-07T01:29:55.288598453Z"
+    description: Kafka Lag Exporter
+    digest: d3e57f080be664af168363f02de52ae98877b6338b171358e4c99057ed45f9c5
+    maintainers:
+    - name: Sean Glover
+    name: kafka-lag-exporter
+    urls:
+    - https://github.com/seglo/kafka-lag-exporter/releases/download/v0.7.0/kafka-lag-exporter-0.7.0.tgz
+    version: 0.7.0
+  - apiVersion: v1
+    appVersion: 0.6.8
+    created: "2021-11-20T16:28:19.592829653-05:00"
+    description: Kafka Lag Exporter
+    digest: 51f25a2773f35752877ffc82287879438b96807428272070e8b0bc2e07e05b9b
+    maintainers:
+    - name: Sean Glover
+    name: kafka-lag-exporter
+    urls:
+    - https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.8/kafka-lag-exporter-0.6.8.tgz
+    version: 0.6.8
+  - apiVersion: v1
+    appVersion: 0.6.7
+    created: "2021-03-22T14:59:15.303865309-04:00"
+    description: Kafka Lag Exporter
+    digest: 4f4b9dd2a34b0c792c93e74720c74598b6f1e707dbe1803969fca8d9f808cdb8
+    maintainers:
+    - name: Sean Glover
+    name: kafka-lag-exporter
+    urls:
+    - https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.7/kafka-lag-exporter-0.6.7.tgz
+    version: 0.6.7
+  - apiVersion: v1
+    appVersion: 0.6.6
+    created: "2021-01-30T15:20:40.271299784-05:00"
+    description: Kafka Lag Exporter
+    digest: c769b028b64852a30f88dbc81141cbc1ab42013b4307a4586f1b45110ae74f4c
+    maintainers:
+    - name: Sean Glover
+    name: kafka-lag-exporter
+    urls:
+    - https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.6/kafka-lag-exporter-0.6.6.tgz
+    version: 0.6.6
+generated: "2022-04-07T01:29:55.287091738Z"
