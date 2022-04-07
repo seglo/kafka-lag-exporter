@@ -67,7 +67,7 @@ lazy val kafkaLagExporter =
       dockerCommands := {
         // OCI Image Spec Annotations
         // https://github.com/opencontainers/image-spec/blob/main/annotations.md
-        val labels = Map(
+        val labelsStr = Map(
           "org.opencontainers.image.title" -> name.value,
           "org.opencontainers.image.description" -> description.value,
           "org.opencontainers.image.vendor" -> organizationName.value,
@@ -76,10 +76,11 @@ lazy val kafkaLagExporter =
           "org.opencontainers.image.authors" -> maintainer.value,
           "org.opencontainers.image.url" -> homepage.value.get.toString,
           "org.opencontainers.image.version" -> version.value,
-          "org.opencontainers.image.licenses" -> licenses.value
-            .map(l => l._1 + ": " + l._2)
-            .mkString(", ")
-        ).map(l => Cmd("LABEL", l._1 + "=\"" + l._2 + "\""))
+          "org.opencontainers.image.licenses" -> licenses.value.map(l => l._1 + ": " + l._2).mkString(", ")
+        )
+          .map(l => l._1 + "=\"" + l._2 + "\"")
+          .mkString(", \\\n")
+        val labels = Cmd("LABEL", labelsStr)
         val dockerBaseDirectory = (Docker / defaultLinuxInstallLocation).value
         val layerIdsAscending = (Docker / dockerLayerMappings).value
           .map(_.layerId)
@@ -94,7 +95,7 @@ lazy val kafkaLagExporter =
           Cmd("COPY", s"$path /$files")
         }
         Seq(Cmd("FROM", "redhat/ubi8")) ++
-          labels ++ Seq(
+          Seq(
             Cmd(
               "RUN",
               "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"
@@ -102,6 +103,7 @@ lazy val kafkaLagExporter =
             Cmd("RUN", "useradd -r -m -u 1001 kafkalagexporter")
           ) ++
           layerCopy ++ Seq(
+            labels,
             Cmd(
               "RUN",
               "chgrp -R 1001 /opt && chmod -R g=u /opt && chmod +x /opt/docker/bin/kafka-lag-exporter"
@@ -129,17 +131,17 @@ lazy val kafkaLagExporter =
         lintHelmChart, // Lint the Helm Chart for errors
         checkSnapshotDependencies,
         inquireVersions,
-//        runClean,
-//        runTest,
+        runClean,
+        runTest,
         setReleaseVersion,
         updateHelmChartRelease, // Update the Helm Chart
         publishDockerImage, // Publish the Docker images used by the chart
         packageChart, // Package the Helm Chart
-        buildChartsIndex,                       // Build Helm Charts index
+        buildChartsIndex, // Build Helm Charts index
         packageJavaApp, // Package the standalone Java App
         updateReadmeRelease, // Update the README.md with this version
         setNextVersion,
-        updateHelmChartNextVersion, // Update the Helm Chart with the next snapshot version
+        updateHelmChartNextVersion // Update the Helm Chart with the next snapshot version
       )
     )
 
@@ -241,7 +243,6 @@ lazy val updateReadmeRelease = ReleaseStep(action = st => {
   )
   st
 })
-
 
 lazy val packageChart = ReleaseStep(action = st => {
   exec("./scripts/package_chart.sh", "Error while packaging Helm Chart")

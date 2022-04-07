@@ -564,22 +564,11 @@ helm install ./charts/kafka-lag-exporter \
 
 ## Release
 
-### Pre-requisites
+The release process is run when a new tag is pushed to the repository. Release steps:
 
-The release process is orchestrated by the [`sbt-release`](https://github.com/sbt/sbt-release).  Privileged access is
-required.  Before running a release make sure the following pre-req's are met.
-
-* Authenticated with Docker Hub with the `docker` command.
-* Authenticated with GitHub
-* `~/.netrc` file setup with GitHub credentials/token
-
-### Release steps
-
-1. Update the Change log
 1. Run `doctoc README.md`
-1. Run `sbt release`.  To see what steps are performed during release consult the `build.sbt`.
 1. Update change log `docker run -it --rm -v "$(pwd)":/usr/local/src/your-app githubchangeloggenerator/github-changelog-generator -u seglo -p kafka-lag-exporter -t $GITHUB_TOKEN --no-unreleased --since-tag v0.6.7`
-1. Review the GitHub release draft and submit it.
+1. Push a new tag `git tag -a v0.7.0 -m "v0.7.0" && git push origin --tags`
 
 ## Change log
 
