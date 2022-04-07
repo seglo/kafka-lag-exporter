@@ -8,7 +8,7 @@ cd $DIR/..
 
 REMOTE_URL_BASE=$1
 REMOTE_INDEX_URL=$2
-CHARTS_DIR=".helm-release-packages"
+CHARTS_DIR="repo"
 
 EXISTING_INDEX=$(mktemp /tmp/index.yaml.XXXXXX)
 
