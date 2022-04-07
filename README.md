@@ -356,7 +356,7 @@ Ex)
 ```
 docker run -p 8000:8000 \
     -v $(pwd):/opt/docker/conf/ \
-    lightbend/kafka-lag-exporter:0.6.9 \
+    lightbend/kafka-lag-exporter:0.6.8 \
     /opt/docker/bin/kafka-lag-exporter \
     -Dconfig.file=/opt/docker/conf/application.conf \
     -Dlogback.configurationFile=/opt/docker/conf/logback.xml
