@@ -10,7 +10,7 @@ import java.net.ServerSocket
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.HTTPServer
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.Outcome
