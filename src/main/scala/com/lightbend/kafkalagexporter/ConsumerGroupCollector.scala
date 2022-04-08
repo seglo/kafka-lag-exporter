@@ -335,7 +335,8 @@ object ConsumerGroupCollector {
             }
 
             val offsetLagCalc = mostRecentPoint.offset - point.offset
-            val offsetLag = if (offsetLagCalc < 0) 0d else offsetLagCalc.toDouble
+            val offsetLag =
+              if (offsetLagCalc < 0) 0d else offsetLagCalc.toDouble
 
             (groupOffset, offsetLag, timeLag)
           case None => (Double.NaN, Double.NaN, Double.NaN)
