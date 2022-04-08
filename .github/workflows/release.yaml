@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  pull_request:
+  push:
+    tags: ["*"]
+
+jobs:
+  release:
+    # runs on main repo only
+    if: github.repository == 'seglo/kafka-lag-exporter'
+    name: Release
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Setup Scala with Java ${{ matrix.java-version }}
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build, test, and publish
+        run: |+
+          TAG=$(git describe --tags --abbrev=0 | sed "s/v//g")
+          sbt "release with-defaults release-version $TAG"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add . && git commit -m "Released v$TAG"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ github.token }}
+          branch: master
+
+      - name: Push GitHub release artifact
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          files: |
+            repo/kafka-lag-exporter-*.tgz
+            target/universal/kafka-lag-exporter-*.zip
+
+      - name: Print logs on failure
+        if: ${{ failure() }}
+        run: find . -name "*.log" -exec ./scripts/cat_log.sh {} \;
