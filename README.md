@@ -567,7 +567,7 @@ helm install ./charts/kafka-lag-exporter \
 The release process is run when a new tag is pushed to the repository. Release steps:
 
 1. Run `doctoc README.md`
-1. Update change log `docker run -it --rm -v "$(pwd)":/usr/local/src/your-app githubchangeloggenerator/github-changelog-generator -u seglo -p kafka-lag-exporter -t $GITHUB_TOKEN --no-unreleased --since-tag v0.6.7`
+1. Update change log `docker run -it --rm -v "$(pwd)":/usr/local/src/your-app githubchangeloggenerator/github-changelog-generator -u seglo -p kafka-lag-exporter -t $(cat ~/.ghtoken-personal) --no-unreleased --no-issues --since-tag v0.6.7`
 1. Push a new tag `git tag -a v0.7.0 -m "v0.7.0" && git push origin --tags`
 
 ## Change log

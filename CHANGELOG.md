@@ -1,12 +1,43 @@
 # Changelog
 
+## [v0.7.0](https://github.com/seglo/kafka-lag-exporter/tree/v0.7.0) (2022-04-07)
+
+[Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.6.8...v0.7.0)
+
+**Merged pull requests:**
+
+- Patreon support badge [\#348](https://github.com/seglo/kafka-lag-exporter/pull/348) ([seglo](https://github.com/seglo))
+- Add scalafmt plugin [\#347](https://github.com/seglo/kafka-lag-exporter/pull/347) ([seglo](https://github.com/seglo))
+- Minikube integration tests [\#346](https://github.com/seglo/kafka-lag-exporter/pull/346) ([seglo](https://github.com/seglo))
+- Remove references to seanglover.com [\#345](https://github.com/seglo/kafka-lag-exporter/pull/345) ([seglo](https://github.com/seglo))
+- Move image pull secrets to pod spec [\#344](https://github.com/seglo/kafka-lag-exporter/pull/344) ([seglo](https://github.com/seglo))
+- Update mockito-scala to 1.17.5 [\#343](https://github.com/seglo/kafka-lag-exporter/pull/343) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-native-packager to 1.9.9 [\#342](https://github.com/seglo/kafka-lag-exporter/pull/342) ([scala-steward](https://github.com/scala-steward))
+- Configurable log pattern, force checksum usage, support PrometheusRules thru config [\#341](https://github.com/seglo/kafka-lag-exporter/pull/341) ([seglo](https://github.com/seglo))
+- Documentation of the "sinks" config required to activate reporters [\#340](https://github.com/seglo/kafka-lag-exporter/pull/340) ([julien-lafont](https://github.com/julien-lafont))
+- General cleanup 2022 [\#338](https://github.com/seglo/kafka-lag-exporter/pull/338) ([seglo](https://github.com/seglo))
+- GitHub Actions CI [\#337](https://github.com/seglo/kafka-lag-exporter/pull/337) ([seglo](https://github.com/seglo))
+- Update kafka lag exporter for IAM Auth [\#336](https://github.com/seglo/kafka-lag-exporter/pull/336) ([the-cybersapien](https://github.com/the-cybersapien))
+- Update akka-actor, ... to 2.6.19 [\#334](https://github.com/seglo/kafka-lag-exporter/pull/334) ([scala-steward](https://github.com/scala-steward))
+- Adding metricRelabelings and relabelings options [\#332](https://github.com/seglo/kafka-lag-exporter/pull/332) ([guillaume-roland-cd](https://github.com/guillaume-roland-cd))
+- Update logback-classic to 1.2.11 [\#328](https://github.com/seglo/kafka-lag-exporter/pull/328) ([scala-steward](https://github.com/scala-steward))
+- Update akka-http to 10.2.9 [\#327](https://github.com/seglo/kafka-lag-exporter/pull/327) ([scala-steward](https://github.com/scala-steward))
+- Add extra labels for pods and deployment [\#326](https://github.com/seglo/kafka-lag-exporter/pull/326) ([ThiagoSilvaSilveira](https://github.com/ThiagoSilvaSilveira))
+- fix: rbac versioning [\#325](https://github.com/seglo/kafka-lag-exporter/pull/325) ([saminahbab](https://github.com/saminahbab))
+- Update sbt-header to 5.6.5 [\#320](https://github.com/seglo/kafka-lag-exporter/pull/320) ([scala-steward](https://github.com/scala-steward))
+- Update simpleclient, simpleclient\_hotspot, ... to 0.15.0 [\#319](https://github.com/seglo/kafka-lag-exporter/pull/319) ([scala-steward](https://github.com/scala-steward))
+- Added envFrom config options \(configMapRef | secretRef\) [\#318](https://github.com/seglo/kafka-lag-exporter/pull/318) ([judomu](https://github.com/judomu))
+- Update helm repo [\#315](https://github.com/seglo/kafka-lag-exporter/pull/315) ([seglo](https://github.com/seglo))
+- Update scalatest to 3.2.11 [\#313](https://github.com/seglo/kafka-lag-exporter/pull/313) ([scala-steward](https://github.com/scala-steward))
+- Update mockito-scala to 1.16.55 [\#311](https://github.com/seglo/kafka-lag-exporter/pull/311) ([scala-steward](https://github.com/scala-steward))
+- Update influxdb, kafka to 1.16.3 [\#310](https://github.com/seglo/kafka-lag-exporter/pull/310) ([scala-steward](https://github.com/scala-steward))
+- Use Java 17 inside Docker image [\#297](https://github.com/seglo/kafka-lag-exporter/pull/297) ([slachiewicz](https://github.com/slachiewicz))
+- Update akka-stream-alpakka-influxdb to 3.0.4 [\#289](https://github.com/seglo/kafka-lag-exporter/pull/289) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-native-packager to 1.8.1 [\#284](https://github.com/seglo/kafka-lag-exporter/pull/284) ([scala-steward](https://github.com/scala-steward))
+
 ## [v0.6.8](https://github.com/seglo/kafka-lag-exporter/tree/v0.6.8) (2021-11-20)
 
 [Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.6.7...v0.6.8)
-
-**Closed issues:**
-
-- Build failed due to Bintray sunset [\#247](https://github.com/seglo/kafka-lag-exporter/issues/247)
 
 **Merged pull requests:**
 
