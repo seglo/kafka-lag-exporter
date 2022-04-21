@@ -94,11 +94,11 @@ lazy val kafkaLagExporter =
           val path = layerId.map(i => s"$i/$files").getOrElse(s"$files")
           Cmd("COPY", s"$path /$files")
         }
-        Seq(Cmd("FROM", "redhat/ubi8")) ++
+        Seq(Cmd("FROM", "redhat/ubi8:latest")) ++
           Seq(
             Cmd(
               "RUN",
-              "yum -y install java-17-openjdk-headless && yum update -y && yum clean all -y"
+              "yum update -y && yum -y install java-17-openjdk-headless && yum clean all -y"
             ),
             Cmd("RUN", "useradd -r -m -u 1001 kafkalagexporter")
           ) ++
