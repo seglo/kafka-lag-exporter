@@ -2,7 +2,7 @@ Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][g
 ==================
 
 [gh-release]:          https://github.com/seglo/kafka-lag-exporter/releases
-[gh-release-badge]:    https://img.shields.io/github/v/release/lightbend/kafka-lag-exporter?include_prereleases
+[gh-release-badge]:    https://img.shields.io/github/v/release/seglo/kafka-lag-exporter?include_prereleases
 [gh-actions]:          https://github.com/seglo/kafka-lag-exporter/actions
 [gh-actions-badge]:    https://github.com/seglo/kafka-lag-exporter/workflows/CI/badge.svg?branch=master
 [license]:             https://github.com/seglo/kafka-lag-exporter/blob/master/LICENSE.txt
@@ -333,7 +333,7 @@ kafka-lag-exporter {
 
 ### Run as Java App
 
-Download the release **zip** file (`kafka-lag-exporter-{VERSION}.zip`) from the [GitHub release](https://github.com/lightbend/kafka-lag-exporter/releases) page.
+Download the release **zip** file (`kafka-lag-exporter-{VERSION}.zip`) from the [GitHub release](https://github.com/seglo/kafka-lag-exporter/releases) page.
 Extract its contents and run the `./bin/kafka-lag-exporter` shell script.
 
 Ex)
@@ -356,7 +356,7 @@ Ex)
 ```
 docker run -p 8000:8000 \
     -v $(pwd):/opt/docker/conf/ \
-    lightbend/kafka-lag-exporter:0.7.0 \
+    seglo/kafka-lag-exporter:0.7.0 \
     /opt/docker/bin/kafka-lag-exporter \
     -Dconfig.file=/opt/docker/conf/application.conf \
     -Dlogback.configurationFile=/opt/docker/conf/logback.xml
@@ -387,7 +387,7 @@ Last Group Offsets:
   group-1-1                                                       topic-1-2                                                       0          5
 ```
 
-If installing with Helm then you can enable `DEBUG` logging with the `kafkaLogLevel` configuration in the chart's `[values.yaml](https://github.com/lightbend/kafka-lag-exporter/blob/master/charts/kafka-lag-exporter/values.yaml)`.
+If installing with Helm then you can enable `DEBUG` logging with the `kafkaLogLevel` configuration in the chart's `[values.yaml](https://github.com/seglo/kafka-lag-exporter/blob/master/charts/kafka-lag-exporter/values.yaml)`.
 
 When running in standalone mode you can either define assign the `KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL` environment variable to `DEBUG`, or override the log level of `com.lightbend.kafkalagexporter` directly in the `logback.xml`.
 
@@ -521,7 +521,7 @@ If you want to build your own Helm Chart and accompanying docker images you can 
 username with environment variables.
 
 `DOCKER_REPOSITORY` - A custom Docker repository, such as a private company's docker repository (defaults to DockerHub)
-`DOCKER_USERNAME` - A custom Docker username (defaults to `lightbend`)
+`DOCKER_USERNAME` - A custom Docker username (defaults to `seglo`)
 
 Run the `updateHelmChart` sbt task to update the Helm Chart with the appropriate Docker repository and username.
 
