@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.7.1](https://github.com/seglo/kafka-lag-exporter/tree/v0.7.1) (2022-04-22)
+
+[Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.7.0...v0.7.1)
+
+**Merged pull requests:**
+
+- Refresh base image to address CVE-2022-21449 [\#359](https://github.com/seglo/kafka-lag-exporter/pull/359) ([seglo](https://github.com/seglo))
+
 ## [v0.7.0](https://github.com/seglo/kafka-lag-exporter/tree/v0.7.0) (2022-04-07)
 
 [Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.6.8...v0.7.0)
