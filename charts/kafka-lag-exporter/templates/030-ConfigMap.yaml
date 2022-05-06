@@ -3,10 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "kafka-lag-exporter.fullname" . }}-configmap
   labels:
-    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
-    helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- include "kafka-lag-exporter.labels" . | nindent 4 }}
 data:
   application.conf: |
     kafka-lag-exporter {
