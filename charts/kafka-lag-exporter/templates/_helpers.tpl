@@ -38,7 +38,7 @@ helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
 app.kubernetes.io/version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/component: metrics
-app.kubernetes.io/port-of: {{ .Release.Name }}
+app.kubernetes.io/part-of: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- if .Values.additionalLabels }}
 {{ toYaml .Values.additionalLabels }}
