@@ -7,7 +7,7 @@ object Version {
   val Fabric8 = "4.9.1"
   val Kafka = "2.5.0"
   val Testcontainers = "1.16.3"
-  val IAMAuth = "1.1.3"
+  val IAMAuth = "1.1.4"
 }
 
 object Dependencies {
