@@ -28,7 +28,7 @@ import org.apache.kafka.common.{
   TopicPartition => KafkaTopicPartition
 }
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.Map
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration

@@ -59,7 +59,7 @@ class LookupTableSpec extends AnyFreeSpec with Matchers {
         )
 
         tests.foreach(expected =>
-          table.lookup(expected) shouldBe Prediction(expected)
+          table.lookup(expected) shouldBe Prediction(expected.toDouble)
         )
       }
 
@@ -184,9 +184,9 @@ class LookupTableSpec extends AnyFreeSpec with Matchers {
           )
         }
 
-        if (n != result.right.get.offset) {
+        if (n != result.toOption.get.offset) {
           fail(
-            s"Most recent point on $table expected $n, but got ${result.right.get.offset}"
+            s"Most recent point on $table expected $n, but got ${result.toOption.get.offset}"
           )
         }
       }

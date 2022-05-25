@@ -53,7 +53,10 @@ object LookupTable {
           // create a sliding window of 2 elements with a step size of 1
           .sliding(size = 2, step = 1)
           // convert window to a tuple. since we're iterating backwards we match right and left in reverse.
-          .map { case r :: l :: Nil => (l, r) }
+          .map {
+            case r :: l :: Nil => (l, r)
+            case w => sys.error(s"Sliding window unexpected length: $w")
+          }
           // find the Point that contains the offset
           .find { case (l, r) => offset >= l.offset && offset <= r.offset }
           // offset is not between any two points in the table

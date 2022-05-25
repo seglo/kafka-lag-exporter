@@ -137,7 +137,7 @@ class InfluxDBPusherSinkSpec
           new InfluxDBPusherSinkConfig(
             "InfluxDBPusherSink",
             List("kafka_consumergroup_group_max_lag"),
-            ConfigFactory.parseMap(mapAsJavaMap(fixture.properties))
+            ConfigFactory.parseMap(fixture.properties.asJava)
           ),
           clustersGlobalValuesMap
         )

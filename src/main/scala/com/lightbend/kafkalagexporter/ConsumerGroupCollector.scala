@@ -153,7 +153,7 @@ object ConsumerGroupCollector {
       }
     }
     .onFailure(
-      SupervisorStrategy.restartWithBackoff(1 seconds, 10 seconds, 0.2)
+      SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)
     )
 
   def collector(
@@ -335,7 +335,8 @@ object ConsumerGroupCollector {
             }
 
             val offsetLagCalc = mostRecentPoint.offset - point.offset
-            val offsetLag = if (offsetLagCalc < 0) 0d else offsetLagCalc
+            val offsetLag =
+              if (offsetLagCalc < 0) 0d else offsetLagCalc.toDouble
 
             (groupOffset, offsetLag, timeLag)
           case None => (Double.NaN, Double.NaN, Double.NaN)
@@ -416,7 +417,7 @@ object ConsumerGroupCollector {
           Metrics.EarliestOffsetMetric,
           config.cluster.name,
           tp,
-          topicPoint.offset
+          topicPoint.offset.toDouble
         )
       }
     }
@@ -433,7 +434,7 @@ object ConsumerGroupCollector {
         Metrics.LatestOffsetMetric,
         config.cluster.name,
         tp,
-        point.offset
+        point.offset.toDouble
       )
     }
 
@@ -509,7 +510,7 @@ object ConsumerGroupCollector {
     reporter ! Metrics.ClusterValueMessage(
       Metrics.PollTimeMetric,
       config.cluster.name,
-      metaData.pollTime
+      metaData.pollTime.toDouble
     )
   }
 }
