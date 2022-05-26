@@ -1,0 +1,23 @@
+{{- if .Values.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "kafka-lag-exporter.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
+    helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- if .Values.prometheusRule.additionalLabels }}
+      {{- toYaml .Values.prometheusRule.additionalLabels | nindent 4 -}}
+    {{- end }}
+spec:
+  groups:
+    - name: {{ include "kafka-lag-exporter.fullname" . }}-rules
+      rules:
+      {{- if .Values.prometheusRule -}}
+        {{- with .Values.prometheusRule }}
+          {{- toYaml .rules | nindent 8 }}
+        {{- end }}
+      {{- end }}
+{{- end }}

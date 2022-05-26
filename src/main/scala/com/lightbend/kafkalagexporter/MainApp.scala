@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -22,36 +23,66 @@ object MainApp extends App {
     Await.result(system.whenTerminated, 10 seconds)
   }
 
-  def start(config: Config = ConfigFactory.load()): ActorSystem[KafkaClusterManager.Message] = {
+  def start(
+      config: Config = ConfigFactory.load()
+  ): ActorSystem[KafkaClusterManager.Message] = {
     // Cached thread pool for various Kafka calls for non-blocking I/O
-    val kafkaClientEc = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+    val kafkaClientEc =
+      ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
     val appConfig = AppConfig(config)
 
     val clientCreator = (cluster: KafkaCluster) =>
-      KafkaClient(cluster, appConfig.clientGroupId, appConfig.clientTimeout)(kafkaClientEc)
+      KafkaClient(cluster, appConfig.clientGroupId, appConfig.clientTimeout)(
+        kafkaClientEc
+      )
 
-    var endpointCreators : List[KafkaClusterManager.NamedCreator] = List()
+    var endpointCreators: List[KafkaClusterManager.NamedCreator] = List()
 
     appConfig.sinkConfigs.foreach { sinkConfig =>
       val endpointCreator = sinkConfig.sinkType match {
         case "PrometheusEndpointSink" =>
-          KafkaClusterManager.NamedCreator("prometheus-lag-reporter",
-            (() => PrometheusEndpointSink(sinkConfig.asInstanceOf[PrometheusEndpointSinkConfig], Metrics.definitions,
-              appConfig.clustersGlobalLabels(), CollectorRegistry.defaultRegistry)))
+          KafkaClusterManager.NamedCreator(
+            "prometheus-lag-reporter",
+            (
+                () =>
+                  PrometheusEndpointSink(
+                    sinkConfig.asInstanceOf[PrometheusEndpointSinkConfig],
+                    Metrics.definitions,
+                    appConfig.clustersGlobalLabels(),
+                    CollectorRegistry.defaultRegistry
+                  )
+            )
+          )
         case "InfluxDBPusherSink" =>
-          KafkaClusterManager.NamedCreator("influxDB-lag-reporter",
-            (() => InfluxDBPusherSink(sinkConfig.asInstanceOf[InfluxDBPusherSinkConfig],
-              appConfig.clustersGlobalLabels())))
+          KafkaClusterManager.NamedCreator(
+            "influxDB-lag-reporter",
+            (
+                () =>
+                  InfluxDBPusherSink(
+                    sinkConfig.asInstanceOf[InfluxDBPusherSinkConfig],
+                    appConfig.clustersGlobalLabels()
+                  )
+            )
+          )
         case "GraphiteEndpointSink" =>
-          KafkaClusterManager.NamedCreator("graphite-lag-reporter",
-            (() => GraphiteEndpointSink(sinkConfig.asInstanceOf[GraphiteEndpointConfig], appConfig.clustersGlobalLabels())))
+          KafkaClusterManager.NamedCreator(
+            "graphite-lag-reporter",
+            (
+                () =>
+                  GraphiteEndpointSink(
+                    sinkConfig.asInstanceOf[GraphiteEndpointConfig],
+                    appConfig.clustersGlobalLabels()
+                  )
+            )
+          )
       }
       endpointCreators = endpointCreator :: endpointCreators
     }
 
-
     ActorSystem(
-      KafkaClusterManager.init(appConfig, endpointCreators, clientCreator), "kafka-lag-exporter")
+      KafkaClusterManager.init(appConfig, endpointCreators, clientCreator),
+      "kafka-lag-exporter"
+    )
   }
 }

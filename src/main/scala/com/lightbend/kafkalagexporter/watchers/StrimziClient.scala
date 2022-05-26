@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
 package com.lightbend.kafkalagexporter.watchers
@@ -17,7 +18,9 @@ import io.fabric8.kubernetes.api.builder.{Function => Fabric8Function}
 import scala.util.control.NonFatal
 
 object StrimziClient {
-  def apply(clusterWatcher: Watcher.Events): Watcher.Client = new StrimziClient(clusterWatcher)
+  def apply(clusterWatcher: Watcher.Events): Watcher.Client = new StrimziClient(
+    clusterWatcher
+  )
 
   // Ignore all custom fields (i.e. the spec) of the Kafka resource. We only care about its metadata.
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -31,20 +34,51 @@ object StrimziClient {
     val groupVersion = s"$group/v1alpha1"
   }
   class KafkaResourceList extends CustomResourceList[KafkaResource]
-  class KafkaResourceDoneable(val resource: KafkaResource, val function: Fabric8Function[KafkaResource, KafkaResource])
-    extends CustomResourceDoneable[KafkaResource](resource, function)
+  class KafkaResourceDoneable(
+      val resource: KafkaResource,
+      val function: Fabric8Function[KafkaResource, KafkaResource]
+  ) extends CustomResourceDoneable[KafkaResource](resource, function)
 
-  KubernetesDeserializer.registerCustomKind(KafkaResource.groupVersion, KafkaResource.kind, classOf[KafkaResource])
+  KubernetesDeserializer.registerCustomKind(
+    KafkaResource.groupVersion,
+    KafkaResource.kind,
+    classOf[KafkaResource]
+  )
 
   private val kafkaDefinition = new CustomResourceDefinitionBuilder()
     .withApiVersion(KafkaResource.groupVersion)
-    .withNewMetadata().withName(KafkaResource.name).endMetadata()
-    .withNewSpec().withGroup(KafkaResource.group).withVersion(KafkaResource.groupVersion).withScope("Cluster")//.withScope("Namespaced")
-    .withNewNames().withKind(KafkaResource.kind).withShortNames(KafkaResource.shortNames).withPlural(KafkaResource.plural).endNames().endSpec()
+    .withNewMetadata()
+    .withName(KafkaResource.name)
+    .endMetadata()
+    .withNewSpec()
+    .withGroup(KafkaResource.group)
+    .withVersion(KafkaResource.groupVersion)
+    .withScope("Cluster") // .withScope("Namespaced")
+    .withNewNames()
+    .withKind(KafkaResource.kind)
+    .withShortNames(KafkaResource.shortNames)
+    .withPlural(KafkaResource.plural)
+    .endNames()
+    .endSpec()
     .build()
 
-  def createClient(client: DefaultKubernetesClient): FilterWatchListMultiDeletable[KafkaResource, KafkaResourceList, lang.Boolean, Watch, FWatcher[KafkaResource]] = {
-    client.customResources(kafkaDefinition, classOf[KafkaResource], classOf[KafkaResourceList], classOf[KafkaResourceDoneable]).inAnyNamespace()
+  def createClient(
+      client: DefaultKubernetesClient
+  ): FilterWatchListMultiDeletable[
+    KafkaResource,
+    KafkaResourceList,
+    lang.Boolean,
+    Watch,
+    FWatcher[KafkaResource]
+  ] = {
+    client
+      .customResources(
+        kafkaDefinition,
+        classOf[KafkaResource],
+        classOf[KafkaResourceList],
+        classOf[KafkaResourceDoneable]
+      )
+      .inAnyNamespace()
   }
 }
 
@@ -52,7 +86,13 @@ class StrimziClient(clusterWatcher: Watcher.Events) extends Watcher.Client {
   import StrimziClient._
 
   private val k8sClient: DefaultKubernetesClient = new DefaultKubernetesClient()
-  private val client: FilterWatchListMultiDeletable[KafkaResource, KafkaResourceList, lang.Boolean, Watch, FWatcher[KafkaResource]] =
+  private val client: FilterWatchListMultiDeletable[
+    KafkaResource,
+    KafkaResourceList,
+    lang.Boolean,
+    Watch,
+    FWatcher[KafkaResource]
+  ] =
     createClient(k8sClient)
 
   private def resourceToCluster(resource: KafkaResource): KafkaCluster = {
@@ -67,10 +107,18 @@ class StrimziClient(clusterWatcher: Watcher.Events) extends Watcher.Client {
   try {
     client.watch(new FWatcher[KafkaResource]() {
 
-      override def eventReceived(action: FWatcher.Action, resource: KafkaResource): Unit = action match {
-        case FWatcher.Action.ADDED => clusterWatcher.added(resourceToCluster(resource))
-        case FWatcher.Action.DELETED => clusterWatcher.removed(resourceToCluster(resource))
-        case _ => throw new Exception(s"Unhandled Watcher.Action: $action: ${resource.getMetadata}")
+      override def eventReceived(
+          action: FWatcher.Action,
+          resource: KafkaResource
+      ): Unit = action match {
+        case FWatcher.Action.ADDED =>
+          clusterWatcher.added(resourceToCluster(resource))
+        case FWatcher.Action.DELETED =>
+          clusterWatcher.removed(resourceToCluster(resource))
+        case _ =>
+          throw new Exception(
+            s"Unhandled Watcher.Action: $action: ${resource.getMetadata}"
+          )
       }
 
       override def onClose(e: KubernetesClientException): Unit = {

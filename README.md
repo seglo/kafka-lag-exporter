@@ -1,16 +1,38 @@
-[![Build Status](https://travis-ci.com/lightbend/kafka-lag-exporter.svg?branch=master)](https://app.travis-ci.com/github/lightbend/kafka-lag-exporter)
-![GitHub release](https://img.shields.io/github/v/release/lightbend/kafka-lag-exporter?include_prereleases)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/lightbend/kafka-lag-exporter/blob/master/LICENSE.txt)
+Kafka Lag Exporter [![gh-release-badge][]][gh-release] [![gh-actions-badge][]][gh-actions] [![license-badge][]][license] [![patreon-badge][]][patreon]
+==================
 
-# Kafka Lag Exporter
+[gh-release]:          https://github.com/seglo/kafka-lag-exporter/releases
+[gh-release-badge]:    https://img.shields.io/github/v/release/seglo/kafka-lag-exporter?include_prereleases
+[gh-actions]:          https://github.com/seglo/kafka-lag-exporter/actions
+[gh-actions-badge]:    https://github.com/seglo/kafka-lag-exporter/workflows/CI/badge.svg?branch=master
+[license]:             https://github.com/seglo/kafka-lag-exporter/blob/master/LICENSE.txt
+[license-badge]:       https://img.shields.io/badge/License-Apache%202.0-blue.svg
+[patreon]:             https://www.patreon.com/seglo
+[patreon-badge]:       https://img.shields.io/badge/patreon-sponsor-ff69b4.svg
 
 > Monitor Kafka Consumer Group Latency with Kafka Lag Exporter
+
+## Overview
+
+Kafka Lag Exporter makes it easy to view the offset lag and calculate an estimate of latency (residence time) of your [Apache Kafka](https://kafka.apache.org/) consumer groups.
+It can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/) clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) monitoring stack. 
+Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html) application written in [Scala](https://www.scala-lang.org/).
+
+Kafka Lag Exporter is maintained by [Sean Glover](https://seanglover.com) ([@seglo](https://github.com/seglo)) and a community of contributors.
+If you like using this project and would like to support its development, please consider a donation using [Patreon][patreon].
+
+_Kafka Lag Exporter interpolates latency based on observed latest committed offset measurements of consumer groups._
+
+![Interpolation](./docs/interpolation-sm.png)
+
+For more information about Kafka Lag Exporter's features see Lightbend's blog post:
+[Monitor Kafka Consumer Group Latency with Kafka Lag Exporter](https://www.lightbend.com/blog/monitor-kafka-consumer-group-latency-with-kafka-lag-exporter).
+
+## Contents
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
-- [Introduction](#introduction)
 - [Metrics](#metrics)
   - [Labels](#labels)
 - [Run on Kubernetes](#run-on-kubernetes)
@@ -26,7 +48,6 @@
   - [Run as Docker Image](#run-as-docker-image)
 - [Troubleshooting](#troubleshooting)
 - [Required Permissions for Kafka ACL](#required-permissions-for-kafka-acl)
-- [Estimate Consumer Group Time Lag](#estimate-consumer-group-time-lag)
 - [Strimzi Kafka Cluster Watcher](#strimzi-kafka-cluster-watcher)
 - [Monitoring with Grafana](#monitoring-with-grafana)
 - [Filtering Metrics without Prometheus Server](#filtering-metrics-without-prometheus-server)
@@ -41,19 +62,6 @@
 - [Change log](#change-log)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-## Introduction
-
-Kafka Lag Exporter makes it easy to view the latency (residence time) of your [Apache Kafka](https://kafka.apache.org/)
-consumer groups. It can run anywhere, but it provides features to run easily on [Kubernetes](https://kubernetes.io/)
-clusters against [Strimzi](https://strimzi.io/) Kafka clusters using the [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/)
-monitoring stack. Kafka Lag Exporter is an [Akka Typed](https://doc.akka.io/docs/akka/current/typed/index.html)
-application written in [Scala](https://www.scala-lang.org/).
-
-For more information about Kafka Lag Exporter's features see Lightbend's blog post:
-[Monitor Kafka Consumer Group Latency with Kafka Lag Exporter](https://www.lightbend.com/blog/monitor-kafka-consumer-group-latency-with-kafka-lag-exporter).
-
-_Kafka Lag Exporter is maintained by [@seglo](https://github.com/seglo) and a community of contributors. It is not covered by support under the [Lightbend subscription](https://www.lightbend.com/subscription)._
 
 ## Metrics
 
@@ -149,10 +157,11 @@ file of the accompanying Helm Chart.
 
 ### Install with Helm
 
-You can install the chart from the chart repository ( index file location: https://seanglover.com/kafka-lag-exporter/repo/index.yaml ).
+You can install the chart from the chart repository at the following location
+* [https://seglo.github.io/kafka-lag-exporter/repo/index.yaml](https://seglo.github.io/kafka-lag-exporter/repo/index.yaml)
 
 ```
-helm repo add kafka-lag-exporter https://seanglover.com/kafka-lag-exporter/repo/
+helm repo add kafka-lag-exporter https://seglo.github.io/kafka-lag-exporter/repo/
 helm repo update
 
 helm install kafka-lag-exporter/kafka-lag-exporter 
@@ -239,6 +248,8 @@ It is possible to report (either one, multiple or all):
   - to graphite via the config `kafka-lag-exporter.reporters.graphite`
   - as prometheus via the config `kafka-lag-exporter.reporters.prometheus`
 
+You must also specify the active reporters in the `kafka-lag-exporter.sinks` config.
+
 See section below for more information.
 
 ### Configuration
@@ -256,7 +267,8 @@ General Configuration (`kafka-lag-exporter{}`)
 | `reporters.influxdb.database` | `kafka_lag_exporter` | The influxdb database to send metrics to                                                                                              |
 | `reporters.influxdb.username` | None                 | The influxdb username to connect (if not set, username will be empty)                                                                 |
 | `reporters.influxdb.password` | None                 | The influxdb password to connect (if not set, password will be empty)                                                                 |
-| `reporters.influxdb.async`    | `true`               | Flag to enable influxdb async **non-blocking** write mode to send metrics                                                             |
+| `reporters.influxdb.async`    | `true`               | Flag to enable influxdb async **non-blocking** write mode to send metrics      
+| `sinks`                       | `["PrometheusEndpointSink"]` | Specify which reporters must be used to send metrics. Possible values are: `PrometheusEndpointSink`, `InfluxDBPusherSink`, `GraphiteEndpointSink`.  (if not set, only Prometheus is activated)     
 | `poll-interval`               | `30 seconds`         | How often to poll Kafka for latest and group offsets                                                                                  |
 | `lookup-table-size`           | `60`                 | The maximum window size of the look up table **per partition**                                                                        |
 | `client-group-id`             | `kafkalagexporter`   | Consumer group id of kafka-lag-exporter's client connections                                                                          |
@@ -321,7 +333,7 @@ kafka-lag-exporter {
 
 ### Run as Java App
 
-Download the release **zip** file (`kafka-lag-exporter-{VERSION}.zip`) from the [GitHub release](https://github.com/lightbend/kafka-lag-exporter/releases) page.
+Download the release **zip** file (`kafka-lag-exporter-{VERSION}.zip`) from the [GitHub release](https://github.com/seglo/kafka-lag-exporter/releases) page.
 Extract its contents and run the `./bin/kafka-lag-exporter` shell script.
 
 Ex)
@@ -344,7 +356,7 @@ Ex)
 ```
 docker run -p 8000:8000 \
     -v $(pwd):/opt/docker/conf/ \
-    lightbend/kafka-lag-exporter:0.6.8 \
+    seglo/kafka-lag-exporter:0.7.0 \
     /opt/docker/bin/kafka-lag-exporter \
     -Dconfig.file=/opt/docker/conf/application.conf \
     -Dlogback.configurationFile=/opt/docker/conf/logback.xml
@@ -375,7 +387,7 @@ Last Group Offsets:
   group-1-1                                                       topic-1-2                                                       0          5
 ```
 
-If installing with Helm then you can enable `DEBUG` logging with the `kafkaLogLevel` configuration in the chart's `[values.yaml](https://github.com/lightbend/kafka-lag-exporter/blob/master/charts/kafka-lag-exporter/values.yaml)`.
+If installing with Helm then you can enable `DEBUG` logging with the `kafkaLogLevel` configuration in the chart's `[values.yaml](https://github.com/seglo/kafka-lag-exporter/blob/master/charts/kafka-lag-exporter/values.yaml)`.
 
 When running in standalone mode you can either define assign the `KAFKA_LAG_EXPORTER_KAFKA_LOG_LEVEL` environment variable to `DEBUG`, or override the log level of `com.lightbend.kafkalagexporter` directly in the `logback.xml`.
 
@@ -400,36 +412,6 @@ This can be added using the following command (`authorizer-properties` depends o
 ```
 kafka-acls --authorizer-properties "zookeeper.connect=localhost:2181" --add --allow-principal "User:kafka-lag-exporter" --operation DESCRIBE --group '*' --topic '*' --cluster
 ```
-
-## Estimate Consumer Group Time Lag
-
-One of Kafka Lag Exporter’s more unique features is its ability to estimate the length of time that a consumer group is behind the last produced value for a particular partition, time lag (wait time).  Offset lag is useful to indicate that the consumer group is lagging, but it doesn’t provide a sense of the actual latency of the consuming application.
-
-For example, a topic with two consumer groups may have different lag characteristics.  Application A is a consumer which performs CPU intensive (and slow) business logic on each message it receives. It’s distributed across many consumer group members to handle the high load, but since its processing throughput is slower it takes longer to process each message per partition.   Meanwhile Application B is a consumer which performs a simple ETL operation to land streaming data in another system, such as an HDFS data lake.  It may have similar offset lag to Application A, but because it has a higher processing throughput its lag in time may be significantly less.
-
-It’s easier to build monitoring alerts using a time lag measurement than an offset lag measurement, because latency is best described in requirements as a unit of time.
-
-There are several ways to calculate time lag. The easiest way would be to parse the message timestamp and subtract it from the current time. However, this requires us to actually poll for messages in each partition that we wish to calculate time lag for. We must download the message payload and parse this information out of a `ConsumerRecord`. This is an expensive operation to perform and will likely not scale well in the general use case where messages can be of any size (though less than 1MB, unless default broker config is changed) and the number of partitions for any given topic could range into to thousands. However, it would be an interesting feature to explore in the future. It would also be possible to instrument the Kafka consuming application itself to report this metric since it can readily sample messages it's already consuming for their timestamp property and perform the calculation, but this requires each Kafka consuming application to opt into this implementation in order for it to be monitored. Another way to determine time lag is to estimate it based on consumer group lag information we already have available.
-
-Kafka Lag Exporter estimates time lag by either interpolation or extrapolation of the timestamp of when the last consumed offset was first produced.  We begin by retrieving the source data from Kafka.  We poll the last produced offset for all partitions in all consumer groups and store the offset (x) and current time (y) as a coordinate in a table (the interpolation table) for each partition.  This information is retrieved as a metadata call using the `KafkaConsumer` `endOffsets` call and does not require us to actually poll for messages.  The Kafka Consumer Group coordinator will return the last produced offsets for all the partitions we are subscribed to (the set of all partitions of all consumer groups).  Similarly, we use the Kafka `AdminClient`’s `listConsumerGroupOffsets` API to poll for consumer group metadata from all consumer groups to get the last consumed offset for each partition in a consumer group.
-
-Once we’ve built up an interpolation table of at least two values we can begin estimating time lag by performing the following operations (some edge cases are omitted for clarity) for each last consumed offset of each partition.
-
-1. Lookup interpolation table for a consumer group partition
-2. Find two points within the table that contain the last consumed offset
-  1. If there are no two points that contain the last consumed offset then use the first and last points as input to the interpolation formula.  This is the extrapolation use case.
-3. Interpolate inside (or extrapolate outside) the two points from the table we picked to predict a timestamp for when the last consumed message was first produced.
-4. Take the difference of the time of the last consumed offset (~ the current time) and the predicted timestamp to find the time lag.
-
-Below you will find a diagram that demonstrates the interpolation use case.
-
-![Interpolation](./docs/interpolation.png)
-
-The extrapolation use case uses different points in the interpolation table (the first and last points), but the calculation is the same.
-
-![Extrapolation](./docs/extrapolation.png)
-
-Interpolation is always desirable because we can be more assured that the prediction will be more accurate because we’re plotting a point within two points of our existing dataset.  Extrapolation will always be less accurate because we’re predicting points that may be a fair distance away from our dataset.
 
 ## Strimzi Kafka Cluster Watcher
 
@@ -539,7 +521,7 @@ If you want to build your own Helm Chart and accompanying docker images you can 
 username with environment variables.
 
 `DOCKER_REPOSITORY` - A custom Docker repository, such as a private company's docker repository (defaults to DockerHub)
-`DOCKER_USERNAME` - A custom Docker username (defaults to `lightbend`)
+`DOCKER_USERNAME` - A custom Docker username (defaults to `seglo`)
 
 Run the `updateHelmChart` sbt task to update the Helm Chart with the appropriate Docker repository and username.
 
@@ -582,170 +564,12 @@ helm install ./charts/kafka-lag-exporter \
 
 ## Release
 
-### Pre-requisites
+The release process is run when a new tag is pushed to the repository. Release steps:
 
-The release process is orchestrated by the [`sbt-release`](https://github.com/sbt/sbt-release).  Privileged access is
-required.  Before running a release make sure the following pre-req's are met.
-
-* Authenticated with Docker Hub with the `docker` command.
-* Authenticated with GitHub
-* `~/.netrc` file setup with GitHub credentials/token
-
-### Release steps
-
-1. Update the Change log
-2. Run `doctoc README.md`
-3. Run `sbt release`.  To see what steps are performed during release consult the `build.sbt`.
-4. Review the GitHub release draft and submit it.
+1. Run `doctoc README.md`
+1. Update change log `docker run -it --rm -v "$(pwd)":/usr/local/src/your-app githubchangeloggenerator/github-changelog-generator -u seglo -p kafka-lag-exporter -t $(cat ~/.ghtoken-personal) --no-unreleased --no-issues --since-tag v0.6.7`
+1. Push a new tag `git tag -a v0.7.0 -m "v0.7.0" && git push origin --tags`
 
 ## Change log
 
-0.6.8
-
-* _A lot up minor updates and version library bumps_
-
-0.6.7
-
-* Send globalClusterLabels as tags in InfluxDBSink [#200](https://github.com/lightbend/kafka-lag-exporter/pull/200) ([@lukaszkrawiec](https://github.com/lukaszkrawiec))
-
-0.6.6
-
-* Add support for Consumer Group blacklisting [#184](https://github.com/lightbend/kafka-lag-exporter/pull/184) ([@Manicben](https://github.com/Manicben))
-* Add release steps to serve Helm Charts Repository on Github Pages [#183](https://github.com/lightbend/kafka-lag-exporter/pull/183) ([@akozich](https://github.com/akozich))
-* Upgrade sbt from 1.2.6 to 1.4.3 to improve the metals support [#178](https://github.com/lightbend/kafka-lag-exporter/pull/178) ([@robsonpeixoto](https://github.com/robsonpeixoto))
-* Automatically roll Deployment when ConfigMap change [#176](https://github.com/lightbend/kafka-lag-exporter/pull/176) ([@robsonpeixoto](https://github.com/robsonpeixoto))
-* Support multiple instances and extra labels for service monitor [#171](https://github.com/lightbend/kafka-lag-exporter/pull/171) ([@ryan-dyer-sp](https://github.com/ryan-dyer-sp))
-* Ability to extend and configure desired sink to report lag metrics, adding support to push lag metrics into InfluxDB as well [#157](https://github.com/lightbend/kafka-lag-exporter/pull/157) ([@hariprasad-k](https://github.com/hariprasad-k))
-
-0.6.5
-
-* Use `centos:8` docker base layer [#168](https://github.com/lightbend/kafka-lag-exporter/pull/168) ([@killuazhu](https://github.com/killuazhu))
-
-0.6.4
-
-* Bugfix: Filter Out NaN Values from Aggregate Metrics [#158](https://github.com/lightbend/kafka-lag-exporter/pull/158) ([@simoncaron](https://github.com/simoncaron))
-
-0.6.3
-
-* Configurable readiness and liveness probes in helm chart [#145](https://github.com/lightbend/kafka-lag-exporter/pull/145) ([@chelomontilla](https://github.com/chelomontilla))
-* Swap embedded-kafka for testcontainers [#147](https://github.com/lightbend/kafka-lag-exporter/pull/147)
-* Bugfix: Handle null offset in consumer group offset result [#149](https://github.com/lightbend/kafka-lag-exporter/pull/149)
-* List Permissions required by Kafka Lag Exporter to run against a secured Kafka cluster [#152](https://github.com/lightbend/kafka-lag-exporter/pull/152)
-* Bugfix: Evict all metrics for a cluster on collector stop or failure [#154](https://github.com/lightbend/kafka-lag-exporter/pull/154)
-
-0.6.2
-
-* Support init containers in helm chart [#135](https://github.com/lightbend/kafka-lag-exporter/pull/135) ([@terjesannum](https://github.com/terjesannum))
-* Support consumer groups for which member information is unavailable [#128](https://github.com/lightbend/kafka-lag-exporter/pull/128) ([@lilyevsky](https://github.com/lilyevsky)) 
-
-0.6.1
-
-* Update to Apache Kafka 2.5.0. Resolves issue of "Invalid negative offset" for uninitizalized consumer groups [#120](https://github.com/lightbend/kafka-lag-exporter/issues/120)
-* Graphite support [#105](https://github.com/lightbend/kafka-lag-exporter/pull/115) ([@yazgoo](https://github.com/yazgoo))
-
-0.6.0
-
-* Add Metadata poll timer metric `kafka_consumergroup_poll_time_ms` [#105](https://github.com/lightbend/kafka-lag-exporter/pull/105) ([@anbarasantr](https://github.com/anbarasantr))
-* Bugfix: Bypass prediction when consumer group is caught up. Reported in [#111](https://github.com/lightbend/kafka-lag-exporter/issues/111) ([@rkrage](https://github.com/rkrage)).
-* Publish Java App Packaging for non-Docker envs [#119](https://github.com/lightbend/kafka-lag-exporter/pull/119)
-
-0.5.5
-
-* Add kafka topic blacklist [#90](https://github.com/lightbend/kafka-lag-exporter/pull/90) ([@drrzmr](https://github.com/drrzmr))
-* Add metric to represent a consumer group's total offset lag per topic [#93](https://github.com/lightbend/kafka-lag-exporter/pull/93) ([@dylanmei](https://github.com/dylanmei))
-* Support specifying image digest and container securityContext [#95](https://github.com/lightbend/kafka-lag-exporter/pull/95) ([@terjesannum](https://github.com/terjesannum))
-* Allow mounting extra configmaps in pod [#94](https://github.com/lightbend/kafka-lag-exporter/pull/94) ([@terjesannum](https://github.com/terjesannum))
-* Bugfix: Fixed pod annotations support in helm chart [#91](https://github.com/lightbend/kafka-lag-exporter/pull/91) ([@terjesannum](https://github.com/terjesannum))
-* Bugfix: Global label values [#82](https://github.com/lightbend/kafka-lag-exporter/pull/82) ([@anbarasantr](https://github.com/anbarasantr))
-* Prometheus Operator Service Operator support [#85](ttps://github.com/lightbend/kafka-lag-exporter/pull/85) ([@abhishekjiitr](https://github.com/abhishekjiitr))
-* Added kafka_partition_earliest_offset metric for determining the volume of offsets stored in Kafka. [#86](https://github.com/lightbend/kafka-lag-exporter/pull/86) ([@graphex](https://github.com/graphex))
-
-0.5.4
-
-* Bugfix: Accidentally released with local repo.
-
-0.5.3
-
-* Bugfix: Fix Helm Chart: Whitespace in Deployment.yaml [#77](https://github.com/lightbend/kafka-lag-exporter/pull/77) ([@abhishekjiitr](https://github.com/abhishekjiitr))
-* Bugfix: Revert cluster labels (see discussion in [#78](https://github.com/lightbend/kafka-lag-exporter/pull/78)) [#79](https://github.com/lightbend/kafka-lag-exporter/pull/79)
-
-0.5.2
-
-* Implement consumer group whitelist [#75](https://github.com/lightbend/kafka-lag-exporter/pull/75)
-* Allow whitelisting Kafka topics [#65](https://github.com/lightbend/kafka-lag-exporter/pull/65) ([@NeQuissimus](https://github.com/NeQuissimus))
-* Omit service account generation when not using strimzi [#64](https://github.com/lightbend/kafka-lag-exporter/pull/64) ([@khorshuheng](https://github.com/khorshuheng))
-* Adding support to control which prometheus metrics to expose [#62](https://github.com/lightbend/kafka-lag-exporter/pull/62) ([@khorshuheng](https://github.com/khorshuheng))
-* Adds custom labels for every cluster [#61](https://github.com/lightbend/kafka-lag-exporter/pull/61) ([@anbarasantr](https://github.com/anbarasantr))
-* Adding support for custom annotations on pods [#59](https://github.com/lightbend/kafka-lag-exporter/pull/59) ([@WarpRat](https://github.com/WarpRat))
-* Allow Helm to quote Kafka client property values when necessary [#58](https://github.com/lightbend/kafka-lag-exporter/pull/58)
-
-0.5.1
-
-* Bugfix: Get commit offset for correct group topic partitions [#56](https://github.com/lightbend/kafka-lag-exporter/pull/56)
-
-0.5.0
-
-* Bugfix: Report NaN for group offset, lag, and time lag when no group offset returned. [#50](https://github.com/lightbend/kafka-lag-exporter/pull/50)
-* Support arbitrary kafka client configuration. [#48](https://github.com/lightbend/kafka-lag-exporter/pull/48)
-* Use ConfigMap to provide app and logging config. [#47](https://github.com/lightbend/kafka-lag-exporter/pull/47)
-* Bugfix: Use lag offsets metric in lag offsets panel Grafana dashboard. [#39](https://github.com/lightbend/kafka-lag-exporter/pull/39/) ([@msravan](https://github.com/msravan))
-
-0.4.3
-
-* Update chart defaults to match app defaults.  Poll interval: 30s, Lookup table size: 60.
-
-0.4.2
-
-* Bugfix: Check for missing group topic partitions after collecting all group offsets. Regression bugfix. [#30](https://github.com/lightbend/kafka-lag-exporter/issues/30)
-* Make simple polling logging `INFO` log level. Added `DEBUG` logging to show all offsets collected per poll for troubleshooting.
-
-0.4.1
-
-* Remove labels `state` and `is_simple_consumer` from group topic partition metrics
-* Document metric endpoint filtering [#24](https://github.com/lightbend/kafka-lag-exporter/issues/24)
-* Document standalone deployment mode [#22](https://github.com/lightbend/kafka-lag-exporter/issues/22)
-* Evict metrics from endpoint when they're no longer tracked by Kafka [#25](https://github.com/lightbend/kafka-lag-exporter/issues/25)
-* Support clusters with TLS and SASL [#21](https://github.com/lightbend/kafka-lag-exporter/pull/21)
-
-0.4.0
-
-* Open Sourced! 🎆 [#17](https://github.com/lightbend/kafka-lag-exporter/issues/17)
-* Add Integration tests using Embedded Kafka [#11](https://github.com/lightbend/kafka-lag-exporter/issues/11)
-* Replace lag in time implementation with interpolation table implementation [#5](https://github.com/lightbend/kafka-lag-exporter/issues/5)
-* Removed `spark-event-exporter`.  See the [`spark-committer`](https://github.com/lightbend/spark-committer) GitHub
-project to commit offsets in Spark Structured Streaming back to Kafka. [#9](https://github.com/lightbend/kafka-lag-exporter/issues/9)
-* Implement backoff strategy for Kafka connections in Kafka Lag Exporter [#6](https://github.com/lightbend/kafka-lag-exporter/issues/6)
-* Travis build [#7](https://github.com/lightbend/kafka-lag-exporter/issues/7)
-* Update docs [#14](https://github.com/lightbend/kafka-lag-exporter/issues/14)
-* Update Grafana dashboard
-* Licensing headers
-* Script release process
-
-0.3.6
-
-* Add `kafka-client-timeout` config.
-* Tune retry and timeout logic of Kafka admin client and consumer
-* Use backoff strategy restarting offset collection logic when transient runtime exceptions are encountered
-* Terminate when Prometheus HTTP server can't start (i.e. port can't be bound)
-
-0.3.1
-
-* Default partition to 0 (instead of omitting it from being reported) when a consumer group returns no offset for a
-group partition
-* Use `akkaSource` for actor path in logging
-
-0.3.0
-
-* Bugfix: Parse `poll-interval` in seconds
-* Rename metric from `kafka_consumergroup_latest_offset` to `kafka_partition_latest_offset`
-* Use JVM 8 experimental cgroup memory awareness flags when running exporter in container
-* Use snakecase for metric label names
-* Sample Grafana Dashboard
-
-0.2.0
-
-* Strimzi cluster auto discovery
-
-0.1.0
-
-* Initial release
+See [CHANGELOG.md](CHANGELOG.md)

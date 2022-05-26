@@ -1,10 +1,15 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
 package com.lightbend.kafkalagexporter
 
-import com.lightbend.kafkalagexporter.LookupTable.Table.{LagIsZero, Prediction, TooFewPoints}
+import com.lightbend.kafkalagexporter.LookupTable.Table.{
+  LagIsZero,
+  Prediction,
+  TooFewPoints
+}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -49,11 +54,13 @@ class LookupTableSpec extends AnyFreeSpec with Matchers {
         table.addPoint(Point(200, 200))
 
         val tests = List[Long](150, 190, 110, // interpolation
-        10, 0, -100, // extrapolation under the table
-        300, 100 // extrapolation over the table
+          10, 0, -100, // extrapolation under the table
+          300, 100 // extrapolation over the table
         )
 
-        tests.foreach(expected => table.lookup(expected) shouldBe Prediction(expected))
+        tests.foreach(expected =>
+          table.lookup(expected) shouldBe Prediction(expected)
+        )
       }
 
       "lookups with flat sections" in {
@@ -65,7 +72,9 @@ class LookupTableSpec extends AnyFreeSpec with Matchers {
         table.addPoint(Point(200, 700))
 
         if (table.points.length != 3) {
-          fail(s"Expected table to have 3 entries.  Table should truncate compress middle value for offset 200.  $table")
+          fail(
+            s"Expected table to have 3 entries.  Table should truncate compress middle value for offset 200.  $table"
+          )
         }
 
         table.addPoint(Point(300, 730))
@@ -73,7 +82,9 @@ class LookupTableSpec extends AnyFreeSpec with Matchers {
         table.addPoint(Point(400, 9030))
 
         table.lookup(199) shouldBe Prediction(59.7)
-        table.lookup(200) shouldBe Prediction(700) // should find the latest (right hand side) of the flat section
+        table.lookup(200) shouldBe Prediction(
+          700
+        ) // should find the latest (right hand side) of the flat section
         table.lookup(201) shouldBe Prediction(700.3)
         table.lookup(250) shouldBe Prediction(715)
         table.lookup(299) shouldBe Prediction(729.7)
@@ -120,7 +131,7 @@ class LookupTableSpec extends AnyFreeSpec with Matchers {
         val table = Table(5)
 
         table.addPoint(Point(-2, -2))
-        table.addPoint(Point(-1 , -1))
+        table.addPoint(Point(-1, -1))
         table.addPoint(Point(0, 0))
         table.addPoint(Point(10, 1))
         table.addPoint(Point(200, 2))
@@ -158,19 +169,25 @@ class LookupTableSpec extends AnyFreeSpec with Matchers {
       val result = table.mostRecentPoint()
 
       if (result.isRight) {
-        fail(s"Expected most recent point on empty table to fail with an error, but got $result")
+        fail(
+          s"Expected most recent point on empty table to fail with an error, but got $result"
+        )
       }
 
       for (n <- 0 to 10) {
-        table.addPoint(Point(n, n*10))
+        table.addPoint(Point(n, n * 10))
         val result = table.mostRecentPoint()
 
         if (result.isLeft) {
-          fail(s"Most recent point on $table returned error unexpectedly: $result")
+          fail(
+            s"Most recent point on $table returned error unexpectedly: $result"
+          )
         }
 
         if (n != result.right.get.offset) {
-          fail(s"Most recent point on $table expected $n, but got ${result.right.get.offset}")
+          fail(
+            s"Most recent point on $table expected $n, but got ${result.right.get.offset}"
+          )
         }
       }
     }

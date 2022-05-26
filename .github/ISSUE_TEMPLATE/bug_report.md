@@ -12,7 +12,7 @@ A clear and concise description of what the bug is.
 
 **To Reproduce**
 Provide logs and application configuration.
-See the [Troubleshooting](https://github.com/lightbend/kafka-lag-exporter#troubleshooting) section of the `README` for instructions on how to enable `DEBUG` logging.
+See the [Troubleshooting](https://github.com/seglo/kafka-lag-exporter#troubleshooting) section of the `README` for instructions on how to enable `DEBUG` logging.
 
 **Environment**
  - Version

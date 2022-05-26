@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -11,9 +12,8 @@ object LookupTable {
   case class Table(limit: Int, points: mutable.Queue[Point]) {
     import Table._
 
-    /**
-     * Add the `Point` to the table.
-     */
+    /** Add the `Point` to the table.
+      */
     def addPoint(point: Point): Unit = mostRecentPoint() match {
       // new point is out of order
       case Right(mrp) if mrp.time >= point.time =>
@@ -30,9 +30,10 @@ object LookupTable {
       //   If we still have not incremented the offset, replace the last entry.  Table now looks like:
       //     Point(offset = 200, time = 1000)
       //     Point(offset = 200, time = 3000)
-      case Right(mrp) if mrp.offset == point.offset &&
-                         points.length > 1 &&
-                         points(points.length - 2).offset == point.offset =>
+      case Right(mrp)
+          if mrp.offset == point.offset &&
+            points.length > 1 &&
+            points(points.length - 2).offset == point.offset =>
         // update the most recent point
         points(points.length - 1) = point
       // the table is empty or we filtered thru previous cases on the most recent point
@@ -42,15 +43,13 @@ object LookupTable {
         points.enqueue(point)
     }
 
-    /**
-     * Predict the timestamp of a provided offset using interpolation if in the sliding window, or extrapolation if
-     * outside the sliding window.
-     */
+    /** Predict the timestamp of a provided offset using interpolation if in the
+      * sliding window, or extrapolation if outside the sliding window.
+      */
     def lookup(offset: Long): Result = {
       def estimate(): Result = {
         // search for two cells that contains the given offset
-        val (left, right) = points
-          .reverseIterator
+        val (left, right) = points.reverseIterator
           // create a sliding window of 2 elements with a step size of 1
           .sliding(size = 2, step = 1)
           // convert window to a tuple. since we're iterating backwards we match right and left in reverse.
@@ -75,15 +74,15 @@ object LookupTable {
       points.toList match {
         // if last point is same as looked up group offset then lag is zero
         case p if p.nonEmpty && offset == p.last.offset => LagIsZero
-        case p if p.length < 2 => TooFewPoints
-        case _ => estimate()
+        case p if p.length < 2                          => TooFewPoints
+        case _                                          => estimate()
 
       }
     }
 
-    /**
-     * Return the most recently added `Point`.  Returns either an error message, or the `Point`.
-     */
+    /** Return the most recently added `Point`. Returns either an error message,
+      * or the `Point`.
+      */
     def mostRecentPoint(): Either[String, Point] = {
       if (points.isEmpty) Left("No data in table")
       else Right(points.last)

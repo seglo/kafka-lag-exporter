@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
 package com.lightbend.kafkalagexporter
@@ -9,12 +10,17 @@ import com.lightbend.kafkalagexporter.MetricsSink._
 
 object MetricsSink {
   trait Message
-  final case class Stop(sender: ActorRef[KafkaClusterManager.Message]) extends MetricsSink.Message
+  final case class Stop(sender: ActorRef[KafkaClusterManager.Message])
+      extends MetricsSink.Message
 
-  final case class GaugeDefinition(name: String, help: String, labels: List[String])
+  final case class GaugeDefinition(
+      name: String,
+      help: String,
+      labels: List[String]
+  )
   type MetricDefinitions = List[GaugeDefinition]
 
-  trait ClusterMetric extends Metric{
+  trait ClusterMetric extends Metric {
     def clusterName: String
   }
 

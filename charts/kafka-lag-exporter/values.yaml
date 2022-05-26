@@ -110,8 +110,8 @@ akkaLogLevel: DEBUG
 
 ## You probably won't need to change anything below this line.
 image:
-  repository: lightbend/kafka-lag-exporter
-  tag: 0.6.8
+  repository: seglo/kafka-lag-exporter
+  tag: 0.7.2-SNAPSHOT
   # If digest is set it will be used instead of tag to specify the image
   # digest: sha256:0f6387aa011e6eb7952ea211ac139bf8613ad3ef6954a1a5d910676d293bd610
   pullPolicy: Always
@@ -182,6 +182,17 @@ envFromSecretRefs: []
 
 podAnnotations: {}
   # foo: bar
+
+## Extra labels for the pod
+## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podExtraLabels: {}
+  # foo: bar
+
+## Extra labels for the deployment
+## Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+deploymentExtraLabels: {}
+  # foo: bar
+
 ## Readiness and liveness probe initial delay and timeout
 ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 readinessProbeInitialDelay: 30
@@ -199,6 +210,11 @@ prometheus:
   serviceMonitor:
     enabled: false
     interval: "30s"
+    # metricRelabelings:
+    #  - sourceLabels: [__name__]
+    #    regex: ^(process_|jvm_).*$
+    #    action: drop
+    # relabelings: []
     # service monitor label selectors: https://github.com/helm/charts/blob/f5a751f174263971fafd21eee4e35416d6612a3d/stable/prometheus-operator/templates/prometheus/prometheus.yaml#L74
     # additionalLabels:
     #   prometheus: k8s
@@ -206,3 +222,18 @@ prometheus:
     #   targetLabels:
     #   - prometheus
     #   - app.kubernetes.io/name
+
+# Allow alert rules to be configured for Prometheus Alertmanager
+prometheusRule:
+  enabled: false
+#  List of rules that can be used in Prometheus Alertmanager
+  rules: []
+#    - alert: ConsumerGroupLagHigh
+#      annotations:
+#        message: '{{ $labels.group }} on cluster {{ $labels.cluster_name }} is lagging on topic {{ $labels.topic }}'
+#      expr: 'max by (cluster_name, group, topic) (kafka_consumergroup_group_lag_seconds{cluster_name=~"my-cluster", group=~"consumergroup.A"} ) < Inf > 180'
+#      for: 5m
+#      labels:
+#        severity: medium
+
+logPattern: "%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg %ex%n"

@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2022 Sean Glover <https://seanglover.com>
  */
 
 package com.lightbend.kafkalagexporter.watchers
@@ -25,14 +26,21 @@ object Watcher {
     def error(e: Throwable): Unit
   }
 
-  def createClusterWatchers(context: ActorContext[KafkaClusterManager.Message],
-                            appConfig: AppConfig): Seq[ActorRef[Watcher.Message]] = {
+  def createClusterWatchers(
+      context: ActorContext[KafkaClusterManager.Message],
+      appConfig: AppConfig
+  ): Seq[ActorRef[Watcher.Message]] = {
     // Add additional watchers here..
     val configMap = Seq(StrimziClusterWatcher.name -> appConfig.strimziWatcher)
     configMap.flatMap {
       case (StrimziClusterWatcher.name, true) =>
         context.log.info(s"Adding watcher: ${StrimziClusterWatcher.name}")
-        Seq(context.spawn(StrimziClusterWatcher.init(context.self), s"strimzi-cluster-watcher-${StrimziClusterWatcher.name}"))
+        Seq(
+          context.spawn(
+            StrimziClusterWatcher.init(context.self),
+            s"strimzi-cluster-watcher-${StrimziClusterWatcher.name}"
+          )
+        )
       case _ => Seq()
     }
   }
