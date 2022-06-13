@@ -19,7 +19,7 @@ data:
         {{- range $cluster := .Values.clusters }}
         {
           name = "{{ $cluster.name }}"
-          bootstrap-brokers = "{{ $cluster.bootstrapBrokers }}"
+          bootstrap-brokers = {{ $cluster.bootstrapBrokers }}
           {{- if $cluster.groupWhitelist }}
           group-whitelist = [
             {{- $lastIndex := sub (len $cluster.groupWhitelist) 1}}
