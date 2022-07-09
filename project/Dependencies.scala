@@ -53,7 +53,7 @@ object Dependencies {
   val ScalaTest = "org.scalatest" %% "scalatest" % "3.2.12" % Test
   val AkkaStreamsTestKit =
     "com.typesafe.akka" %% "akka-stream-testkit" % Version.Akka % Test
-  val MockitoScala = "org.mockito" %% "mockito-scala" % "1.17.5" % Test
+  val MockitoScala = "org.mockito" %% "mockito-scala" % "1.17.7" % Test
   val AlpakkaKafkaTestKit =
     "com.typesafe.akka" %% "akka-stream-kafka-testkit" % "2.0.7" % Test excludeAll (jacksonExclusionRule, log4jExclusionRule, slf4jExclusionRule)
   val TestcontainersKafka =
