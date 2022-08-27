@@ -1,5 +1,5 @@
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.9")
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.10")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2")
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.5")
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.7.0")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.6")

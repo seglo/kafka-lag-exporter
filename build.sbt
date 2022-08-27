@@ -76,7 +76,9 @@ lazy val kafkaLagExporter =
           "org.opencontainers.image.authors" -> maintainer.value,
           "org.opencontainers.image.url" -> homepage.value.get.toString,
           "org.opencontainers.image.version" -> version.value,
-          "org.opencontainers.image.licenses" -> licenses.value.map(l => l._1 + ": " + l._2).mkString(", ")
+          "org.opencontainers.image.licenses" -> licenses.value
+            .map(l => l._1 + ": " + l._2)
+            .mkString(", ")
         )
           .map(l => l._1 + "=\"" + l._2 + "\"")
           .mkString(", \\\n")
