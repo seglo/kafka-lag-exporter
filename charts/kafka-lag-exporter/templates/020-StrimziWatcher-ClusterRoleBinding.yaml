@@ -5,10 +5,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "kafka-lag-exporter.fullname" . }}-strimziwatcher-clusterrolebinding
   labels:
-    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
-    helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- include "kafka-lag-exporter.labels" . | nindent 4 }}
 subjects:
 - kind: ServiceAccount
   name: {{ include "kafka-lag-exporter.fullname" . }}-serviceaccount

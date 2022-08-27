@@ -3,10 +3,7 @@ kind: Service
 metadata:
   name: {{ include "kafka-lag-exporter.fullname" . }}-service
   labels:
-    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
-    helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- include "kafka-lag-exporter.labels" . | nindent 4 }}
     jobLabel: {{ include "kafka-lag-exporter.fullname" . }}
     {{- if .Values.service.additionalLabels }}
 {{ toYaml .Values.service.additionalLabels | indent 4 -}}
@@ -23,5 +20,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "kafka-lag-exporter.selectorLabels" . | nindent 4 }}
