@@ -50,7 +50,7 @@ object Dependencies {
   /* Test */
   val AkkaTypedTestKit =
     "com.typesafe.akka" %% "akka-actor-testkit-typed" % Version.Akka % Test
-  val ScalaTest = "org.scalatest" %% "scalatest" % "3.2.12" % Test
+  val ScalaTest = "org.scalatest" %% "scalatest" % "3.2.13" % Test
   val AkkaStreamsTestKit =
     "com.typesafe.akka" %% "akka-stream-testkit" % Version.Akka % Test
   val MockitoScala = "org.mockito" %% "mockito-scala" % "1.17.5" % Test
