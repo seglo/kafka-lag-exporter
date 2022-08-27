@@ -9,7 +9,7 @@ import java.lang
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.lightbend.kafkalagexporter.KafkaCluster
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionBuilder
+import io.fabric8.kubernetes.api.model.apiextensions.v1beta1.CustomResourceDefinitionBuilder
 import io.fabric8.kubernetes.client.{Watcher => FWatcher, _}
 import io.fabric8.kubernetes.client.dsl.FilterWatchListMultiDeletable
 import io.fabric8.kubernetes.internal.KubernetesDeserializer

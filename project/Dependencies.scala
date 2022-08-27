@@ -3,9 +3,9 @@ import sbt._
 object Version {
   val Scala = "2.12.16"
   val Akka = "2.6.19"
-  val Prometheus = "0.16.0"
-  val Fabric8 = "4.9.1"
-  val Kafka = "2.5.0"
+  val Prometheus = "0.15.0"
+  val Fabric8 = "4.11.2"
+  val Kafka = "3.2.1"
   val Testcontainers = "1.17.3"
   val IAMAuth = "1.1.4"
 }

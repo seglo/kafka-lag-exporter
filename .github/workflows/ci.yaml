@@ -12,7 +12,7 @@ on:
 jobs:
   test:
     name: Build and Test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
     steps:
@@ -44,7 +44,7 @@ jobs:
 
   local-test:
     name: Integration tests using Testcontainers
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
     steps:
@@ -76,7 +76,7 @@ jobs:
 
   minikube-test:
     name: Integration tests using Minikube
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
     steps:
@@ -126,7 +126,7 @@ jobs:
 
   build-docker:
     name: Build Docker Image
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
     steps:
@@ -158,7 +158,7 @@ jobs:
 
   helm-chart:
     name: Package Helm Chart
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2

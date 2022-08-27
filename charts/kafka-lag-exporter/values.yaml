@@ -165,6 +165,9 @@ secrets: {}
 #    - name: my-keystore-file.p12
 #      value: base64-encoded-string
 
+secretAnnotations: {}
+  # foo: bar
+
 hostAliases: {}
 #  - ip: "192.168.99.100"
 #    hostnames:
