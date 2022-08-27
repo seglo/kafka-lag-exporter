@@ -108,6 +108,10 @@ kafkaLogLevel: INFO
 ## The log level of Akka
 akkaLogLevel: DEBUG
 
+## Additional labels to add to all resources
+additionalLabels: #{}
+  app: kafka-lag-exporter
+
 ## You probably won't need to change anything below this line.
 image:
   repository: seglo/kafka-lag-exporter
@@ -160,6 +164,9 @@ secrets: {}
 #  data:
 #    - name: my-keystore-file.p12
 #      value: base64-encoded-string
+
+secretAnnotations: {}
+  # foo: bar
 
 hostAliases: {}
 #  - ip: "192.168.99.100"

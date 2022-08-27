@@ -7,10 +7,7 @@ metadata:
   namespace: {{ .Values.prometheus.serviceMonitor.namespace }}
   {{- end }}
   labels:
-    app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
-    helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- include "kafka-lag-exporter.labels" . | nindent 4 }}
     {{- if .Values.prometheus.serviceMonitor.additionalLabels }}
 {{ toYaml .Values.prometheus.serviceMonitor.additionalLabels | indent 4 -}}
     {{- end }}
@@ -18,9 +15,7 @@ spec:
   jobLabel: jobLabel
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "kafka-lag-exporter.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
-      helm.sh/chart: {{ include "kafka-lag-exporter.chart" . }}
+      {{- include "kafka-lag-exporter.selectorLabels" . | nindent 6 }}
   namespaceSelector:
     matchNames:
     - {{ .Release.Namespace }}
