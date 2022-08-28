@@ -96,13 +96,9 @@ lazy val kafkaLagExporter =
           val path = layerId.map(i => s"$i/$files").getOrElse(s"$files")
           Cmd("COPY", s"$path /$files")
         }
-        Seq(Cmd("FROM", "redhat/ubi8:latest")) ++
+        Seq(Cmd("FROM", "eclipse-temurin:17-jre-alpine")) ++
           Seq(
-            Cmd(
-              "RUN",
-              "yum update -y && yum -y install java-17-openjdk-headless && yum clean all -y"
-            ),
-            Cmd("RUN", "useradd -r -m -u 1001 kafkalagexporter")
+            Cmd("RUN", "addgroup -S -g 1001 kafkalagexporter; adduser -S -u 1001 -G kafkalagexporter kafkalagexporter")
           ) ++
           layerCopy ++ Seq(
             labels,
