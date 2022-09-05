@@ -98,6 +98,7 @@ lazy val kafkaLagExporter =
         }
         Seq(Cmd("FROM", "eclipse-temurin:17-jre-alpine")) ++
           Seq(
+	    Cmd("RUN", "apk add --no-cache bash"),
             Cmd("RUN", "addgroup -S -g 1001 kafkalagexporter; adduser -S -u 1001 -G kafkalagexporter kafkalagexporter")
           ) ++
           layerCopy ++ Seq(
