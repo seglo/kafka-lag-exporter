@@ -9,7 +9,6 @@ data:
     kafka-lag-exporter {
       port = {{ .Values.service.port }}
       poll-interval = {{ .Values.pollIntervalSeconds }} seconds
-      lookup-table-size = {{ .Values.lookupTableSize }}
       client-group-id = "{{ .Values.clientGroupId }}"
       kafka-client-timeout = {{ .Values.kafkaClientTimeoutSeconds }} seconds
       clusters = [
@@ -73,6 +72,41 @@ data:
         }
         {{- end }}
       ]
+      {{- if .Values.lookup.redis.enabled }}
+      lookup-table.redis = {
+        {{- with .Values.lookup.redis.host }}
+        host = {{ . | quote }}
+        {{- end }}
+        {{- with .Values.lookup.redis.database }}
+        database = {{ . | quote }}
+        {{- end }}
+        {{- with .Values.lookup.redis.port }}
+        port = {{ . | quote }}
+        {{- end }}
+        {{- with .Values.lookup.redis.timeout }}
+        timeout = {{ . | quote }}
+        {{- end }}
+        {{- with .Values.lookup.redis.prefix }}
+        prefix = {{ . | quote }}
+        {{- end }}
+        {{- with .Values.lookup.redis.separator }}
+        separator = {{ . | quote }}
+        {{- end }}
+        {{- with .Values.lookup.redis.resolution }}
+        resolution = {{ . | quote }}
+        {{- end }}
+        {{- with .Values.lookup.redis.retention }}
+        retention = {{ . | quote }}
+        {{- end }}
+        {{- with .Values.lookup.redis.expiration }}
+        expiration = {{ . | quote }}
+        {{- end }}
+      }
+      {{- else }}
+      lookup-table.memory = {
+        size = {{ .Values.lookupTableSize | default .Values.lookup.memory.size }}
+      }
+      {{- end }}
 
       {{- $sinks := list -}}
       {{- if .Values.reporters.prometheus.enabled }}

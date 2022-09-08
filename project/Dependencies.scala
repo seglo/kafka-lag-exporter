@@ -8,6 +8,7 @@ object Version {
   val Kafka = "3.2.2"
   val Testcontainers = "1.17.3"
   val IAMAuth = "1.1.4"
+  val Redis = "3.42"
 }
 
 object Dependencies {
@@ -46,6 +47,7 @@ object Dependencies {
     "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val AkkaHttp = "com.typesafe.akka" %% "akka-http" % "10.2.10"
   val IAMAuthLib = "software.amazon.msk" % "aws-msk-iam-auth" % Version.IAMAuth
+  val ScalaRedis = "net.debasishg" %% "redisclient" % Version.Redis
 
   /* Test */
   val AkkaTypedTestKit =
@@ -60,4 +62,6 @@ object Dependencies {
     "org.testcontainers" % "kafka" % Version.Testcontainers % Test
   val TestcontainersInfluxDb =
     "org.testcontainers" % "influxdb" % Version.Testcontainers % Test
+  val TestcontainersRedis =
+    "org.testcontainers" % "spock" % Version.Testcontainers % Test
 }

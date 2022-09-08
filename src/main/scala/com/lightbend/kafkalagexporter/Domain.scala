@@ -40,27 +40,33 @@ object Domain {
   }
 
   class TopicPartitionTable private (
-      limit: Int,
-      var tables: Map[TopicPartition, LookupTable.Table]
+      var tables: Map[TopicPartition, LookupTable],
+      config: ConsumerGroupCollector.CollectorConfig
   ) {
-    def apply(tp: TopicPartition): LookupTable.Table = {
-      tables =
-        tables.updated(tp, tables.getOrElse(tp, LookupTable.Table(limit)))
+    def apply(tp: TopicPartition): LookupTable = {
+      val clusterName = config.cluster.name
+      tables = tables.updated(
+        tp,
+        tables.getOrElse(
+          tp,
+          LookupTable(clusterName, tp, config.lookupTableConfig)
+        )
+      )
       tables(tp)
     }
 
     def clear(evictedTps: List[TopicPartition]): Unit =
       tables = tables.filterKeys(tp => !evictedTps.contains(tp))
 
-    def all: Map[TopicPartition, LookupTable.Table] = tables
+    def all: Map[TopicPartition, LookupTable] = tables
   }
 
   object TopicPartitionTable {
     def apply(
-        limit: Int,
-        tables: Map[TopicPartition, LookupTable.Table] =
-          Map.empty[TopicPartition, LookupTable.Table]
+        tables: Map[TopicPartition, LookupTable] =
+          Map.empty[TopicPartition, LookupTable],
+        config: ConsumerGroupCollector.CollectorConfig
     ): TopicPartitionTable =
-      new TopicPartitionTable(limit, tables)
+      new TopicPartitionTable(tables, config)
   }
 }

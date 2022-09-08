@@ -30,10 +30,25 @@ clusters: {}
 #      location: ny
 #      zone: "us-east"
 
+# Lookup Table
+lookup:
+  memory:
+    ## Size of the sliding window of offsets to keep in each partition's lookup table
+    size: 60
+  redis:
+    enabled: false
+    # host: localhost
+    # database: 0
+    # port: 6379
+    # timeout: 60
+    # prefix: kafka-lag-exporter
+    # separator: ":"
+    # resolution: 1 minute
+    # retention: 1 day
+    # expiration: 7 days
+
 ## The interval between refreshing metrics
 pollIntervalSeconds: 30
-## Size of the sliding window of offsets to keep in each partition's lookup table
-lookupTableSize: 60
 ## The Consumer Group `group.id` to use when connecting to Kafka
 clientGroupId: "kafkalagexporter"
 ## The timeout when communicating with Kafka clusters

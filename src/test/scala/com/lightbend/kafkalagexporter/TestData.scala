@@ -6,6 +6,7 @@
 package com.lightbend.kafkalagexporter
 
 import com.lightbend.kafkalagexporter.Domain._
+import com.typesafe.config.ConfigFactory
 
 import org.apache.kafka.common.Node
 
@@ -61,6 +62,9 @@ trait TestData {
     topic2Partition0.topic,
     topic2Partition0.partition
   )
-  val lookupTableOnePoint = LookupTable.Table(20)
+  val lookupTableOnePointConfig = new LookupTableConfig.MemoryTableConfig(
+    ConfigFactory.parseString("lookup-table.memory.size = 20")
+  )
+  val lookupTableOnePoint = LookupTable.MemoryTable(lookupTableOnePointConfig)
   lookupTableOnePoint.addPoint(LookupTable.Point(100, 100))
 }
