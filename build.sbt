@@ -67,7 +67,7 @@ lazy val kafkaLagExporter =
       dockerCommands := {
         // OCI Image Spec Annotations
         // https://github.com/opencontainers/image-spec/blob/main/annotations.md
-        val labelsStr = Map(
+        val labels = Map(
           "org.opencontainers.image.title" -> name.value,
           "org.opencontainers.image.description" -> description.value,
           "org.opencontainers.image.vendor" -> organizationName.value,
@@ -82,7 +82,6 @@ lazy val kafkaLagExporter =
         )
           .map(l => l._1 + "=\"" + l._2 + "\"")
           .mkString(", \\\n")
-        val labels = Cmd("LABEL", labelsStr)
         val dockerBaseDirectory = (Docker / defaultLinuxInstallLocation).value
         val layerIdsAscending = (Docker / dockerLayerMappings).value
           .map(_.layerId)
@@ -94,33 +93,26 @@ lazy val kafkaLagExporter =
         val layerCopy = layerIdsAscending.map { layerId =>
           val files = dockerBaseDirectory.split(UnixSeparatorChar)(1)
           val path = layerId.map(i => s"$i/$files").getOrElse(s"$files")
-          Cmd("COPY", s"$path /$files")
+          Cmd("COPY", "--chown=1001:1001", s"$path /$files")
         }
-        Seq(Cmd("FROM", "redhat/ubi8:latest")) ++
-          Seq(
-            Cmd(
-              "RUN",
-              "yum update -y && yum -y install java-17-openjdk-headless && yum clean all -y"
-            ),
-            Cmd("RUN", "useradd -r -m -u 1001 kafkalagexporter")
-          ) ++
-          layerCopy ++ Seq(
-            labels,
-            Cmd(
-              "RUN",
-              "chgrp -R 1001 /opt && chmod -R g=u /opt && chmod +x /opt/docker/bin/kafka-lag-exporter"
-            ),
-            Cmd("WORKDIR", "/opt/docker"),
-            Cmd("USER", "1001")
-          ) ++
-          dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++ Seq(
-            ExecCmd(
-              "CMD",
-              "/opt/docker/bin/kafka-lag-exporter",
-              "-Dconfig.file=/opt/docker/conf/application.conf",
-              "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"
-            )
+        Seq(
+          Cmd("FROM", "eclipse-temurin:17-jre-alpine"),
+          Cmd("RUN", "apk add --no-cache bash"),
+          Cmd("RUN", "addgroup -S -g 1001 kafkalagexporter; adduser -S -u 1001 -G kafkalagexporter kafkalagexporter"),
+          Cmd("WORKDIR", "/opt/docker"),
+          Cmd("USER", "1001"),
+          Cmd("LABEL", labels)
+        ) ++
+        layerCopy ++
+        dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++ 
+        Seq(
+          ExecCmd(
+            "CMD",
+            "/opt/docker/bin/kafka-lag-exporter",
+            "-Dconfig.file=/opt/docker/conf/application.conf",
+            "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"
           )
+        )
       },
       updateHelmChart := {
         import scala.sys.process._
