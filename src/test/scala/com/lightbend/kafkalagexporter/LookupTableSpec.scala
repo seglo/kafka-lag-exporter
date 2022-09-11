@@ -6,31 +6,31 @@
 package com.lightbend.kafkalagexporter
 
 import com.lightbend.kafkalagexporter.ConsumerGroupCollector.CollectorConfig
-import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.{
-  Inserted,
-  NonMonotonic,
-  OutOfOrder,
-  UpdatedRetention,
-  UpdatedSameOffset
-}
-import com.lightbend.kafkalagexporter.LookupTable.LookupResult.{
-  LagIsZero,
-  Prediction,
-  TooFewPoints
-}
+import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.Inserted
+import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.NonMonotonic
+import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.OutOfOrder
+import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.UpdatedRetention
+import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.UpdatedSameOffset
+import com.lightbend.kafkalagexporter.LookupTable.LookupResult.LagIsZero
+import com.lightbend.kafkalagexporter.LookupTable.LookupResult.Prediction
+import com.lightbend.kafkalagexporter.LookupTable.LookupResult.TooFewPoints
 import com.lightbend.kafkalagexporter.LookupTableConfig.RedisTableConfig
-
-import java.time.{Clock, Instant, ZoneId}
 import com.redis.RedisClient
 import com.typesafe.config.ConfigFactory
+import java.time.Instant
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
 import scala.concurrent.duration.DurationInt
 
-class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
+class LookupTableSpec
+    extends AnyFreeSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach {
 
   import com.lightbend.kafkalagexporter.LookupTable._
 
@@ -41,6 +41,7 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
     c
   }
 
+  val testClock: TestClock = new TestClock
   var redisConfig: RedisTableConfig = null
   var redisClient: RedisClient = null
   var config: CollectorConfig = null
@@ -48,13 +49,6 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     container.start()
-//    redisConfig = LookupTableConfig.RedisTableConfig(
-//      resolution = 0.second,
-//      retention = Long.MaxValue.nanoseconds,
-//      expiration = 30.minute,
-//      host = container.getHost,
-//      port = container.getFirstMappedPort
-//    )
     redisConfig = new LookupTableConfig.RedisTableConfig(
       ConfigFactory.parseString(s"""lookup-table.redis = {
            |  resolution = 0 seconds
@@ -69,13 +63,13 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       0.second,
       redisConfig,
       KafkaCluster("default", ""),
-      Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault())
+      testClock
     )
     table = LookupTable.RedisTable(
       config.cluster.name,
       Domain.TopicPartition("topic", 0),
       redisConfig,
-      Clock.fixed(Instant.EPOCH, ZoneId.of("UTC"))
+      testClock
     )
   }
 
@@ -83,12 +77,15 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
     container.stop()
   }
 
+  override def beforeEach(): Unit = {
+    // make sure the Point table is empty
+    redisClient.del(table.pointsKey)
+    testClock.setInstant(Instant.EPOCH)
+  }
+
   "LookupTable" - {
     "RedisTable" - {
       "invalids and edge conditions" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         if (table.length > 0) {
           fail(s"New table should be empty $table")
         }
@@ -115,9 +112,6 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "square lookups, x == y" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         table.addPoint(Point(100, 100)) shouldBe Inserted
         table.addPoint(Point(200, 200)) shouldBe Inserted
 
@@ -134,9 +128,6 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "lookups with flat sections" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         table.addPoint(Point(100, 30))
         table.addPoint(Point(200, 60))
         table.addPoint(Point(200, 120))
@@ -164,9 +155,6 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "lookups when table only contains a flat section with offsets same as lookup" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         table.addPoint(Point(0, 0))
         table.addPoint(Point(0, 100))
 
@@ -174,17 +162,11 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "lookup is zero when when table has a single element the same as the last group offset" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         table.addPoint(Point(0, 100))
         table.lookup(0) shouldBe LagIsZero
       }
 
       "infinite lookups, dy == 0, flat curve/no growth" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         table.addPoint(Point(100, 100))
         table.addPoint(Point(100, 200))
         table.addPoint(Point(100, 300))
@@ -207,7 +189,7 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "table retention and resolution" in {
-        val _redisTableConfig = new LookupTableConfig.RedisTableConfig(
+        val redisConfig = new LookupTableConfig.RedisTableConfig(
           ConfigFactory.parseString(s"""lookup-table.redis = {
                |  resolution = 1 seconds
                |  retention = 2 seconds
@@ -216,37 +198,33 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
                |  port = ${container.getFirstMappedPort}
                |}""".stripMargin)
         )
-        val _config = ConsumerGroupCollector.CollectorConfig(
-          0.second,
-          _redisTableConfig,
-          KafkaCluster("default", ""),
-          Clock.fixed(Instant.ofEpochMilli(0), ZoneId.systemDefault())
-        )
         val table = LookupTable.RedisTable(
-          _config.cluster.name,
-          Domain.TopicPartition("topic", 0),
-          _redisTableConfig
+          clusterName = "default",
+          tp = Domain.TopicPartition("topic", 0),
+          config = redisConfig,
+          clock = testClock
         )
-
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
 
         table.addPoint(
           Point(100, 0)
         ) shouldBe Inserted
+        // tick less than 1 second to update most recent point
+        testClock.setInstant(Instant.ofEpochMilli(1))
         table.addPoint(
-          Point(200, 0)
+          Point(200, 1)
         ) shouldBe UpdatedRetention
 
+        testClock.setInstant(Instant.ofEpochMilli(1000))
         table.addPoint(
           Point(200, 1000)
         ) shouldBe Inserted
 
+        testClock.setInstant(Instant.ofEpochMilli(2000))
         table.addPoint(
           Point(200, 2000)
         ) shouldBe UpdatedSameOffset
         table.addPoint(
-          Point(300, 2000)
+          Point(300, 2001)
         ) shouldBe Inserted
 
         if (table.length != 3) {
@@ -255,9 +233,10 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
           )
         }
 
-        // Tick 1 second for the first point to expire
+        testClock.setInstant(Instant.ofEpochMilli(3001))
+        // tick 1 second for the first point to expire
         table.addPoint(
-          Point(400, 3000)
+          Point(400, 3001)
         ) shouldBe Inserted
 
         if (table.length != 3) {
@@ -265,9 +244,10 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
             s"Expected table to limit to 3 entries (current is ${table.length})"
           )
         }
-
+        // tick > 1 interval of 1 second since most recent point
+        testClock.setInstant(Instant.ofEpochMilli(4002))
         table.addPoint(
-          Point(500, 4000)
+          Point(500, 4002)
         ) shouldBe Inserted
 
         if (table.length != 2) {
@@ -278,9 +258,6 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "normal case, steady timestamps, different val rates" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         table.addPoint(Point(0, 0))
         table.addPoint(Point(10, 1))
         table.addPoint(Point(200, 2))
@@ -307,9 +284,6 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "mostRecentPoint" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         val result = table.mostRecentPoint()
         if (result.isRight) {
           fail(
@@ -336,9 +310,6 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "redis return invalid results" in {
-        // Make sure the Point table is empty
-        redisClient.del(table.pointsKey)
-
         table.addPoint(Point(100, 100)) shouldBe Inserted
         table.addPoint(Point(110, 90)) shouldBe OutOfOrder
         table.addPoint(Point(90, 110)) shouldBe NonMonotonic
