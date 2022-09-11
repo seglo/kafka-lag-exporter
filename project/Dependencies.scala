@@ -44,7 +44,7 @@ object Dependencies {
   val Fabric8Client = "io.fabric8" % "kubernetes-client" % Version.Fabric8
   val ScalaJava8Compat =
     "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
-  val AkkaHttp = "com.typesafe.akka" %% "akka-http" % "10.2.9"
+  val AkkaHttp = "com.typesafe.akka" %% "akka-http" % "10.2.10"
   val IAMAuthLib = "software.amazon.msk" % "aws-msk-iam-auth" % Version.IAMAuth
 
   /* Test */
