@@ -2,6 +2,17 @@ apiVersion: v1
 entries:
   kafka-lag-exporter:
   - apiVersion: v1
+    appVersion: 0.7.3
+    created: "2022-09-11T19:27:53.667688465Z"
+    description: Kafka Lag Exporter
+    digest: 1e82b987801fcaa2c6268b2116b3b06e74311a81238f21157c6873209a049817
+    maintainers:
+    - name: Sean Glover
+    name: kafka-lag-exporter
+    urls:
+    - https://github.com/seglo/kafka-lag-exporter/releases/download/v0.7.3/kafka-lag-exporter-0.7.3.tgz
+    version: 0.7.3
+  - apiVersion: v1
     appVersion: 0.7.2
     created: "2022-08-27T16:17:31.444709557Z"
     description: Kafka Lag Exporter
@@ -67,4 +78,4 @@ entries:
     urls:
     - https://github.com/lightbend/kafka-lag-exporter/releases/download/v0.6.6/kafka-lag-exporter-0.6.6.tgz
     version: 0.6.6
-generated: "2022-08-27T16:17:31.44372974Z"
+generated: "2022-09-11T19:27:53.665698737Z"
