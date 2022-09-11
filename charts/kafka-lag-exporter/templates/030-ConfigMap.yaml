@@ -73,35 +73,19 @@ data:
         {{- end }}
       ]
       {{- if .Values.lookup.redis.enabled }}
+      {{- with .Values.lookup.redis }}
       lookup-table.redis = {
-        {{- with .Values.lookup.redis.host }}
-        host = {{ . | quote }}
-        {{- end }}
-        {{- with .Values.lookup.redis.database }}
-        database = {{ . | quote }}
-        {{- end }}
-        {{- with .Values.lookup.redis.port }}
-        port = {{ . | quote }}
-        {{- end }}
-        {{- with .Values.lookup.redis.timeout }}
-        timeout = {{ . | quote }}
-        {{- end }}
-        {{- with .Values.lookup.redis.prefix }}
-        prefix = {{ . | quote }}
-        {{- end }}
-        {{- with .Values.lookup.redis.separator }}
-        separator = {{ . | quote }}
-        {{- end }}
-        {{- with .Values.lookup.redis.resolution }}
-        resolution = {{ . | quote }}
-        {{- end }}
-        {{- with .Values.lookup.redis.retention }}
-        retention = {{ . | quote }}
-        {{- end }}
-        {{- with .Values.lookup.redis.expiration }}
-        expiration = {{ . | quote }}
-        {{- end }}
+        host = {{ .host | quote }}
+        database = {{ .database | quote }}
+        port = {{ .port | quote }}
+        timeout = {{ .timeout }}
+        prefix = {{ .prefix | quote }}
+        separator = {{ .separator | quote }}
+        resolution = {{ .resolution | quote }}
+        retention = {{ .retention | quote }}
+        expiration = {{ .expiration | quote }}
       }
+      {{- end }}
       {{- else }}
       lookup-table.memory = {
         size = {{ .Values.lookupTableSize | default .Values.lookup.memory.size }}

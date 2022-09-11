@@ -327,46 +327,32 @@ object ConsumerGroupCollector {
     ): Unit = {
       topicPartitionTables.clear(evictedTps)
       for ((tp, point) <- snapshot.latestOffsets) {
+        def logAddPoint(msg: String) =
+          log.debug(
+            "  " + msg,
+            point.offset.toString,
+            point.time.toString,
+            tp.topic,
+            tp.partition.toString
+          )
         topicPartitionTables(tp).addPoint(point) match {
           case Inserted =>
-            log.debug(
-              "  Point ({}, {}) was added to the lookup table ({}, {})",
-              point.offset.toString,
-              point.time.toString,
-              tp.topic,
-              tp.partition.toString
-            )
+            logAddPoint("Point ({}, {}) was added to the lookup table ({}, {})")
           case NonMonotonic =>
-            log.debug(
-              "  Point ({}, {}) was not added to the lookup table ({}, {}) because it was not part of a monotonically increasing set",
-              point.offset.toString,
-              point.time.toString,
-              tp.topic,
-              tp.partition.toString
+            logAddPoint(
+              "Point ({}, {}) was not added to the lookup table ({}, {}) because it was not part of a monotonically increasing set"
             )
           case OutOfOrder =>
-            log.debug(
-              "  Point ({}, {}) was not added to the lookup table ({}, {}) because the time is older than the previous point",
-              point.offset.toString,
-              point.time.toString,
-              tp.topic,
-              tp.partition.toString
+            logAddPoint(
+              "Point ({}, {}) was not added to the lookup table ({}, {}) because the time is older than the previous point"
             )
           case UpdatedRetention =>
-            log.debug(
-              "  Point ({}, {}) was updated in the lookup table ({}, {}) because the last insert was too recent",
-              point.offset.toString,
-              point.time.toString,
-              tp.topic,
-              tp.partition.toString
+            logAddPoint(
+              "Point ({}, {}) was updated in the lookup table ({}, {}) because the last insert was too recent"
             )
           case UpdatedSameOffset =>
-            log.debug(
-              "  Point ({}, {}) was updated in the lookup table ({}, {}) because the offset was the same",
-              point.offset.toString,
-              point.time.toString,
-              tp.topic,
-              tp.partition.toString
+            logAddPoint(
+              "Point ({}, {}) was updated in the lookup table ({}, {}) because the offset was the same"
             )
         }
       }
