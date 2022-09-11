@@ -232,21 +232,21 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
         redisClient.del(table.pointsKey)
 
         table.addPoint(
-          Point(100, Clock.systemUTC().instant().toEpochMilli)
+          Point(100, 0)
         ) shouldBe Inserted
         table.addPoint(
-          Point(200, Clock.systemUTC().instant().toEpochMilli)
+          Point(200, 0)
         ) shouldBe UpdatedRetention
-        Thread.sleep(1000)
+
         table.addPoint(
-          Point(200, Clock.systemUTC().instant().toEpochMilli)
+          Point(200, 1000)
         ) shouldBe Inserted
-        Thread.sleep(1000)
+
         table.addPoint(
-          Point(200, Clock.systemUTC().instant().toEpochMilli)
+          Point(200, 2000)
         ) shouldBe UpdatedSameOffset
         table.addPoint(
-          Point(300, Clock.systemUTC().instant().toEpochMilli)
+          Point(300, 2000)
         ) shouldBe Inserted
 
         if (table.length != 3) {
@@ -255,10 +255,9 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
           )
         }
 
-        // Sleeping 1 seconds for the first point to expire
-        Thread.sleep(1000)
+        // Tick 1 second for the first point to expire
         table.addPoint(
-          Point(400, Clock.systemUTC().instant().toEpochMilli)
+          Point(400, 3000)
         ) shouldBe Inserted
 
         if (table.length != 3) {
@@ -267,9 +266,8 @@ class LookupTableSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
           )
         }
 
-        Thread.sleep(1000)
         table.addPoint(
-          Point(500, Clock.systemUTC().instant().toEpochMilli)
+          Point(500, 4000)
         ) shouldBe Inserted
 
         if (table.length != 2) {
