@@ -16,8 +16,7 @@ import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.{
   Inserted,
   NonMonotonic,
   OutOfOrder,
-  UpdatedRetention,
-  UpdatedSameOffset
+  Updated
 }
 import com.lightbend.kafkalagexporter.LookupTable.LookupResult.{
   LagIsZero,
@@ -26,6 +25,7 @@ import com.lightbend.kafkalagexporter.LookupTable.LookupResult.{
 }
 import org.slf4j.Logger
 
+import java.text.NumberFormat
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -174,6 +174,9 @@ object ConsumerGroupCollector {
   // TODO: assert state transition changes. See `ConsumerGroupCollectorSpec` which uses mockito to assert the state
   // TODO: transition change
   class CollectorBehavior {
+    val nf = NumberFormat.getNumberInstance
+    nf.setMaximumFractionDigits(0)
+
     def collector(
         config: CollectorConfig,
         client: KafkaClientContract,
@@ -330,14 +333,16 @@ object ConsumerGroupCollector {
         def logAddPoint(msg: String) =
           log.debug(
             "  " + msg,
-            point.offset.toString,
-            point.time.toString,
+            nf.format(point.offset),
+            nf.format(point.time),
             tp.topic,
-            tp.partition.toString
+            nf.format(tp.partition)
           )
         topicPartitionTables(tp).addPoint(point) match {
           case Inserted =>
-            logAddPoint("Point ({}, {}) was added to the lookup table ({}, {})")
+            logAddPoint(
+              "Point ({}, {}) was added to the lookup table ({}, {})"
+            )
           case NonMonotonic =>
             logAddPoint(
               "Point ({}, {}) was not added to the lookup table ({}, {}) because it was not part of a monotonically increasing set"
@@ -346,13 +351,9 @@ object ConsumerGroupCollector {
             logAddPoint(
               "Point ({}, {}) was not added to the lookup table ({}, {}) because the time is older than the previous point"
             )
-          case UpdatedRetention =>
+          case Updated =>
             logAddPoint(
-              "Point ({}, {}) was updated in the lookup table ({}, {}) because the last insert was too recent"
-            )
-          case UpdatedSameOffset =>
-            logAddPoint(
-              "Point ({}, {}) was updated in the lookup table ({}, {}) because the offset was the same"
+              "Point ({}, {}) was updated in the lookup table ({}, {}) because the previous point had the same offset"
             )
         }
       }
@@ -374,12 +375,6 @@ object ConsumerGroupCollector {
         val (groupOffset, offsetLag, timeLag) = groupPoint match {
           case Some(point) =>
             val groupOffset = point.offset.toDouble
-            log.debug(
-              "Find time lag for offset {} in the lookup table ({}, {})",
-              point.offset.toString,
-              gtp.tp.topic,
-              gtp.tp.partition.toString
-            )
             val timeLagResult = tables(gtp.tp).lookup(point.offset)
             val timeLag = timeLagResult match {
               case Prediction(pxTime) => (point.time.toDouble - pxTime) / 1000
@@ -389,6 +384,15 @@ object ConsumerGroupCollector {
 
             val offsetLagCalc = mostRecentPoint.offset - point.offset
             val offsetLag = if (offsetLagCalc < 0) 0d else offsetLagCalc
+
+            log.debug(
+              "  Found time_lag=\"{}\" and offset_lag=\"{}\" for offset=\"{}\" in the lookup table ({}, {})",
+              nf.format(timeLag),
+              nf.format(offsetLag),
+              nf.format(groupOffset),
+              gtp.tp.topic,
+              gtp.tp.partition.toString
+            )
 
             (groupOffset, offsetLag, timeLag)
           case None => (Double.NaN, Double.NaN, Double.NaN)

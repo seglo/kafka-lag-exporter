@@ -81,7 +81,6 @@ data:
         timeout = {{ .timeout }}
         prefix = {{ .prefix | quote }}
         separator = {{ .separator | quote }}
-        resolution = {{ .resolution | quote }}
         retention = {{ .retention | quote }}
         expiration = {{ .expiration | quote }}
       }

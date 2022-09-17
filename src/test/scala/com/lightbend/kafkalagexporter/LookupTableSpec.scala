@@ -9,8 +9,7 @@ import com.lightbend.kafkalagexporter.ConsumerGroupCollector.CollectorConfig
 import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.Inserted
 import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.NonMonotonic
 import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.OutOfOrder
-import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.UpdatedRetention
-import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.UpdatedSameOffset
+import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.Updated
 import com.lightbend.kafkalagexporter.LookupTable.LookupResult.LagIsZero
 import com.lightbend.kafkalagexporter.LookupTable.LookupResult.Prediction
 import com.lightbend.kafkalagexporter.LookupTable.LookupResult.TooFewPoints
@@ -51,7 +50,6 @@ class LookupTableSpec
     container.start()
     redisConfig = new LookupTableConfig.RedisTableConfig(
       ConfigFactory.parseString(s"""lookup-table.redis = {
-           |  resolution = 0 seconds
            |  retention = 1 day
            |  expiration = 30 minutes
            |  host = "${container.getHost}"
@@ -188,10 +186,9 @@ class LookupTableSpec
         )
       }
 
-      "table retention and resolution" in {
+      "table retention" in {
         val redisConfig = new LookupTableConfig.RedisTableConfig(
           ConfigFactory.parseString(s"""lookup-table.redis = {
-               |  resolution = 1 seconds
                |  retention = 2 seconds
                |  expiration = 30 minutes
                |  host = "${container.getHost}"
@@ -208,11 +205,6 @@ class LookupTableSpec
         table.addPoint(
           Point(100, 0)
         ) shouldBe Inserted
-        // tick less than 1 second to update most recent point
-        testClock.setInstant(Instant.ofEpochMilli(1))
-        table.addPoint(
-          Point(200, 1)
-        ) shouldBe UpdatedRetention
 
         testClock.setInstant(Instant.ofEpochMilli(1000))
         table.addPoint(
@@ -222,7 +214,8 @@ class LookupTableSpec
         testClock.setInstant(Instant.ofEpochMilli(2000))
         table.addPoint(
           Point(200, 2000)
-        ) shouldBe UpdatedSameOffset
+        ) shouldBe Updated
+
         table.addPoint(
           Point(300, 2001)
         ) shouldBe Inserted

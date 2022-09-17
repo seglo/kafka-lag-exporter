@@ -314,7 +314,6 @@ Redis Details (`kafka-lag-exporter.lookup-table.redis{}`)
 | `timeout`    | `60`                   | No       | Redis connection timeout.                                                                                           |
 | `prefix`     | `"kafka-lag-exporter"` | No       | Prefix used by all the keys.                                                                                        |
 | `separator`  | `":"`                  | No       | Separator used to build the keys.                                                                                   |
-| `resolution` | `"1 minute"`           | No       | Resolution of the lookup table. Last point will get updated if the collection interval is less than the resolution. |
 | `retention`  | `"1 day"`              | No       | Retention of the lookup table. Points will get removed from the table after that.                                   |
 | `expiration` | `"1 day"`              | No       | Expiration (TTL) of all the keys.                                                                                   |
 

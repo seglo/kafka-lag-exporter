@@ -50,7 +50,6 @@ object LookupTableConfig {
     val TimeoutDefault: Duration = 60.seconds
     val PrefixDefault: String = "kafka-lag-exporter"
     val SeparatorDefault: String = ":"
-    val ResolutionDefault: Duration = 1.minute
     val RetentionDefault: Duration = 1.day
     val ExpirationDefault: Duration = 1.day
   }
@@ -89,11 +88,6 @@ object LookupTableConfig {
         redis.getString("separator")
       else SeparatorDefault
 
-    val resolution =
-      if (redis.hasPath("resolution"))
-        redis.getDuration("resolution").toScala
-      else ResolutionDefault
-
     val retention =
       if (redis.hasPath("retention"))
         redis.getDuration("retention").toScala
@@ -121,7 +115,6 @@ object LookupTableConfig {
          |  Timeout: $timeout
          |  Prefix: $prefix
          |  Separator: $separator
-         |  Resolution: $resolution
          |  Retention: $retention
          |  Expiration: $expiration
      """.stripMargin

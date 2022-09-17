@@ -20,7 +20,6 @@ import com.lightbend.kafkalagexporter.LookupTableConfig.{
 import com.redis.RedisClient
 
 import scala.collection.mutable
-import scala.util.Try
 import scala.util.control._
 
 sealed trait LookupTable {
@@ -72,9 +71,8 @@ object LookupTable {
   object AddPointResult {
     case object OutOfOrder extends AddPointResult
     case object NonMonotonic extends AddPointResult
-    case object UpdatedSameOffset extends AddPointResult
+    case object Updated extends AddPointResult
     case object Inserted extends AddPointResult
-    case object UpdatedRetention extends AddPointResult
   }
 
   def apply(
@@ -96,10 +94,6 @@ object LookupTable {
 
     val pointsKey = List(prefix, clusterName, tp.topic, tp.partition, "points")
       .mkString(separator)
-    val lastUpdatedKey =
-      List(prefix, clusterName, tp.topic, tp.partition, "updated").mkString(
-        separator
-      )
     val client = config.client
 
     /** Add the `Point` to the table.
@@ -111,58 +105,20 @@ object LookupTable {
         // new point is not part of a monotonically increasing set
         case Right(mrp) if mrp.offset > point.offset => NonMonotonic
         // compress flat lines to a single segment
-        case Right(_) if isFlat(point) =>
-          // update the most recent point
-          removeExpiredPoints()
-          val times = client
-            .zrangebyscore(
-              key = pointsKey,
-              min = point.offset,
-              max = point.offset,
-              limit = Some((0, 2): (Int, Int))
-            )
-            .get
-          client.zremrangebyscore(
-            key = pointsKey,
-            start = point.offset,
-            end = point.offset
-          )
-          client.zadd(
-            pointsKey,
-            point.offset.toDouble,
-            times.minBy(_.toLong)
-          )
+        case Right(_) if isFlat(point) => removeExpiredPoints()
+          // get first and last time for flat points
+          val times = client.zrangebyscore(key = pointsKey, min = point.offset, max = point.offset, limit = Some((0, 2): (Int, Int))).get
+          // remove points with the same offset
+          client.zremrangebyscore(key = pointsKey, start = point.offset, end = point.offset)
+          // insert earliest + current points
+          client.zadd(pointsKey, point.offset.toDouble, times.minBy(_.toLong))
           client.zadd(pointsKey, point.offset.toDouble, point.time)
           expireKeys()
-          UpdatedSameOffset
-        case Right(mrp) =>
-          // dequeue oldest point if we've hit the limit
-          removeExpiredPoints()
-          val lastUpdatedTimestamp =
-            client.get(lastUpdatedKey).getOrElse("0")
-          Try(lastUpdatedTimestamp.toLong).toOption match {
-            case Some(lastUpdatedTimestamp)
-                if point.time - lastUpdatedTimestamp < resolution.toMillis =>
-              client.zremrangebyscore(
-                key = pointsKey,
-                start = mrp.offset,
-                end = mrp.offset
-              )
-              client.zadd(pointsKey, point.offset.toDouble, point.time)
-              expireKeys()
-              UpdatedRetention
-            case _ =>
-              client.zadd(pointsKey, point.offset.toDouble, point.time)
-              client.set(lastUpdatedKey, point.time)
-              expireKeys()
-              Inserted
-          }
-        // the table is empty or we filtered thru previous cases on the most recent point
+          Updated
         case _ =>
           // dequeue oldest point if we've hit the limit
           removeExpiredPoints()
           client.zadd(pointsKey, point.offset.toDouble, point.time)
-          client.set(lastUpdatedKey, point.time)
           expireKeys()
           Inserted
       }
@@ -246,10 +202,6 @@ object LookupTable {
       */
     def expireKeys(): Unit = {
       client.expire(pointsKey, expiration.toSeconds.toInt)
-      client.expire(
-        lastUpdatedKey,
-        expiration.toSeconds.toInt
-      )
     }
 
     /** Remove points that are older than the configured retention
@@ -354,7 +306,7 @@ object LookupTable {
       case Right(_) if isFlat(point) =>
         // update the most recent point
         points(points.length - 1) = point
-        UpdatedSameOffset
+        Updated
       // the table is empty or we filtered thru previous cases on the most recent point
       case _ =>
         // dequeue oldest point if we've hit the limit (sliding window)

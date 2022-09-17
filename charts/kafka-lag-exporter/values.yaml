@@ -43,7 +43,6 @@ lookup:
     # timeout: 60
     # prefix: kafka-lag-exporter
     # separator: ":"
-    # resolution: 1 minute
     # retention: 1 day
     # expiration: 7 days
 
