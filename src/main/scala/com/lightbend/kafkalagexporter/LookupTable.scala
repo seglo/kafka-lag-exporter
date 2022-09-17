@@ -105,11 +105,23 @@ object LookupTable {
         // new point is not part of a monotonically increasing set
         case Right(mrp) if mrp.offset > point.offset => NonMonotonic
         // compress flat lines to a single segment
-        case Right(_) if isFlat(point) => removeExpiredPoints()
+        case Right(_) if isFlat(point) =>
+          removeExpiredPoints()
           // get first and last time for flat points
-          val times = client.zrangebyscore(key = pointsKey, min = point.offset, max = point.offset, limit = Some((0, 2): (Int, Int))).get
+          val times = client
+            .zrangebyscore(
+              key = pointsKey,
+              min = point.offset,
+              max = point.offset,
+              limit = Some((0, 2): (Int, Int))
+            )
+            .get
           // remove points with the same offset
-          client.zremrangebyscore(key = pointsKey, start = point.offset, end = point.offset)
+          client.zremrangebyscore(
+            key = pointsKey,
+            start = point.offset,
+            end = point.offset
+          )
           // insert earliest + current points
           client.zadd(pointsKey, point.offset.toDouble, times.minBy(_.toLong))
           client.zadd(pointsKey, point.offset.toDouble, point.time)
