@@ -201,40 +201,50 @@ class LookupTableSpec
           config = redisConfig,
           clock = testClock
         )
-
+        // Add a normal point
         table.addPoint(
           Point(100, 0)
         ) shouldBe Inserted
 
+        // Add first part of the flat line
         testClock.setInstant(Instant.ofEpochMilli(1000))
         table.addPoint(
           Point(200, 1000)
         ) shouldBe Inserted
 
+        // Add another point with same offet to make a flat line
+        testClock.setInstant(Instant.ofEpochMilli(1500))
+        table.addPoint(
+          Point(200, 1500)
+        ) shouldBe Inserted
+
+        // Add another point with the same offset, will extend the flat line
         testClock.setInstant(Instant.ofEpochMilli(2000))
         table.addPoint(
           Point(200, 2000)
         ) shouldBe Updated
 
+        testClock.setInstant(Instant.ofEpochMilli(3000))
         table.addPoint(
-          Point(300, 2001)
+          Point(300, 3000)
         ) shouldBe Inserted
 
+        // first point is more than 2 seconds old, so that let 3 points
         if (table.length != 3) {
           fail(
-            s"Expected table to limit to 3 entries (current is ${table.length})"
+            s"Expected table to limit to 3 entry (current is ${table.length})"
           )
         }
 
-        testClock.setInstant(Instant.ofEpochMilli(3001))
-        // tick 1 second for the first point to expire
+        testClock.setInstant(Instant.ofEpochMilli(4001))
+        // tick 1+ second for the first point to expire
         table.addPoint(
-          Point(400, 3001)
+          Point(400, 4000)
         ) shouldBe Inserted
 
-        if (table.length != 3) {
+        if (table.length != 2) {
           fail(
-            s"Expected table to limit to 3 entries (current is ${table.length})"
+            s"Expected table to limit to 2 entries (current is ${table.length})"
           )
         }
         // tick > 1 interval of 1 second since most recent point
@@ -243,9 +253,9 @@ class LookupTableSpec
           Point(500, 4002)
         ) shouldBe Inserted
 
-        if (table.length != 2) {
+        if (table.length != 3) {
           fail(
-            s"Expected table to limit to 2 entries (current is ${table.length})"
+            s"Expected table to limit to 3 entries (current is ${table.length})"
           )
         }
       }
