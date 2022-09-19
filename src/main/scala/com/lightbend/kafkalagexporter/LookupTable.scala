@@ -92,7 +92,7 @@ object LookupTable {
   ) extends LookupTable {
     import config._
 
-    val pointsKey = List(prefix, clusterName, tp.topic, tp.partition, "points")
+    val key = List(prefix, clusterName, tp.topic, tp.partition)
       .mkString(separator)
     val client = config.client
 
@@ -110,7 +110,7 @@ object LookupTable {
           // get first and last time for flat points
           val times = client
             .zrangebyscore(
-              key = pointsKey,
+              key = key,
               min = point.offset,
               max = point.offset,
               limit = Some((0, 2): (Int, Int))
@@ -118,19 +118,19 @@ object LookupTable {
             .get
           // remove points with the same offset
           client.zremrangebyscore(
-            key = pointsKey,
+            key = key,
             start = point.offset,
             end = point.offset
           )
           // insert earliest + current points
-          client.zadd(pointsKey, point.offset.toDouble, times.minBy(_.toLong))
-          client.zadd(pointsKey, point.offset.toDouble, point.time)
+          client.zadd(key, point.offset.toDouble, times.minBy(_.toLong))
+          client.zadd(key, point.offset.toDouble, point.time)
           expireKeys()
           Updated
         case _ =>
           // dequeue oldest point if we've hit the limit
           removeExpiredPoints()
-          client.zadd(pointsKey, point.offset.toDouble, point.time)
+          client.zadd(key, point.offset.toDouble, point.time)
           expireKeys()
           Inserted
       }
@@ -142,7 +142,7 @@ object LookupTable {
     def lookup(offset: Long): LookupResult = {
       def estimate(): LookupResult = {
         // Look in the sorted set for an exact point. It can happens by chance or during flattened range
-        client zrangebyscore (key = pointsKey, min = offset.toDouble, max =
+        client zrangebyscore (key = key, min = offset.toDouble, max =
           offset.toDouble, limit = Some((0, 1): (Int, Int)), sortAs =
           RedisClient.DESC) match {
           // unexpected situation where the redis result is None
@@ -153,7 +153,7 @@ object LookupTable {
         }
 
         var left: Either[String, Point] = client.zrangebyscoreWithScore(
-          key = pointsKey,
+          key = key,
           min = 0,
           max = offset.toDouble,
           maxInclusive = false,
@@ -172,7 +172,7 @@ object LookupTable {
         }
 
         var right: Either[String, Point] = client.zrangebyscoreWithScore(
-          key = pointsKey,
+          key = key,
           min = offset.toDouble,
           minInclusive = false,
           max = Double.PositiveInfinity,
@@ -213,7 +213,7 @@ object LookupTable {
     /** Expire keys in Redis with the configured TTL
       */
     def expireKeys(): Unit = {
-      client.expire(pointsKey, expiration.toSeconds.toInt)
+      client.expire(key, expiration.toSeconds.toInt)
     }
 
     /** Remove points that are older than the configured retention
@@ -237,7 +237,7 @@ object LookupTable {
     /** Remove the oldest point
       */
     def removeOldestPoint(): Unit = {
-      client.zremrangebyrank(pointsKey, 0, 0)
+      client.zremrangebyrank(key, 0, 0)
     }
 
     /** Return the oldest `Point`. Returns either an error message, or the
@@ -249,7 +249,7 @@ object LookupTable {
     ): Either[String, Point] = {
       val r = client
         .zrangeWithScore(
-          key = pointsKey,
+          key = key,
           start = start,
           end = end,
           sortAs = RedisClient.ASC
@@ -261,7 +261,7 @@ object LookupTable {
 
     /** Return the size of the lookup table.
       */
-    override def length: Long = client.zcount(pointsKey).getOrElse(0)
+    override def length: Long = client.zcount(key).getOrElse(0)
 
     /** Return the most recently added `Point`. Returns either an error message,
       * or the `Point`.
@@ -272,7 +272,7 @@ object LookupTable {
     ): Either[String, Point] = {
       val r = client
         .zrangeWithScore(
-          key = pointsKey,
+          key = key,
           start = start,
           end = end,
           sortAs = RedisClient.DESC

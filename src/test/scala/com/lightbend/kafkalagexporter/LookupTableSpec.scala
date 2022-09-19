@@ -77,7 +77,7 @@ class LookupTableSpec
 
   override def beforeEach(): Unit = {
     // make sure the Point table is empty
-    redisClient.del(table.pointsKey)
+    redisClient.del(table.key)
     testClock.setInstant(Instant.EPOCH)
   }
 
