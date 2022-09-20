@@ -9,7 +9,7 @@ jobs:
     # runs on main repo only
     if: github.repository == 'seglo/kafka-lag-exporter'
     name: Release
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
     steps:

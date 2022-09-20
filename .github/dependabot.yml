@@ -1,0 +1,15 @@
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+version: 2
+registries:
+  dockerhub:
+    type: docker-registry
+    url: registry.hub.docker.com
+    username: seglo
+    password: ${{secrets.DOCKERHUB_PASSWORD}}
+updates:
+  - package-ecosystem: "docker"
+    directory: "/"
+    registries:
+      - dockerhub
+    schedule:
+      interval: "weekly"

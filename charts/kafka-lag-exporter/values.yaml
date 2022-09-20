@@ -108,10 +108,14 @@ kafkaLogLevel: INFO
 ## The log level of Akka
 akkaLogLevel: DEBUG
 
+## Additional labels to add to all resources
+additionalLabels: #{}
+  app: kafka-lag-exporter
+
 ## You probably won't need to change anything below this line.
 image:
   repository: seglo/kafka-lag-exporter
-  tag: 0.7.2-SNAPSHOT
+  tag: 0.7.4-SNAPSHOT
   # If digest is set it will be used instead of tag to specify the image
   # digest: sha256:0f6387aa011e6eb7952ea211ac139bf8613ad3ef6954a1a5d910676d293bd610
   pullPolicy: Always
@@ -160,6 +164,9 @@ secrets: {}
 #  data:
 #    - name: my-keystore-file.p12
 #      value: base64-encoded-string
+
+secretAnnotations: {}
+  # foo: bar
 
 hostAliases: {}
 #  - ip: "192.168.99.100"
