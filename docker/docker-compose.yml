@@ -4,6 +4,10 @@
 # https://hub.docker.com/r/wurstmeister/zookeeper/
 version: '2'
 services:
+  redis:
+    image: redis:6.2.6
+    ports:
+      - "6379:6379"
   zookeeper:
     image: wurstmeister/zookeeper:3.4.6
     ports:

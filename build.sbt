@@ -44,6 +44,7 @@ lazy val kafkaLagExporter =
         PrometheusHttpServer,
         ScalaJava8Compat,
         AkkaHttp,
+        ScalaRedis,
         Logback,
         IAMAuthLib,
         ScalaTest,
@@ -52,7 +53,8 @@ lazy val kafkaLagExporter =
         AkkaStreamsTestKit,
         AlpakkaKafkaTestKit,
         TestcontainersKafka,
-        TestcontainersInfluxDb
+        TestcontainersInfluxDb,
+        TestcontainersRedis
       ),
       dockerApiVersion := Some(DockerApiVersion(1, 41)),
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY"))
