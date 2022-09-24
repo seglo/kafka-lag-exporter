@@ -1,5 +1,49 @@
 # Changelog
 
+## [v0.8.0](https://github.com/seglo/kafka-lag-exporter/tree/v0.8.0) (2022-09-24)
+
+[Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.7.3...v0.8.0)
+
+**Merged pull requests:**
+
+- Upgrade confluent platform version in tests [\#398](https://github.com/seglo/kafka-lag-exporter/pull/398) ([seglo](https://github.com/seglo))
+- Update logback-classic to 1.4.0 [\#387](https://github.com/seglo/kafka-lag-exporter/pull/387) ([scala-steward](https://github.com/scala-steward))
+- Adding support for Redis lookup tables [\#333](https://github.com/seglo/kafka-lag-exporter/pull/333) ([guillaume-roland-cd](https://github.com/guillaume-roland-cd))
+
+## [v0.7.3](https://github.com/seglo/kafka-lag-exporter/tree/v0.7.3) (2022-09-11)
+
+[Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.7.2...v0.7.3)
+
+**Merged pull requests:**
+
+- Update kafka to 3.2.2 [\#394](https://github.com/seglo/kafka-lag-exporter/pull/394) ([scala-steward](https://github.com/scala-steward))
+- Change base image, from ubi8 to eclipse-temurin [\#392](https://github.com/seglo/kafka-lag-exporter/pull/392) ([guillaume-roland-cd](https://github.com/guillaume-roland-cd))
+- Update akka-http to 10.2.10 [\#390](https://github.com/seglo/kafka-lag-exporter/pull/390) ([scala-steward](https://github.com/scala-steward))
+- Update akka-actor, ... to 2.6.20 [\#389](https://github.com/seglo/kafka-lag-exporter/pull/389) ([scala-steward](https://github.com/scala-steward))
+
+## [v0.7.2](https://github.com/seglo/kafka-lag-exporter/tree/v0.7.2) (2022-08-27)
+
+[Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.7.1...v0.7.2)
+
+**Merged pull requests:**
+
+- Added annotation support to 031-MountedSecret.yaml [\#383](https://github.com/seglo/kafka-lag-exporter/pull/383) ([seglo](https://github.com/seglo))
+- Update Ubuntu on the workflows, as 18.04 is deprecated on GitHub [\#382](https://github.com/seglo/kafka-lag-exporter/pull/382) ([sverrehu](https://github.com/sverrehu))
+- Fix "Integration tests using Minikube" [\#381](https://github.com/seglo/kafka-lag-exporter/pull/381) ([sverrehu](https://github.com/sverrehu))
+- Update dependencies to avoid known vulnerabilities [\#380](https://github.com/seglo/kafka-lag-exporter/pull/380) ([sverrehu](https://github.com/sverrehu))
+- Update sbt-native-packager to 1.9.11 [\#379](https://github.com/seglo/kafka-lag-exporter/pull/379) ([scala-steward](https://github.com/scala-steward))
+- Update scalafmt-core to 3.5.9 [\#378](https://github.com/seglo/kafka-lag-exporter/pull/378) ([scala-steward](https://github.com/scala-steward))
+- Update mockito-scala to 1.17.12 [\#375](https://github.com/seglo/kafka-lag-exporter/pull/375) ([scala-steward](https://github.com/scala-steward))
+- Update scalatest to 3.2.13 [\#374](https://github.com/seglo/kafka-lag-exporter/pull/374) ([scala-steward](https://github.com/scala-steward))
+- Update influxdb, kafka to 1.17.3 [\#372](https://github.com/seglo/kafka-lag-exporter/pull/372) ([scala-steward](https://github.com/scala-steward))
+- Update scala-library to 2.12.16 [\#370](https://github.com/seglo/kafka-lag-exporter/pull/370) ([scala-steward](https://github.com/scala-steward))
+- Update simpleclient, simpleclient\_hotspot, ... to 0.16.0 [\#368](https://github.com/seglo/kafka-lag-exporter/pull/368) ([scala-steward](https://github.com/scala-steward))
+- Update aws-msk-iam-auth to 1.1.4 [\#365](https://github.com/seglo/kafka-lag-exporter/pull/365) ([scala-steward](https://github.com/scala-steward))
+- Update scalafmt-core to 3.5.3 [\#364](https://github.com/seglo/kafka-lag-exporter/pull/364) ([scala-steward](https://github.com/scala-steward))
+- Refactoring labels [\#362](https://github.com/seglo/kafka-lag-exporter/pull/362) ([nlamirault](https://github.com/nlamirault))
+- Update scalatest to 3.2.12 [\#360](https://github.com/seglo/kafka-lag-exporter/pull/360) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-header to 5.7.0 [\#356](https://github.com/seglo/kafka-lag-exporter/pull/356) ([scala-steward](https://github.com/scala-steward))
+
 ## [v0.7.1](https://github.com/seglo/kafka-lag-exporter/tree/v0.7.1) (2022-04-22)
 
 [Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.7.0...v0.7.1)
