@@ -33,7 +33,12 @@ object MainApp extends App {
     val appConfig = AppConfig(config)
 
     val clientCreator = (cluster: KafkaCluster) =>
-      KafkaClient(cluster, appConfig.clientGroupId, appConfig.clientTimeout)(
+      KafkaClient(
+        cluster,
+        appConfig.clientGroupId,
+        appConfig.clientTimeout,
+        appConfig.retries
+      )(
         kafkaClientEc
       )
 
