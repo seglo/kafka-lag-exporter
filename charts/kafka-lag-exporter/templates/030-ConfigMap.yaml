@@ -75,14 +75,30 @@ data:
       {{- if .Values.lookup.redis.enabled }}
       {{- with .Values.lookup.redis }}
       lookup-table.redis = {
-        host = {{ .host | quote }}
-        database = {{ .database | quote }}
-        port = {{ .port | quote }}
-        timeout = {{ .timeout }}
-        prefix = {{ .prefix | quote }}
-        separator = {{ .separator | quote }}
-        retention = {{ .retention | quote }}
-        expiration = {{ .expiration | quote }}
+        {{- with .host }}
+        host = {{ . }}
+        {{- end }}
+        {{- with .database }}
+        database = {{ . }}
+        {{- end }}
+        {{- with .port }}
+        port = {{ . }}
+        {{- end }}
+        {{- with .timeout }}
+        timeout = {{ . }}
+        {{- end }}
+        {{- with .prefix }}
+        prefix = {{ . }}
+        {{- end }}
+        {{- with .separator }}
+        separator = {{ . }}
+        {{- end }}
+        {{- with .retention }}
+        retention = {{ . }}
+        {{- end }}
+        {{- with .expiration }}
+        expiration = {{ . }}
+        {{- end }}
       }
       {{- end }}
       {{- else }}
