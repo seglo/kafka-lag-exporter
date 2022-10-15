@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.8.1](https://github.com/seglo/kafka-lag-exporter/tree/v0.8.1) (2022-10-15)
+
+[Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.8.0...v0.8.1)
+
+**Merged pull requests:**
+
+- Set retries default to 2 [\#407](https://github.com/seglo/kafka-lag-exporter/pull/407) ([seglo](https://github.com/seglo))
+- Add kafka-retries parameter [\#403](https://github.com/seglo/kafka-lag-exporter/pull/403) ([guillaume-roland-cd](https://github.com/guillaume-roland-cd))
+- \(chart\) Always add checksum/config annotation [\#402](https://github.com/seglo/kafka-lag-exporter/pull/402) ([guillaume-roland-cd](https://github.com/guillaume-roland-cd))
+- \(chart\) Make values in lookup.redis optional [\#401](https://github.com/seglo/kafka-lag-exporter/pull/401) ([guillaume-roland-cd](https://github.com/guillaume-roland-cd))
+
 ## [v0.8.0](https://github.com/seglo/kafka-lag-exporter/tree/v0.8.0) (2022-09-24)
 
 [Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.7.3...v0.8.0)
