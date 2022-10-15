@@ -44,6 +44,7 @@ object AppConfig {
     val lookupTable = LookupTableConfig(c)
     val clientGroupId = c.getString("client-group-id")
     val kafkaClientTimeout = c.getDuration("kafka-client-timeout").toScala
+    val kafkaRetries = c.getInt("kafka-retries")
     val clusters =
       c.getConfigList("clusters").asScala.toList.map { clusterConfig =>
         val consumerProperties =
@@ -110,6 +111,7 @@ object AppConfig {
       sinkConfigs,
       clientGroupId,
       kafkaClientTimeout,
+      kafkaRetries,
       clusters,
       strimziWatcher
     )
@@ -199,6 +201,7 @@ final case class AppConfig(
     sinkConfigs: List[SinkConfig],
     clientGroupId: String,
     clientTimeout: FiniteDuration,
+    retries: Int,
     clusters: List[KafkaCluster],
     strimziWatcher: Boolean
 ) {
@@ -215,6 +218,7 @@ final case class AppConfig(
        |Metrics whitelist: [${sinkConfigs.head.metricWhitelist.mkString(", ")}]
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
+       |Kafka retries: $retries
        |$sinksString
        |Statically defined Clusters:
        |$clusterString

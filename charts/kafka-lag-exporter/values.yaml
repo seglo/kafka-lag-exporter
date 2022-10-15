@@ -52,6 +52,8 @@ pollIntervalSeconds: 30
 clientGroupId: "kafkalagexporter"
 ## The timeout when communicating with Kafka clusters
 kafkaClientTimeoutSeconds: 10
+## The number of retry when getting the consumer groups
+kafkaRetries: 0
 ## Reporters will send metrics to time series databases
 reporters:
   prometheus:
