@@ -19,11 +19,11 @@ spec:
         {{- if .Values.podExtraLabels }}
         {{- tpl (toYaml .Values.podExtraLabels) . | nindent 8 }}
         {{- end }}
-      {{- if .Values.podAnnotations }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/030-ConfigMap.yaml") . | sha256sum }}
-{{ tpl (toYaml .Values.podAnnotations) . | indent 8 }}
-      {{- end }}
+        {{- if .Values.podAnnotations }}
+        {{- tpl (toYaml .Values.podAnnotations) . | nindent 8 }}
+        {{- end }}
     spec:
       {{- if .Values.hostAliases }}
       hostAliases:
