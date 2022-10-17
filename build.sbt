@@ -100,21 +100,24 @@ lazy val kafkaLagExporter =
         Seq(
           Cmd("FROM", "eclipse-temurin:17-jre-alpine"),
           Cmd("RUN", "apk add --no-cache bash"),
-          Cmd("RUN", "addgroup -S -g 1001 kafkalagexporter; adduser -S -u 1001 -G kafkalagexporter kafkalagexporter"),
+          Cmd(
+            "RUN",
+            "addgroup -S -g 1001 kafkalagexporter; adduser -S -u 1001 -G kafkalagexporter kafkalagexporter"
+          ),
           Cmd("WORKDIR", "/opt/docker"),
           Cmd("USER", "1001"),
           Cmd("LABEL", labels)
         ) ++
-        layerCopy ++
-        dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++ 
-        Seq(
-          ExecCmd(
-            "CMD",
-            "/opt/docker/bin/kafka-lag-exporter",
-            "-Dconfig.file=/opt/docker/conf/application.conf",
-            "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"
+          layerCopy ++
+          dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++
+          Seq(
+            ExecCmd(
+              "CMD",
+              "/opt/docker/bin/kafka-lag-exporter",
+              "-Dconfig.file=/opt/docker/conf/application.conf",
+              "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"
+            )
           )
-        )
       },
       updateHelmChart := {
         import scala.sys.process._
