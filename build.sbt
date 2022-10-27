@@ -108,6 +108,7 @@ lazy val kafkaLagExporter =
         layerCopy ++
         dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++
         Seq(
+          Cmd("RUN chgrp -R 0 /opt/docker && chmod -R g=u /opt/docker"),
           ExecCmd(
             "CMD",
             "/opt/docker/bin/kafka-lag-exporter",
