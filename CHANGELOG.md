@@ -1,5 +1,19 @@
 # Changelog
 
+## [v0.8.2](https://github.com/seglo/kafka-lag-exporter/tree/v0.8.2) (2022-10-30)
+
+[Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.8.1...v0.8.2)
+
+**Merged pull requests:**
+
+- Implement Openshift best practice with regard to the root group [\#416](https://github.com/seglo/kafka-lag-exporter/pull/416) ([sverrehu](https://github.com/sverrehu))
+- Update influxdb, kafka, spock to 1.17.5 [\#414](https://github.com/seglo/kafka-lag-exporter/pull/414) ([scala-steward](https://github.com/scala-steward))
+- Update scalatest to 3.2.14 [\#413](https://github.com/seglo/kafka-lag-exporter/pull/413) ([scala-steward](https://github.com/scala-steward))
+- Update scalafmt-core to 3.6.0 [\#412](https://github.com/seglo/kafka-lag-exporter/pull/412) ([scala-steward](https://github.com/scala-steward))
+- Update scala-library to 2.12.17 [\#411](https://github.com/seglo/kafka-lag-exporter/pull/411) ([scala-steward](https://github.com/scala-steward))
+- Update kafka to 3.2.3 [\#410](https://github.com/seglo/kafka-lag-exporter/pull/410) ([scala-steward](https://github.com/scala-steward))
+- Update logback-classic to 1.4.4 [\#409](https://github.com/seglo/kafka-lag-exporter/pull/409) ([scala-steward](https://github.com/scala-steward))
+
 ## [v0.8.1](https://github.com/seglo/kafka-lag-exporter/tree/v0.8.1) (2022-10-15)
 
 [Full Changelog](https://github.com/seglo/kafka-lag-exporter/compare/v0.8.0...v0.8.1)
