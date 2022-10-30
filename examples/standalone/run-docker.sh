@@ -6,7 +6,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 # Note that this will only work on Linux.
 docker run -p 8000:8000 \
     -v $DIR:/opt/docker/conf/ \
-    lightbend/kafka-lag-exporter:0.8.1 \
+    lightbend/kafka-lag-exporter:0.8.2 \
     /opt/docker/bin/kafka-lag-exporter \
     -Dconfig.file=/opt/docker/conf/application.conf \
     -Dlogback.configurationFile=/opt/docker/conf/logback.xml
