@@ -44,6 +44,7 @@ lazy val kafkaLagExporter =
         PrometheusHttpServer,
         ScalaJava8Compat,
         AkkaHttp,
+        ScalaRedis,
         Logback,
         IAMAuthLib,
         ScalaTest,
@@ -52,7 +53,8 @@ lazy val kafkaLagExporter =
         AkkaStreamsTestKit,
         AlpakkaKafkaTestKit,
         TestcontainersKafka,
-        TestcontainersInfluxDb
+        TestcontainersInfluxDb,
+        TestcontainersRedis
       ),
       dockerApiVersion := Some(DockerApiVersion(1, 41)),
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY"))
@@ -93,19 +95,20 @@ lazy val kafkaLagExporter =
         val layerCopy = layerIdsAscending.map { layerId =>
           val files = dockerBaseDirectory.split(UnixSeparatorChar)(1)
           val path = layerId.map(i => s"$i/$files").getOrElse(s"$files")
-          Cmd("COPY", "--chown=1001:1001", s"$path /$files")
+          Cmd("COPY", "--chown=1001:0", s"$path /$files")
         }
         Seq(
           Cmd("FROM", "eclipse-temurin:17-jre-alpine"),
           Cmd("RUN", "apk add --no-cache bash"),
-          Cmd("RUN", "addgroup -S -g 1001 kafkalagexporter; adduser -S -u 1001 -G kafkalagexporter kafkalagexporter"),
+          Cmd("RUN", "adduser -S -u 1001 kafkalagexporter"),
           Cmd("WORKDIR", "/opt/docker"),
           Cmd("USER", "1001"),
           Cmd("LABEL", labels)
         ) ++
         layerCopy ++
-        dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++ 
+        dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++
         Seq(
+          Cmd("RUN chgrp -R 0 /opt/docker && chmod -R g=u /opt/docker"),
           ExecCmd(
             "CMD",
             "/opt/docker/bin/kafka-lag-exporter",

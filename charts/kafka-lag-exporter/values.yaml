@@ -30,14 +30,30 @@ clusters: {}
 #      location: ny
 #      zone: "us-east"
 
+# Lookup Table
+lookup:
+  memory:
+    ## Size of the sliding window of offsets to keep in each partition's lookup table
+    size: 60
+  redis:
+    enabled: false
+    # host: localhost
+    # database: 0
+    # port: 6379
+    # timeout: 60
+    # prefix: kafka-lag-exporter
+    # separator: ":"
+    # retention: 1 day
+    # expiration: 7 days
+
 ## The interval between refreshing metrics
 pollIntervalSeconds: 30
-## Size of the sliding window of offsets to keep in each partition's lookup table
-lookupTableSize: 60
 ## The Consumer Group `group.id` to use when connecting to Kafka
 clientGroupId: "kafkalagexporter"
 ## The timeout when communicating with Kafka clusters
 kafkaClientTimeoutSeconds: 10
+## The number of retry when getting the consumer groups
+kafkaRetries: 2
 ## Reporters will send metrics to time series databases
 reporters:
   prometheus:
@@ -115,7 +131,7 @@ additionalLabels: #{}
 ## You probably won't need to change anything below this line.
 image:
   repository: seglo/kafka-lag-exporter
-  tag: 0.7.4-SNAPSHOT
+  tag: 0.8.3-SNAPSHOT
   # If digest is set it will be used instead of tag to specify the image
   # digest: sha256:0f6387aa011e6eb7952ea211ac139bf8613ad3ef6954a1a5d910676d293bd610
   pullPolicy: Always

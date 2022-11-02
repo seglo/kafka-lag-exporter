@@ -12,13 +12,20 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import com.lightbend.kafkalagexporter.ConsumerGroupCollector.OffsetsSnapshot.MetricKeys
 import com.lightbend.kafkalagexporter.KafkaClient.KafkaClientContract
-import com.lightbend.kafkalagexporter.LookupTable.Table.{
+import com.lightbend.kafkalagexporter.LookupTable.AddPointResult.{
+  Inserted,
+  NonMonotonic,
+  OutOfOrder,
+  Updated
+}
+import com.lightbend.kafkalagexporter.LookupTable.LookupResult.{
   LagIsZero,
   Prediction,
   TooFewPoints
 }
 import org.slf4j.Logger
 
+import java.text.NumberFormat
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -109,7 +116,7 @@ object ConsumerGroupCollector {
 
   final case class CollectorConfig(
       pollInterval: FiniteDuration,
-      lookupTableSize: Int,
+      lookupTableConfig: LookupTableConfig,
       cluster: KafkaCluster,
       clock: Clock = Clock.systemUTC()
   )
@@ -132,7 +139,7 @@ object ConsumerGroupCollector {
       reporters: List[ActorRef[MetricsSink.Message]]
   ): Behavior[Message] = Behaviors
     .supervise[Message] {
-      Behaviors.setup { context =>
+      Behaviors.setup[Message] { context =>
         context.log.info(
           "Spawned ConsumerGroupCollector for cluster: {}",
           config.cluster.name
@@ -141,8 +148,7 @@ object ConsumerGroupCollector {
         context.self ! Collect
 
         val collectorState = CollectorState(
-          topicPartitionTables =
-            Domain.TopicPartitionTable(config.lookupTableSize)
+          topicPartitionTables = Domain.TopicPartitionTable(config = config)
         )
         collector(
           config,
@@ -168,6 +174,9 @@ object ConsumerGroupCollector {
   // TODO: assert state transition changes. See `ConsumerGroupCollectorSpec` which uses mockito to assert the state
   // TODO: transition change
   class CollectorBehavior {
+    val nf = NumberFormat.getNumberInstance
+    nf.setMaximumFractionDigits(0)
+
     def collector(
         config: CollectorConfig,
         client: KafkaClientContract,
@@ -229,7 +238,12 @@ object ConsumerGroupCollector {
           state.lastSnapshot.map(_.diff(snapshot)).getOrElse(MetricKeys())
 
         context.log.info("Updating lookup tables")
-        refreshLookupTable(state, snapshot, evictedKeys.tps)
+        refreshLookupTable(
+          context.log,
+          state.topicPartitionTables,
+          snapshot,
+          evictedKeys.tps
+        )
 
         reporters.foreach { reporter =>
           context.log.info("Reporting offsets")
@@ -237,9 +251,10 @@ object ConsumerGroupCollector {
           reportLatestOffsetMetrics(
             config,
             reporter,
-            state.topicPartitionTables
+            snapshot
           )
           reportConsumerGroupMetrics(
+            context.log,
             config,
             reporter,
             snapshot,
@@ -270,6 +285,7 @@ object ConsumerGroupCollector {
         state.scheduledCollect.cancel()
         Behaviors.stopped { () =>
           client.close()
+          config.lookupTableConfig.close()
           evictAllClusterMetrics(context.log, config, reporters, state)
           context.log.info(
             "Gracefully stopped polling and Kafka client for cluster: {}",
@@ -279,6 +295,7 @@ object ConsumerGroupCollector {
       case (context, StopWithError(t)) =>
         state.scheduledCollect.cancel()
         client.close()
+        config.lookupTableConfig.close()
         evictAllClusterMetrics(context.log, config, reporters, state)
         throw new Exception(
           "A failure occurred while retrieving offsets.  Shutting down.",
@@ -306,16 +323,44 @@ object ConsumerGroupCollector {
       * relevant and update tables with new Point's.
       */
     private def refreshLookupTable(
-        state: CollectorState,
+        log: Logger,
+        topicPartitionTables: TopicPartitionTable,
         snapshot: OffsetsSnapshot,
         evictedTps: List[TopicPartition]
     ): Unit = {
-      state.topicPartitionTables.clear(evictedTps)
-      for ((tp, point) <- snapshot.latestOffsets)
-        state.topicPartitionTables(tp).addPoint(point)
+      topicPartitionTables.clear(evictedTps)
+      for ((tp, point) <- snapshot.latestOffsets) {
+        def logAddPoint(msg: String) =
+          log.debug(
+            "  " + msg,
+            nf.format(point.offset),
+            nf.format(point.time),
+            tp.topic,
+            nf.format(tp.partition)
+          )
+        topicPartitionTables(tp).addPoint(point) match {
+          case Inserted =>
+            logAddPoint(
+              "Point ({}, {}) was added to the lookup table ({}, {})"
+            )
+          case NonMonotonic =>
+            logAddPoint(
+              "Point ({}, {}) was not added to the lookup table ({}, {}) because it was not part of a monotonically increasing set"
+            )
+          case OutOfOrder =>
+            logAddPoint(
+              "Point ({}, {}) was not added to the lookup table ({}, {}) because the time is older than the previous point"
+            )
+          case Updated =>
+            logAddPoint(
+              "Point ({}, {}) was updated in the lookup table ({}, {}) because the previous point had the same offset"
+            )
+        }
+      }
     }
 
     private def reportConsumerGroupMetrics(
+        log: Logger,
         config: CollectorConfig,
         reporter: ActorRef[MetricsSink.Message],
         offsetsSnapshot: OffsetsSnapshot,
@@ -323,12 +368,15 @@ object ConsumerGroupCollector {
     ): Unit = {
       val groupLag: immutable.Iterable[GroupPartitionLag] = for {
         (gtp, groupPoint) <- offsetsSnapshot.lastGroupOffsets
-        mostRecentPoint <- tables(gtp.tp).mostRecentPoint().toOption
+        (_, mostRecentPoint) <- offsetsSnapshot.latestOffsets.filterKeys(
+          _ == gtp.tp
+        )
       } yield {
         val (groupOffset, offsetLag, timeLag) = groupPoint match {
           case Some(point) =>
             val groupOffset = point.offset.toDouble
-            val timeLag = tables(gtp.tp).lookup(point.offset) match {
+            val timeLagResult = tables(gtp.tp).lookup(point.offset)
+            val timeLag = timeLagResult match {
               case Prediction(pxTime) => (point.time.toDouble - pxTime) / 1000
               case LagIsZero          => 0d
               case TooFewPoints       => Double.NaN
@@ -336,6 +384,15 @@ object ConsumerGroupCollector {
 
             val offsetLagCalc = mostRecentPoint.offset - point.offset
             val offsetLag = if (offsetLagCalc < 0) 0d else offsetLagCalc
+
+            log.debug(
+              "  Found time_lag=\"{}\" and offset_lag=\"{}\" for offset=\"{}\" in the lookup table ({}, {})",
+              nf.format(timeLag),
+              nf.format(offsetLag),
+              nf.format(groupOffset),
+              gtp.tp.topic,
+              gtp.tp.partition.toString
+            )
 
             (groupOffset, offsetLag, timeLag)
           case None => (Double.NaN, Double.NaN, Double.NaN)
@@ -424,11 +481,10 @@ object ConsumerGroupCollector {
     private def reportLatestOffsetMetrics(
         config: CollectorConfig,
         reporter: ActorRef[MetricsSink.Message],
-        tables: TopicPartitionTable
+        offsetsSnapshot: OffsetsSnapshot
     ): Unit = {
       for {
-        (tp, table: LookupTable.Table) <- tables.all
-        point <- table.mostRecentPoint()
+        (tp, point: LookupTable.Point) <- offsetsSnapshot.latestOffsets
       } reporter ! Metrics.TopicPartitionValueMessage(
         Metrics.LatestOffsetMetric,
         config.cluster.name,

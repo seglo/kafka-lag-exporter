@@ -1,13 +1,14 @@
 import sbt._
 
 object Version {
-  val Scala = "2.12.16"
+  val Scala = "2.12.17"
   val Akka = "2.6.20"
   val Prometheus = "0.15.0"
   val Fabric8 = "4.11.2"
-  val Kafka = "3.2.2"
-  val Testcontainers = "1.17.3"
+  val Kafka = "3.2.3"
+  val Testcontainers = "1.17.5"
   val IAMAuth = "1.1.4"
+  val Redis = "3.42"
 }
 
 object Dependencies {
@@ -34,7 +35,7 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-protobuf" % Version.Akka
   val AkkaInfluxDB =
     "com.lightbend.akka" %% "akka-stream-alpakka-influxdb" % "3.0.4"
-  val Logback = "ch.qos.logback" % "logback-classic" % "1.2.11"
+  val Logback = "ch.qos.logback" % "logback-classic" % "1.4.4"
   val Prometheus = "io.prometheus" % "simpleclient" % Version.Prometheus
   val PrometheusHotSpot =
     "io.prometheus" % "simpleclient_hotspot" % Version.Prometheus
@@ -46,11 +47,12 @@ object Dependencies {
     "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val AkkaHttp = "com.typesafe.akka" %% "akka-http" % "10.2.10"
   val IAMAuthLib = "software.amazon.msk" % "aws-msk-iam-auth" % Version.IAMAuth
+  val ScalaRedis = "net.debasishg" %% "redisclient" % Version.Redis
 
   /* Test */
   val AkkaTypedTestKit =
     "com.typesafe.akka" %% "akka-actor-testkit-typed" % Version.Akka % Test
-  val ScalaTest = "org.scalatest" %% "scalatest" % "3.2.13" % Test
+  val ScalaTest = "org.scalatest" %% "scalatest" % "3.2.14" % Test
   val AkkaStreamsTestKit =
     "com.typesafe.akka" %% "akka-stream-testkit" % Version.Akka % Test
   val MockitoScala = "org.mockito" %% "mockito-scala" % "1.17.12" % Test
@@ -60,4 +62,6 @@ object Dependencies {
     "org.testcontainers" % "kafka" % Version.Testcontainers % Test
   val TestcontainersInfluxDb =
     "org.testcontainers" % "influxdb" % Version.Testcontainers % Test
+  val TestcontainersRedis =
+    "org.testcontainers" % "spock" % Version.Testcontainers % Test
 }

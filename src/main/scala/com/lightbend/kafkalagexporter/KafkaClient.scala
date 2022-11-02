@@ -36,8 +36,6 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
 object KafkaClient {
-  val AdminClientConfigRetries =
-    0 // fail faster when there are transient connection errors, use supervision strategy for backoff
   val CommonClientConfigRetryBackoffMs =
     1000 // longer interval between retry attempts so we don't overload clusters (default = 100ms)
   val ConsumerConfigAutoCommit = false
@@ -45,14 +43,15 @@ object KafkaClient {
   def apply(
       cluster: KafkaCluster,
       groupId: String,
-      clientTimeout: FiniteDuration
+      clientTimeout: FiniteDuration,
+      retries: Int
   )(implicit ec: ExecutionContext): KafkaClientContract = {
     val consumer = new ConsumerKafkaClient(
       createConsumerClient(cluster, groupId, clientTimeout),
       clientTimeout
     )
     val adminKafkaClient = new AdminKafkaClient(
-      createAdminClient(cluster, clientTimeout),
+      createAdminClient(cluster, clientTimeout, retries),
       clientTimeout
     )
     new KafkaClient(cluster, consumer, adminKafkaClient)(ec)
@@ -94,7 +93,8 @@ object KafkaClient {
 
   private def createAdminClient(
       cluster: KafkaCluster,
-      clientTimeout: FiniteDuration
+      clientTimeout: FiniteDuration,
+      retries: Int
   ): AdminClient = {
     val props = new Properties()
     // AdminClient config: https://kafka.apache.org/documentation/#adminclientconfigs
@@ -111,7 +111,7 @@ object KafkaClient {
     )
     props.put(
       AdminClientConfig.RETRIES_CONFIG,
-      AdminClientConfigRetries.toString
+      retries.toString
     )
     props.put(
       AdminClientConfig.RETRY_BACKOFF_MS_CONFIG,

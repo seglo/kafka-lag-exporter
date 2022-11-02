@@ -20,7 +20,6 @@ object AppConfig {
   def apply(config: Config): AppConfig = {
     val c = config.getConfig("kafka-lag-exporter")
     val pollInterval = c.getDuration("poll-interval").toScala
-    val lookupTableSize = c.getInt("lookup-table-size")
 
     val metricWhitelist = c.getStringList("metric-whitelist").asScala.toList
 
@@ -42,8 +41,10 @@ object AppConfig {
       }
     }
 
+    val lookupTable = LookupTableConfig(c)
     val clientGroupId = c.getString("client-group-id")
     val kafkaClientTimeout = c.getDuration("kafka-client-timeout").toScala
+    val kafkaRetries = c.getInt("kafka-retries")
     val clusters =
       c.getConfigList("clusters").asScala.toList.map { clusterConfig =>
         val consumerProperties =
@@ -106,10 +107,11 @@ object AppConfig {
 
     AppConfig(
       pollInterval,
-      lookupTableSize,
+      lookupTable,
       sinkConfigs,
       clientGroupId,
       kafkaClientTimeout,
+      kafkaRetries,
       clusters,
       strimziWatcher
     )
@@ -195,10 +197,11 @@ final case class KafkaCluster(
 
 final case class AppConfig(
     pollInterval: FiniteDuration,
-    lookupTableSize: Int,
+    lookupTable: LookupTableConfig,
     sinkConfigs: List[SinkConfig],
     clientGroupId: String,
     clientTimeout: FiniteDuration,
+    retries: Int,
     clusters: List[KafkaCluster],
     strimziWatcher: Boolean
 ) {
@@ -208,12 +211,14 @@ final case class AppConfig(
         "  (none)"
       else clusters.map(_.toString).mkString("\n")
     val sinksString = sinkConfigs.mkString("")
+    val lookupTableString = lookupTable.toString()
     s"""
        |Poll interval: $pollInterval
-       |Lookup table size: $lookupTableSize
+       |$lookupTableString
        |Metrics whitelist: [${sinkConfigs.head.metricWhitelist.mkString(", ")}]
        |Admin client consumer group id: $clientGroupId
        |Kafka client timeout: $clientTimeout
+       |Kafka retries: $retries
        |$sinksString
        |Statically defined Clusters:
        |$clusterString
