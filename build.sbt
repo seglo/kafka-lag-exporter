@@ -105,17 +105,17 @@ lazy val kafkaLagExporter =
           Cmd("USER", "1001"),
           Cmd("LABEL", labels)
         ) ++
-        layerCopy ++
-        dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++
-        Seq(
-          Cmd("RUN chgrp -R 0 /opt/docker && chmod -R g=u /opt/docker"),
-          ExecCmd(
-            "CMD",
-            "/opt/docker/bin/kafka-lag-exporter",
-            "-Dconfig.file=/opt/docker/conf/application.conf",
-            "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"
+          layerCopy ++
+          dockerExposedPorts.value.map(p => Cmd("EXPOSE", p.toString)) ++
+          Seq(
+            Cmd("RUN chgrp -R 0 /opt/docker && chmod -R g=u /opt/docker"),
+            ExecCmd(
+              "CMD",
+              "/opt/docker/bin/kafka-lag-exporter",
+              "-Dconfig.file=/opt/docker/conf/application.conf",
+              "-Dlogback.configurationFile=/opt/docker/conf/logback.xml"
+            )
           )
-        )
       },
       updateHelmChart := {
         import scala.sys.process._
