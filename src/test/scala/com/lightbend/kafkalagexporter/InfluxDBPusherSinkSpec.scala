@@ -6,7 +6,6 @@
 package com.lightbend.kafkalagexporter
 
 import java.net.URL
-
 import com.typesafe.config.ConfigFactory
 import org.influxdb.dto.Query
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
@@ -16,6 +15,7 @@ import org.scalatest.{TryValues, _}
 import org.testcontainers.containers.InfluxDBContainer
 import org.testcontainers.utility.DockerImageName
 
+import scala.collection.JavaConverters.mapAsJavaMap
 import scala.jdk.CollectionConverters._
 
 class InfluxDBPusherSinkSpec
@@ -137,7 +137,7 @@ class InfluxDBPusherSinkSpec
           new InfluxDBPusherSinkConfig(
             "InfluxDBPusherSink",
             List("kafka_consumergroup_group_max_lag"),
-            ConfigFactory.parseMap(mapAsJavaMap(fixture.properties))
+            ConfigFactory.parseMap(fixture.properties.asJava)
           ),
           clustersGlobalValuesMap
         )

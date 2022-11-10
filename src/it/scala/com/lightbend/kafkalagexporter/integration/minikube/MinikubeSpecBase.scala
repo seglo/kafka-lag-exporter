@@ -24,7 +24,6 @@ abstract class MinikubeSpecBase
     with Eventually
     with PrometheusUtils {
 
-  private[this] val log: Logger = LoggerFactory.getLogger(getClass)
   override val bootstrapServers: String =
     getNodePortForService("strimzi-kafka-cluster-kafka-external-bootstrap")
 

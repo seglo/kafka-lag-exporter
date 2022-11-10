@@ -56,7 +56,7 @@ object Domain {
     }
 
     def clear(evictedTps: List[TopicPartition]): Unit =
-      tables = tables.filterKeys(tp => !evictedTps.contains(tp))
+      tables = tables.view.filterKeys(tp => !evictedTps.contains(tp)).toMap
 
     def all: Map[TopicPartition, LookupTable] = tables
   }

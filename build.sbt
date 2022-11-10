@@ -169,14 +169,12 @@ lazy val commonSettings = Seq(
     "-Xlog-reflective-calls",
     "-Xlint",
     "-Ywarn-unused",
-    "-Ywarn-unused-import",
     "-deprecation",
     "-feature",
     "-language:_",
     "-unchecked"
   ),
-  scalacOptions in (Compile, console) := (scalacOptions in (Global)).value
-    .filter(_ == "-Ywarn-unused-import"),
+  scalacOptions in (Compile, console) := (scalacOptions in (Global)).value,
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value
 )
 
