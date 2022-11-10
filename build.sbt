@@ -165,7 +165,7 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-encoding",
     "UTF-8",
-    "-target:jvm-1.8",
+    "-release", "8",
     "-Xlog-reflective-calls",
     "-Xlint",
     "-Ywarn-unused",

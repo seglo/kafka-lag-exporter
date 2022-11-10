@@ -92,7 +92,7 @@ object LookupTable {
   ) extends LookupTable {
     import config._
 
-    val key = List(prefix, clusterName, tp.topic, tp.partition)
+    val key = List(prefix, clusterName, tp.topic, String.valueOf(tp.partition))
       .mkString(separator)
     val client = config.client
 
@@ -111,16 +111,16 @@ object LookupTable {
           val times = client
             .zrangebyscore(
               key = key,
-              min = point.offset,
-              max = point.offset,
+              min = point.offset.toDouble,
+              max = point.offset.toDouble,
               limit = Some((0, 2): (Int, Int))
             )
             .get
           // remove points with the same offset
           client.zremrangebyscore(
             key = key,
-            start = point.offset,
-            end = point.offset
+            start = point.offset.toDouble,
+            end = point.offset.toDouble
           )
           // insert earliest + current points
           client.zadd(key, point.offset.toDouble, times.minBy(_.toLong))
@@ -196,11 +196,11 @@ object LookupTable {
           right = mostRecentPoint()
         }
 
-        if (left.isRight && right.isRight) {
-          predict(offset, left.right.get, right.right.get)
-        } else {
-          TooFewPoints
-        }
+        (for {
+          l <- left
+          r <- right
+        } yield predict(offset, l, r))
+          .getOrElse(TooFewPoints)
       }
 
       mostRecentPoint() match {
@@ -337,7 +337,7 @@ object LookupTable {
           // create a sliding window of 2 elements with a step size of 1
           .sliding(size = 2, step = 1)
           // convert window to a tuple. since we're iterating backwards we match right and left in reverse.
-          .map { case Seq(r, l) => (l, r) }
+          .collect { case Seq(r, l) => (l, r) }
           // find the Point that contains the offset
           .find { case (l, r) => offset >= l.offset && offset <= r.offset }
           // offset is not between any two points in the table

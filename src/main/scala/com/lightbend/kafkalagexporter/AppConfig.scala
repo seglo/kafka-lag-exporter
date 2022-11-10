@@ -6,12 +6,11 @@
 package com.lightbend.kafkalagexporter
 
 import java.util
-
 import com.lightbend.kafkalagexporter.EndpointSink.ClusterGlobalLabels
 import com.typesafe.config.{Config, ConfigObject}
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.{ListHasAsScala, SetHasAsScala}
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Try

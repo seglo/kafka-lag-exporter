@@ -6,26 +6,18 @@
 package com.lightbend.kafkalagexporter
 
 import java.util.Optional
-
 import com.lightbend.kafkalagexporter.Domain.GroupOffsets
-import com.lightbend.kafkalagexporter.KafkaClient.{
-  AdminKafkaClientContract,
-  ConsumerKafkaClientContract,
-  KafkaTopicPartitionOps
-}
+import com.lightbend.kafkalagexporter.KafkaClient.{AdminKafkaClientContract, ConsumerKafkaClientContract, KafkaTopicPartitionOps}
 import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.common.{
-  ConsumerGroupState,
-  TopicPartition => KafkaTopicPartition
-}
+import org.apache.kafka.common.{ConsumerGroupState, TopicPartition => KafkaTopicPartition}
 import org.mockito.{ArgumentMatchersSugar, MockitoSugar}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.jdk.CollectionConverters.{IterableHasAsJava, MapHasAsJava, SeqHasAsJava, SetHasAsJava}
 
 class KafkaClientSpec
     extends AnyFreeSpec

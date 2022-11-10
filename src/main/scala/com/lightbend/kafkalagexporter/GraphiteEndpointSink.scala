@@ -11,8 +11,6 @@ import java.net.Socket
 import java.io.PrintWriter
 import scala.util.{Try, Success, Failure}
 
-import scala.util.Try
-
 object GraphiteEndpointSink {
 
   def apply(

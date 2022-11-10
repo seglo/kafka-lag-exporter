@@ -15,7 +15,6 @@ import org.scalatest.{TryValues, _}
 import org.testcontainers.containers.InfluxDBContainer
 import org.testcontainers.utility.DockerImageName
 
-import scala.collection.JavaConverters.mapAsJavaMap
 import scala.jdk.CollectionConverters._
 
 class InfluxDBPusherSinkSpec

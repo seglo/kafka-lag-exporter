@@ -121,7 +121,7 @@ class LookupTableSpec
         )
 
         tests.foreach(expected =>
-          table.lookup(expected) shouldBe Prediction(expected)
+          table.lookup(expected) shouldBe Prediction(expected.toDouble)
         )
       }
 
@@ -174,7 +174,7 @@ class LookupTableSpec
           fail(s"Expected flat entries to compress to a single entry $table")
         }
 
-        if (table.mostRecentPoint().right.get.time != 400) {
+        if (table.mostRecentPoint().toOption.get.time != 400) {
           fail(s"Expected compressed table to have last timestamp $table")
         }
 
@@ -304,9 +304,9 @@ class LookupTableSpec
             )
           }
 
-          if (n != result.right.get.offset) {
+          if (n != result.toOption.get.offset) {
             fail(
-              s"Most recent point on $table expected $n, but got ${result.right.get.offset}"
+              s"Most recent point on $table expected $n, but got ${result.toOption.get.offset}"
             )
           }
         }
@@ -368,7 +368,7 @@ class LookupTableSpec
         )
 
         tests.foreach(expected =>
-          table.lookup(expected) shouldBe Prediction(expected)
+          table.lookup(expected) shouldBe Prediction(expected.toDouble)
         )
       }
 
@@ -510,9 +510,9 @@ class LookupTableSpec
             )
           }
 
-          if (n != result.right.get.offset) {
+          if (n != result.toOption.get.offset) {
             fail(
-              s"Most recent point on $table expected $n, but got ${result.right.get.offset}"
+              s"Most recent point on $table expected $n, but got ${result.toOption.get.offset}"
             )
           }
         }
