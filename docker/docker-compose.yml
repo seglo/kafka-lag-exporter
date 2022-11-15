@@ -12,46 +12,65 @@ services:
     image: wurstmeister/zookeeper:3.4.6
     ports:
       - "2181:2181"
+
   kafka:
-    image: wurstmeister/kafka:2.12-2.2.0
+    image: 246946804217.dkr.ecr.us-west-2.amazonaws.com/dh-mirror/confluentinc/cp-kafka:6.2.7
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--zookeeper", "zookeeper:2181", "--create", "--topic", "healthcheck", "--partitions", "1", "--replication-factor", "1", "--if-not-exists"]
+      interval: 2s
+      timeout: 10s
+      retries: 5
+#    image: wurstmeister/kafka:2.12-2.2.0
     ports:
-      - "9094:9094"
-      - "1099:1099"
+      - "9092:9092"
+      - "1099:1098"
     environment:
-      HOSTNAME_COMMAND: "docker info | grep ^Name: | cut -d' ' -f 2"
-      PORT_COMMAND: "docker port `hostname` 9094 | cut -d: -f 2"
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:_{PORT_COMMAND}
-      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.rmi.port=1099"
-      JMX_PORT: 1099
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,OUTSIDE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.rmi.port=1098"
+      JMX_PORT: 1098
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   kafka-producer-perf-test:
+    depends_on:
+      - kafka
     image: wurstmeister/kafka:2.12-2.2.0
     command: >
       bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-producer-perf-test.sh --topic replicated-topic --num-records 10000000 --record-size 10 --throughput 1000 --producer-props bootstrap.servers=kafka:9092"
+      && kafka-producer-perf-test.sh --topic replicated-topic --num-records 10000000 --record-size 10 --throughput 1000 --producer-props bootstrap.servers=kafka:9093"
   # each kafka-consumer-test has its own consumer.id so it can be differentiated by consumer group information easily.
   consumer-group1-consumer1:
+    depends_on:
+      - kafka
     image: wurstmeister/kafka:2.12-2.2.0
     command: >
       bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9093 > /dev/null"
   consumer-group1-consumer2:
+    depends_on:
+      - kafka
     image: wurstmeister/kafka:2.12-2.2.0
     command: >
       bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-2 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-2 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9093 > /dev/null"
   consumer-group1-consumer3:
+    depends_on:
+      - kafka
     image: wurstmeister/kafka:2.12-2.2.0
     command: >
       bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-3 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-3 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9093 > /dev/null"
   consumer-group2-consumer1:
+    depends_on:
+      - kafka
     image: wurstmeister/kafka:2.12-2.2.0
     command: >
       bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group-two --consumer-property client.id=test-client-two-id-1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group-two --consumer-property client.id=test-client-two-id-1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9093 > /dev/null"
