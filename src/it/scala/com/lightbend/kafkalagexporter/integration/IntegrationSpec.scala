@@ -134,6 +134,7 @@ trait IntegrationSpec
         val parsedDoubleTry = Try(actual.toDouble)
         assert(parsedDoubleTry.isSuccess)
         val parsedDouble = parsedDoubleTry.get
+        assert(!parsedDouble.isNaN)
         parsedDouble should be > lastLagInTime
         lastLagInTime = parsedDouble
       }
