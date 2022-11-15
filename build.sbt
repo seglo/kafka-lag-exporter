@@ -6,7 +6,6 @@ import com.typesafe.sbt.packager.docker.{Cmd, DockerPermissionStrategy, ExecCmd}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import com.typesafe.sbt.packager.docker.DockerApiVersion
 import com.typesafe.sbt.packager.docker.DockerPlugin.UnixSeparatorChar
-import sbt.IO
 
 import java.time.format.DateTimeFormatter
 import java.time.Instant
@@ -47,6 +46,9 @@ lazy val kafkaLagExporter =
         ScalaRedis,
         Logback,
         IAMAuthLib,
+        JacksonDataFormat,
+        SnakeYaml,
+        OkHttp,
         ScalaTest,
         AkkaTypedTestKit,
         MockitoScala,

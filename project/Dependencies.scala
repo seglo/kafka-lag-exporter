@@ -23,6 +23,11 @@ object Dependencies {
   private val jacksonExclusionRule = ExclusionRule("com.fasterxml.jackson.core")
   private val log4jExclusionRule = ExclusionRule("log4j")
   private val slf4jExclusionRule = ExclusionRule("org.slf4j")
+  private val jacksonDataFormatCborExclusionRule =
+    ExclusionRule("com.fasterxml.jackson.dataformat", "jackson-dataformat-cbor")
+  private val snakeExclusionRule = ExclusionRule("org.yaml", "snakeyaml")
+  private val okHttpExclusionRule =
+    ExclusionRule("com.squareup.okhttp3", "okhttp3")
 
   val LightbendConfig = "com.typesafe" % "config" % "1.3.2"
   val Kafka =
@@ -41,13 +46,20 @@ object Dependencies {
     "io.prometheus" % "simpleclient_hotspot" % Version.Prometheus
   val PrometheusHttpServer =
     "io.prometheus" % "simpleclient_httpserver" % Version.Prometheus
-  val Fabric8Model = "io.fabric8" % "kubernetes-model" % Version.Fabric8
-  val Fabric8Client = "io.fabric8" % "kubernetes-client" % Version.Fabric8
+  val Fabric8Model =
+    "io.fabric8" % "kubernetes-model" % Version.Fabric8 excludeAll (snakeExclusionRule, okHttpExclusionRule)
+  val Fabric8Client =
+    "io.fabric8" % "kubernetes-client" % Version.Fabric8 excludeAll (snakeExclusionRule, okHttpExclusionRule)
   val ScalaJava8Compat =
     "org.scala-lang.modules" %% "scala-java8-compat" % "1.0.2"
   val AkkaHttp = "com.typesafe.akka" %% "akka-http" % "10.2.10"
-  val IAMAuthLib = "software.amazon.msk" % "aws-msk-iam-auth" % Version.IAMAuth
+  val IAMAuthLib =
+    "software.amazon.msk" % "aws-msk-iam-auth" % Version.IAMAuth excludeAll (jacksonDataFormatCborExclusionRule)
   val ScalaRedis = "net.debasishg" %% "redisclient" % Version.Redis
+  val JacksonDataFormat =
+    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % "2.11.4"
+  val SnakeYaml = "org.yaml" % "snakeyaml" % "1.33"
+  val OkHttp = "com.squareup.okhttp3" % "okhttp" % "4.9.3"
 
   /* Test */
   val AkkaTypedTestKit =
