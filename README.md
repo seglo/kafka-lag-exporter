@@ -600,3 +600,4 @@ The release process is run when a new tag is pushed to the repository. Release s
 ## Change log
 
 See [CHANGELOG.md](CHANGELOG.md)
+
