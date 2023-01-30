@@ -6,16 +6,16 @@
 package com.lightbend.kafkalagexporter
 
 import java.net.ServerSocket
-
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.HTTPServer
 
-import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.Outcome
 import org.scalatest.freespec.FixtureAnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+
+import scala.jdk.CollectionConverters.{EnumerationHasAsScala, ListHasAsScala}
 
 class PrometheusEndpointSinkSpec extends FixtureAnyFreeSpec with Matchers {
 

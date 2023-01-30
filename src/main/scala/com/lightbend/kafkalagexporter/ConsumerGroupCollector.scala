@@ -368,9 +368,7 @@ object ConsumerGroupCollector {
     ): Unit = {
       val groupLag: immutable.Iterable[GroupPartitionLag] = for {
         (gtp, groupPoint) <- offsetsSnapshot.lastGroupOffsets
-        (_, mostRecentPoint) <- offsetsSnapshot.latestOffsets.filterKeys(
-          _ == gtp.tp
-        )
+        mostRecentPoint <- offsetsSnapshot.latestOffsets.get(gtp.tp)
       } yield {
         val (groupOffset, offsetLag, timeLag) = groupPoint match {
           case Some(point) =>
@@ -383,7 +381,7 @@ object ConsumerGroupCollector {
             }
 
             val offsetLagCalc = mostRecentPoint.offset - point.offset
-            val offsetLag = if (offsetLagCalc < 0) 0d else offsetLagCalc
+            val offsetLag = if (offsetLagCalc < 0) 0d else offsetLagCalc.toDouble
 
             log.debug(
               "  Found time_lag=\"{}\" and offset_lag=\"{}\" for offset=\"{}\" in the lookup table ({}, {})",
@@ -473,7 +471,7 @@ object ConsumerGroupCollector {
           Metrics.EarliestOffsetMetric,
           config.cluster.name,
           tp,
-          topicPoint.offset
+          topicPoint.offset.toDouble
         )
       }
     }
@@ -489,7 +487,7 @@ object ConsumerGroupCollector {
         Metrics.LatestOffsetMetric,
         config.cluster.name,
         tp,
-        point.offset
+        point.offset.toDouble
       )
     }
 
@@ -565,7 +563,7 @@ object ConsumerGroupCollector {
     reporter ! Metrics.ClusterValueMessage(
       Metrics.PollTimeMetric,
       config.cluster.name,
-      metaData.pollTime
+      metaData.pollTime.toDouble
     )
   }
 }

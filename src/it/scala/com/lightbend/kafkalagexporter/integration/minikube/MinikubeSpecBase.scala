@@ -11,7 +11,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.sys.process._
 import scala.util.Random
@@ -24,7 +23,6 @@ abstract class MinikubeSpecBase
     with Eventually
     with PrometheusUtils {
 
-  private[this] val log: Logger = LoggerFactory.getLogger(getClass)
   override val bootstrapServers: String =
     getNodePortForService("strimzi-kafka-cluster-kafka-external-bootstrap")
 

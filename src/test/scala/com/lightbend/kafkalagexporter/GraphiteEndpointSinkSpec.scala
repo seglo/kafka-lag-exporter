@@ -41,9 +41,9 @@ class GraphiteEndpointSinkTest extends FixtureAnyFreeSpec with Matchers {
   "GraphiteEndpointSinkImpl should" - {
 
     "report only metrics which match the regex" in { fixture =>
-      val properties = Map(
+      val properties: Map[String, Any] = Map(
         "reporters.graphite.host" -> "localhost",
-        "reporters.graphite.port" -> fixture.server.server.getLocalPort()
+        "reporters.graphite.port" -> fixture.server.server.getLocalPort
       )
       val sink = GraphiteEndpointSink(
         new GraphiteEndpointConfig(

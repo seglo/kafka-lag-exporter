@@ -9,30 +9,17 @@ import java.time.Duration
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 import java.{lang, util}
-
 import com.lightbend.kafkalagexporter.Domain.{GroupOffsets, PartitionOffsets}
-import com.lightbend.kafkalagexporter.KafkaClient.{
-  AdminKafkaClientContract,
-  ConsumerKafkaClientContract,
-  KafkaClientContract
-}
+import com.lightbend.kafkalagexporter.KafkaClient.{AdminKafkaClientContract, ConsumerKafkaClientContract, KafkaClientContract}
 import org.apache.kafka.clients.admin._
-import org.apache.kafka.clients.consumer.{
-  ConsumerConfig,
-  KafkaConsumer,
-  OffsetAndMetadata
-}
+import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer, OffsetAndMetadata}
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
-import org.apache.kafka.common.{
-  KafkaFuture,
-  TopicPartition => KafkaTopicPartition
-}
+import org.apache.kafka.common.{KafkaFuture, TopicPartition => KafkaTopicPartition}
 
-import scala.collection.JavaConverters._
-import scala.collection.immutable.Map
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.jdk.CollectionConverters.{CollectionHasAsScala, MapHasAsScala, SeqHasAsJava, SetHasAsJava, SetHasAsScala}
 import scala.util.Try
 
 object KafkaClient {
