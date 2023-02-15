@@ -67,7 +67,7 @@ spec:
             {{- end }}
           {{- end }}
           ports:
-            - name: http
+            - name: {{ .Values.service.portName }}
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           {{- if .Values.securityContext }}
@@ -77,7 +77,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /metrics?name[]=kafka_consumergroup_poll_time_ms
-              port: http
+              port: {{ .Values.service.portName }}
             initialDelaySeconds: {{ .Values.livenessProbeInitialDelay }}
             periodSeconds: {{ .Values.livenessProbePeriodSeconds }}
             timeoutSeconds: {{ .Values.livenessProbeTimeout }}
@@ -86,7 +86,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /metrics?name[]=kafka_consumergroup_poll_time_ms
-              port: http
+              port: {{ .Values.service.portName }}
             initialDelaySeconds: {{ .Values.readinessProbeInitialDelay }}
             periodSeconds: {{ .Values.readinessProbePeriodSeconds }}
             timeoutSeconds: {{ .Values.readinessProbeTimeout }}

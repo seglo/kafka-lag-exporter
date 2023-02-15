@@ -150,6 +150,7 @@ initContainers: []
 service:
   type: ClusterIP
   port: 8000
+  portName: http
   additionalLabels: {}
 resources: {}
   # limits:

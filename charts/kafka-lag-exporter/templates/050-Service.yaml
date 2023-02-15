@@ -18,6 +18,6 @@ spec:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.port }}
       protocol: TCP
-      name: http
+      name: {{ .Values.service.portName }}
   selector:
     {{- include "kafka-lag-exporter.selectorLabels" . | nindent 4 }}
