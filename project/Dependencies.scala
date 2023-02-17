@@ -6,7 +6,7 @@ object Version {
   val Prometheus = "0.15.0"
   val Fabric8 = "4.11.2"
   val Kafka = "3.2.3"
-  val Testcontainers = "1.17.5"
+  val Testcontainers = "1.17.6"
   val IAMAuth = "1.1.4"
   val Redis = "3.42"
 }
