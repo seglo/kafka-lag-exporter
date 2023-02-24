@@ -52,15 +52,12 @@ spec:
           env:
 {{ toYaml .Values.env | indent 10 }}
           {{- end }}
-          {{- if .Values.envFromConfigMapRefs }}
+          {{- if or (.Values.envFromConfigMapRefs) (.Values.envFromSecretRefs) }}
           envFrom:
             {{- range .Values.envFromConfigMapRefs }}
             - configMapRef:
                 name: {{ . }}
             {{- end }}
-          {{- end }}
-          {{- if .Values.envFromSecretRefs }}
-          envFrom:
             {{- range .Values.envFromSecretRefs }}
             - secretRef:
                 name: {{ . }}
