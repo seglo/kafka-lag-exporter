@@ -15,8 +15,16 @@ data:
       clusters = [
         {{- range $cluster := .Values.clusters }}
         {
+          {{- if $cluster.nameNoQuotes }}
+          name = {{ $cluster.nameNoQuotes }}
+          {{- else }}
           name = "{{ $cluster.name }}"
+          {{- end }}
+          {{- if $cluster.bootstrapBrokersNoQuotes }}
+          bootstrap-brokers = {{ $cluster.bootstrapBrokersNoQuotes }}
+          {{- else }}
           bootstrap-brokers = "{{ $cluster.bootstrapBrokers }}"
+          {{- end }}
           {{- if $cluster.groupWhitelist }}
           group-whitelist = [
             {{- $lastIndex := sub (len $cluster.groupWhitelist) 1}}
