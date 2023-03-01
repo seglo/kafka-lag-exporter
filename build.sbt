@@ -1,15 +1,13 @@
 import Dependencies._
-import ReleasePlugin.autoImport._
-import ReleaseKeys._
-import ReleaseTransformations._
-import com.typesafe.sbt.packager.docker.{Cmd, DockerPermissionStrategy, ExecCmd}
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
-import com.typesafe.sbt.packager.docker.DockerApiVersion
 import com.typesafe.sbt.packager.docker.DockerPlugin.UnixSeparatorChar
-import sbt.IO
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
+import com.typesafe.sbt.packager.docker.{Cmd, DockerApiVersion, DockerPermissionStrategy, ExecCmd}
+import sbtrelease.ReleasePlugin.autoImport.ReleaseKeys._
+import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
+import sbtrelease.ReleasePlugin.autoImport._
 
-import java.time.format.DateTimeFormatter
 import java.time.Instant
+import java.time.format.DateTimeFormatter
 import scala.sys.process._
 
 lazy val kafkaLagExporter =
@@ -37,6 +35,7 @@ lazy val kafkaLagExporter =
         AkkaStreams,
         AkkaStreamsProtobuf,
         AkkaInfluxDB,
+        InfluxDB2,
         Fabric8Model,
         Fabric8Client,
         Prometheus,

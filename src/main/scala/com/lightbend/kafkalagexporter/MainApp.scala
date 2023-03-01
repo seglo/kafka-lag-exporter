@@ -70,6 +70,17 @@ object MainApp extends App {
                   )
             )
           )
+        case "InfluxDB2PusherSink" =>
+          KafkaClusterManager.NamedCreator(
+            "influxDB2-lag-reporter",
+            (
+              () =>
+                InfluxDB2PusherSink(
+                  sinkConfig.asInstanceOf[InfluxDB2PusherSinkConfig],
+                  appConfig.clustersGlobalLabels()
+                )
+              )
+          )
         case "GraphiteEndpointSink" =>
           KafkaClusterManager.NamedCreator(
             "graphite-lag-reporter",

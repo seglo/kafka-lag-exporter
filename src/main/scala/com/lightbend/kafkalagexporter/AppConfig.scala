@@ -35,6 +35,8 @@ object AppConfig {
           Some(new PrometheusEndpointSinkConfig(sink, metricWhitelist, c))
         case "InfluxDBPusherSink" =>
           Some(new InfluxDBPusherSinkConfig(sink, metricWhitelist, c))
+        case "InfluxDB2PusherSink" =>
+          Some(new InfluxDB2PusherSinkConfig(sink, metricWhitelist, c))
         case "GraphiteEndpointSink" =>
           Some(new GraphiteEndpointConfig(sink, metricWhitelist, c))
         case _ => None
