@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2018-2022 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2023 Sean Glover <https://seanglover.com>
+ */
+
 package com.lightbend.kafkalagexporter
 
 import com.typesafe.config.Config
