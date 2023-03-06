@@ -57,8 +57,8 @@ class InfluxDB2PusherSink private (
   implicit val system: ActorSystem = ActorSystem("InfluxDB2PusherSink")
   val logger: Logger = Logger("InfluxDB2PusherSink")
   private val influxDbUrl = sinkConfig.endpoint + ":" + sinkConfig.port
-  val influxDB: InfluxDBClientScala = connect()
   createBucket()
+  val influxDB: InfluxDBClientScala = connect()
 
   override def report(m: MetricValue): Unit = {
     if (sinkConfig.metricWhitelist.exists(m.definition.name.matches) && !m.value.isNaN && !m.value.isInfinite) {
