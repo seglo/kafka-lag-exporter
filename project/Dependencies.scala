@@ -35,6 +35,7 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-protobuf" % Version.Akka
   val AkkaInfluxDB =
     "com.lightbend.akka" %% "akka-stream-alpakka-influxdb" % "3.0.4"
+  var InfluxDB2 = "com.influxdb" %% "influxdb-client-scala" % "6.7.0"
   val Logback = "ch.qos.logback" % "logback-classic" % "1.4.4"
   val Prometheus = "io.prometheus" % "simpleclient" % Version.Prometheus
   val PrometheusHotSpot =
