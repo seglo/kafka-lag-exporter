@@ -77,8 +77,8 @@ class LookupTableSpec
 
   override def beforeEach(): Unit = {
     // make sure the Point table is empty
-    redisClients.withClient {
-      redisClient => {
+    redisClients.withClient { redisClient =>
+      {
         redisClient.del(table.key)
       }
     }

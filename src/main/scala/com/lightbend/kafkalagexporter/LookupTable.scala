@@ -107,15 +107,17 @@ object LookupTable {
         // compress flat lines to a single segment
         case Right(_) if isFlat(point) =>
           removeExpiredPoints()
-          clients.withClient {
-            client => {
+          clients.withClient { client =>
+            {
               // get first and last time for flat points
-              val times = client.zrangebyscore(
+              val times = client
+                .zrangebyscore(
                   key = key,
                   min = point.offset,
                   max = point.offset,
                   limit = Some((0, 2): (Int, Int))
-                ).get
+                )
+                .get
               // remove points with the same offset
               client.zremrangebyscore(
                 key = key,
@@ -132,8 +134,8 @@ object LookupTable {
         case _ =>
           // dequeue oldest point if we've hit the limit
           removeExpiredPoints()
-          clients.withClient {
-            client => {
+          clients.withClient { client =>
+            {
               client.zadd(key, point.offset.toDouble, point.time)
             }
           }
@@ -148,16 +150,22 @@ object LookupTable {
     def lookup(offset: Long): LookupResult = {
       def estimate(): LookupResult = {
         // Look in the sorted set for an exact point. It can happens by chance or during flattened range
-        clients.withClient {
-          client => {
-            client.zrangebyscore(key = key, min = offset.toDouble, max =
-              offset.toDouble, limit = Some((0, 1): (Int, Int)), sortAs =
-              RedisClient.DESC) match {
+        clients.withClient { client =>
+          {
+            client.zrangebyscore(
+              key = key,
+              min = offset.toDouble,
+              max = offset.toDouble,
+              limit = Some((0, 1): (Int, Int)),
+              sortAs = RedisClient.DESC
+            ) match {
               // unexpected situation where the redis result is None
               case None => sys.error("Point not found!")
               case Some(points) if points.nonEmpty =>
                 return Prediction(points.head.toDouble)
-              case Some(_) => // Exact point not found, moving to range calculation
+              case Some(
+                    _
+                  ) => // Exact point not found, moving to range calculation
             }
 
             var left: Either[String, Point] = client.zrangebyscoreWithScore(
@@ -223,8 +231,8 @@ object LookupTable {
     /** Expire keys in Redis with the configured TTL
       */
     def expireKeys(): Unit = {
-      clients.withClient {
-        client => {
+      clients.withClient { client =>
+        {
           client.expire(key, expiration.toSeconds.toInt)
         }
       }
@@ -251,8 +259,8 @@ object LookupTable {
     /** Remove the oldest point
       */
     def removeOldestPoint(): Unit = {
-      clients.withClient {
-        client => {
+      clients.withClient { client =>
+        {
           client.zremrangebyrank(key, 0, 0)
         }
       }
@@ -265,14 +273,15 @@ object LookupTable {
         start: Int = 0,
         end: Int = 0
     ): Either[String, Point] = {
-      clients.withClient {
-        client => {
-          val r = client.zrangeWithScore(
-            key = key,
-            start = start,
-            end = end,
-            sortAs = RedisClient.ASC
-          )
+      clients.withClient { client =>
+        {
+          val r = client
+            .zrangeWithScore(
+              key = key,
+              start = start,
+              end = end,
+              sortAs = RedisClient.ASC
+            )
             .get
           if (r.isEmpty) Left("No data in redis")
           else Right(Point(r.head._2.toLong, r.head._1.toLong))
@@ -283,8 +292,8 @@ object LookupTable {
     /** Return the size of the lookup table.
       */
     override def length: Long = {
-      clients.withClient {
-        client => {
+      clients.withClient { client =>
+        {
           client.zcount(key).getOrElse(0)
         }
       }
@@ -297,14 +306,15 @@ object LookupTable {
         start: Int = 0,
         end: Int = 0
     ): Either[String, Point] = {
-      clients.withClient {
-        client => {
-          val r = client.zrangeWithScore(
-            key = key,
-            start = start,
-            end = end,
-            sortAs = RedisClient.DESC
-          )
+      clients.withClient { client =>
+        {
+          val r = client
+            .zrangeWithScore(
+              key = key,
+              start = start,
+              end = end,
+              sortAs = RedisClient.DESC
+            )
             .get
           if (r.isEmpty) Left("No data in redis")
           else Right(Point(r.head._2.toLong, r.head._1.toLong))
