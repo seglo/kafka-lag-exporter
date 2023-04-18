@@ -77,6 +77,7 @@ jobs:
   minikube-test:
     name: Integration tests using Minikube
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     strategy:
       fail-fast: false
     steps:
