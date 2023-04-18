@@ -1,57 +1,80 @@
 # kafka-lag-exporter local test cluster
-# See dockerhub for different versions of kafka and zookeeper
-# https://hub.docker.com/r/wurstmeister/kafka/
-# https://hub.docker.com/r/wurstmeister/zookeeper/
-version: '2'
+version: "3"
 services:
   redis:
-    image: redis:6.2.6
+    image: bitnami/redis:latest
     ports:
       - "6379:6379"
-  zookeeper:
-    image: wurstmeister/zookeeper:3.4.6
-    ports:
-      - "2181:2181"
-  kafka:
-    image: wurstmeister/kafka:2.12-2.2.0
-    ports:
-      - "9094:9094"
-      - "1099:1099"
     environment:
-      HOSTNAME_COMMAND: "docker info | grep ^Name: | cut -d' ' -f 2"
-      PORT_COMMAND: "docker port `hostname` 9094 | cut -d: -f 2"
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:_{PORT_COMMAND}
-      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.rmi.port=1099"
-      JMX_PORT: 1099
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-  kafka-producer-perf-test:
-    image: wurstmeister/kafka:2.12-2.2.0
-    command: >
-      bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-producer-perf-test.sh --topic replicated-topic --num-records 10000000 --record-size 10 --throughput 1000 --producer-props bootstrap.servers=kafka:9092"
+      - ALLOW_EMPTY_PASSWORD=yes
+  zookeeper1:
+    image: bitnami/zookeeper:latest
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  zookeeper2:
+    image: bitnami/zookeeper:latest
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka1:
+    image: bitnami/kafka:latest
+    ports:
+      - '9093:9093'
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka1:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper1:2181
+      - KAFKA_DEFAULT_REPLICATION_FACTOR=1
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    depends_on:
+      - zookeeper1
+  kafka2:
+    image: bitnami/kafka:latest
+    ports:
+      - '9193:9193'
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka2:9192,EXTERNAL://localhost:9193
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9192,EXTERNAL://:9193
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper2:2181
+      - KAFKA_DEFAULT_REPLICATION_FACTOR=1
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    depends_on:
+      - zookeeper2
+  kafka1-producer:
+    image: bitnami/kafka:latest
+    command: kafka-producer-perf-test.sh --topic test --num-records 10000000 --record-size 10 --throughput 10 --producer-props bootstrap.servers=kafka1:9092
+    depends_on:
+      - kafka1
+  kafka2-producer:
+    image: bitnami/kafka:latest
+    command: kafka-producer-perf-test.sh --topic test --num-records 10000000 --record-size 10 --throughput 20 --producer-props bootstrap.servers=kafka2:9092
+    depends_on:
+      - kafka2
   # each kafka-consumer-test has its own consumer.id so it can be differentiated by consumer group information easily.
-  consumer-group1-consumer1:
-    image: wurstmeister/kafka:2.12-2.2.0
-    command: >
-      bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
-  consumer-group1-consumer2:
-    image: wurstmeister/kafka:2.12-2.2.0
-    command: >
-      bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-2 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
-  consumer-group1-consumer3:
-    image: wurstmeister/kafka:2.12-2.2.0
-    command: >
-      bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-3 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
-  consumer-group2-consumer1:
-    image: wurstmeister/kafka:2.12-2.2.0
-    command: >
-      bash -c "until kafka-topics.sh --zookeeper zookeeper:2181 --create --topic replicated-topic --partitions 3 --replication-factor 1 --if-not-exists; do echo \"Waiting for Kafka to be ready..\"; done
-      && kafka-console-consumer.sh --consumer-property group.id=test-consumer-group-two --consumer-property client.id=test-client-two-id-1 --consumer-property enable.auto.commit=true --topic replicated-topic --bootstrap-server kafka:9092 > /dev/null"
+  kafka1-group1-consumer1:
+    image: bitnami/kafka:latest
+    command: kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-1 --consumer-property enable.auto.commit=true --topic test --bootstrap-server kafka1:9092
+    depends_on:
+      - kafka1-producer
+  kafka1-group1-consumer2:
+    image: bitnami/kafka:latest
+    command: kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-2 --consumer-property enable.auto.commit=true --topic test --bootstrap-server kafka1:9092
+    depends_on:
+      - kafka1-producer
+  kafka1-group2-consumer1:
+    image: bitnami/kafka:latest
+    command: kafka-console-consumer.sh --consumer-property group.id=test-consumer-group-two --consumer-property client.id=test-client-two-id-1 --consumer-property enable.auto.commit=true --topic test --bootstrap-server kafka1:9092
+    depends_on:
+      - kafka1-producer
+  kafka2-group1-consumer1:
+    image: bitnami/kafka:latest
+    command: kafka-console-consumer.sh --consumer-property group.id=test-consumer-group --consumer-property client.id=test-client-id-1 --consumer-property enable.auto.commit=true --topic test --bootstrap-server kafka2:9192
+    depends_on:
+      - kafka2-producer

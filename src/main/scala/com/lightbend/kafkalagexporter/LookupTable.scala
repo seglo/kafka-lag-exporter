@@ -94,7 +94,7 @@ object LookupTable {
 
     val key = List(prefix, clusterName, tp.topic, tp.partition)
       .mkString(separator)
-    val client = config.client
+    val clients = config.clients
 
     /** Add the `Point` to the table.
       */
@@ -107,30 +107,36 @@ object LookupTable {
         // compress flat lines to a single segment
         case Right(_) if isFlat(point) =>
           removeExpiredPoints()
-          // get first and last time for flat points
-          val times = client
-            .zrangebyscore(
-              key = key,
-              min = point.offset,
-              max = point.offset,
-              limit = Some((0, 2): (Int, Int))
-            )
-            .get
-          // remove points with the same offset
-          client.zremrangebyscore(
-            key = key,
-            start = point.offset,
-            end = point.offset
-          )
-          // insert earliest + current points
-          client.zadd(key, point.offset.toDouble, times.minBy(_.toLong))
-          client.zadd(key, point.offset.toDouble, point.time)
+          clients.withClient {
+            client => {
+              // get first and last time for flat points
+              val times = client.zrangebyscore(
+                  key = key,
+                  min = point.offset,
+                  max = point.offset,
+                  limit = Some((0, 2): (Int, Int))
+                ).get
+              // remove points with the same offset
+              client.zremrangebyscore(
+                key = key,
+                start = point.offset,
+                end = point.offset
+              )
+              // insert earliest + current points
+              client.zadd(key, point.offset.toDouble, times.minBy(_.toLong))
+              client.zadd(key, point.offset.toDouble, point.time)
+            }
+          }
           expireKeys()
           Updated
         case _ =>
           // dequeue oldest point if we've hit the limit
           removeExpiredPoints()
-          client.zadd(key, point.offset.toDouble, point.time)
+          clients.withClient {
+            client => {
+              client.zadd(key, point.offset.toDouble, point.time)
+            }
+          }
           expireKeys()
           Inserted
       }
@@ -142,64 +148,68 @@ object LookupTable {
     def lookup(offset: Long): LookupResult = {
       def estimate(): LookupResult = {
         // Look in the sorted set for an exact point. It can happens by chance or during flattened range
-        client zrangebyscore (key = key, min = offset.toDouble, max =
-          offset.toDouble, limit = Some((0, 1): (Int, Int)), sortAs =
-          RedisClient.DESC) match {
-          // unexpected situation where the redis result is None
-          case None => sys.error("Point not found!")
-          case Some(points) if points.nonEmpty =>
-            return Prediction(points.head.toDouble)
-          case Some(_) => // Exact point not found, moving to range calculation
-        }
+        clients.withClient {
+          client => {
+            client.zrangebyscore(key = key, min = offset.toDouble, max =
+              offset.toDouble, limit = Some((0, 1): (Int, Int)), sortAs =
+              RedisClient.DESC) match {
+              // unexpected situation where the redis result is None
+              case None => sys.error("Point not found!")
+              case Some(points) if points.nonEmpty =>
+                return Prediction(points.head.toDouble)
+              case Some(_) => // Exact point not found, moving to range calculation
+            }
 
-        var left: Either[String, Point] = client.zrangebyscoreWithScore(
-          key = key,
-          min = 0,
-          max = offset.toDouble,
-          maxInclusive = false,
-          limit = Some((0, 1): (Int, Int)),
-          sortAs = RedisClient.DESC
-        ) match {
-          // unexpected situation where the redis result is None
-          case None => sys.error("Point not found!")
-          // find the left Point from the offset
-          case Some(lefts) if lefts.nonEmpty =>
-            Right(Point(lefts.head._2.toLong, lefts.head._1.toLong))
-          // offset is not between any two points in the table
-          case _ =>
-            // extrapolated = true
-            Left("Extrapolation required")
-        }
+            var left: Either[String, Point] = client.zrangebyscoreWithScore(
+              key = key,
+              min = 0,
+              max = offset.toDouble,
+              maxInclusive = false,
+              limit = Some((0, 1): (Int, Int)),
+              sortAs = RedisClient.DESC
+            ) match {
+              // unexpected situation where the redis result is None
+              case None => sys.error("Point not found!")
+              // find the left Point from the offset
+              case Some(lefts) if lefts.nonEmpty =>
+                Right(Point(lefts.head._2.toLong, lefts.head._1.toLong))
+              // offset is not between any two points in the table
+              case _ =>
+                // extrapolated = true
+                Left("Extrapolation required")
+            }
 
-        var right: Either[String, Point] = client.zrangebyscoreWithScore(
-          key = key,
-          min = offset.toDouble,
-          minInclusive = false,
-          max = Double.PositiveInfinity,
-          limit = Some((0, 1): (Int, Int)),
-          sortAs = RedisClient.ASC
-        ) match {
-          // unexpected situation where the redis result is None
-          case None => sys.error("Point not found!")
-          // find the right Point from the offset
-          case Some(rights) if rights.nonEmpty || left.isLeft =>
-            Right(Point(rights.head._2.toLong, rights.head._1.toLong))
-          // offset is not between any two points in the table
-          case _ =>
-            // extrapolated = true
-            Left("Extrapolation required")
-        }
+            var right: Either[String, Point] = client.zrangebyscoreWithScore(
+              key = key,
+              min = offset.toDouble,
+              minInclusive = false,
+              max = Double.PositiveInfinity,
+              limit = Some((0, 1): (Int, Int)),
+              sortAs = RedisClient.ASC
+            ) match {
+              // unexpected situation where the redis result is None
+              case None => sys.error("Point not found!")
+              // find the right Point from the offset
+              case Some(rights) if rights.nonEmpty || left.isLeft =>
+                Right(Point(rights.head._2.toLong, rights.head._1.toLong))
+              // offset is not between any two points in the table
+              case _ =>
+                // extrapolated = true
+                Left("Extrapolation required")
+            }
 
-        // extrapolate given largest trendline we have available
-        if (left.isLeft || right.isLeft) {
-          left = oldestPoint()
-          right = mostRecentPoint()
-        }
+            // extrapolate given largest trend-line we have available
+            if (left.isLeft || right.isLeft) {
+              left = oldestPoint()
+              right = mostRecentPoint()
+            }
 
-        if (left.isRight && right.isRight) {
-          predict(offset, left.right.get, right.right.get)
-        } else {
-          TooFewPoints
+            if (left.isRight && right.isRight) {
+              predict(offset, left.right.get, right.right.get)
+            } else {
+              TooFewPoints
+            }
+          }
         }
       }
 
@@ -213,7 +223,11 @@ object LookupTable {
     /** Expire keys in Redis with the configured TTL
       */
     def expireKeys(): Unit = {
-      client.expire(key, expiration.toSeconds.toInt)
+      clients.withClient {
+        client => {
+          client.expire(key, expiration.toSeconds.toInt)
+        }
+      }
     }
 
     /** Remove points that are older than the configured retention
@@ -237,7 +251,11 @@ object LookupTable {
     /** Remove the oldest point
       */
     def removeOldestPoint(): Unit = {
-      client.zremrangebyrank(key, 0, 0)
+      clients.withClient {
+        client => {
+          client.zremrangebyrank(key, 0, 0)
+        }
+      }
     }
 
     /** Return the oldest `Point`. Returns either an error message, or the
@@ -247,21 +265,30 @@ object LookupTable {
         start: Int = 0,
         end: Int = 0
     ): Either[String, Point] = {
-      val r = client
-        .zrangeWithScore(
-          key = key,
-          start = start,
-          end = end,
-          sortAs = RedisClient.ASC
-        )
-        .get
-      if (r.isEmpty) Left("No data in redis")
-      else Right(Point(r.head._2.toLong, r.head._1.toLong))
+      clients.withClient {
+        client => {
+          val r = client.zrangeWithScore(
+            key = key,
+            start = start,
+            end = end,
+            sortAs = RedisClient.ASC
+          )
+            .get
+          if (r.isEmpty) Left("No data in redis")
+          else Right(Point(r.head._2.toLong, r.head._1.toLong))
+        }
+      }
     }
 
     /** Return the size of the lookup table.
       */
-    override def length: Long = client.zcount(key).getOrElse(0)
+    override def length: Long = {
+      clients.withClient {
+        client => {
+          client.zcount(key).getOrElse(0)
+        }
+      }
+    }
 
     /** Return the most recently added `Point`. Returns either an error message,
       * or the `Point`.
@@ -270,16 +297,19 @@ object LookupTable {
         start: Int = 0,
         end: Int = 0
     ): Either[String, Point] = {
-      val r = client
-        .zrangeWithScore(
-          key = key,
-          start = start,
-          end = end,
-          sortAs = RedisClient.DESC
-        )
-        .get
-      if (r.isEmpty) Left("No data in redis")
-      else Right(Point(r.head._2.toLong, r.head._1.toLong))
+      clients.withClient {
+        client => {
+          val r = client.zrangeWithScore(
+            key = key,
+            start = start,
+            end = end,
+            sortAs = RedisClient.DESC
+          )
+            .get
+          if (r.isEmpty) Left("No data in redis")
+          else Right(Point(r.head._2.toLong, r.head._1.toLong))
+        }
+      }
     }
 
     /** Is this point the same reading as the last 2 most recent points?

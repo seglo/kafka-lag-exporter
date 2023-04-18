@@ -14,7 +14,7 @@ import com.lightbend.kafkalagexporter.LookupTable.LookupResult.LagIsZero
 import com.lightbend.kafkalagexporter.LookupTable.LookupResult.Prediction
 import com.lightbend.kafkalagexporter.LookupTable.LookupResult.TooFewPoints
 import com.lightbend.kafkalagexporter.LookupTableConfig.RedisTableConfig
-import com.redis.RedisClient
+import com.redis.RedisClientPool
 import com.typesafe.config.ConfigFactory
 import java.time.Instant
 import org.scalatest.BeforeAndAfterAll
@@ -42,7 +42,7 @@ class LookupTableSpec
 
   val testClock: TestClock = new TestClock
   var redisConfig: RedisTableConfig = null
-  var redisClient: RedisClient = null
+  var redisClients: RedisClientPool = null
   var config: CollectorConfig = null
   var table: RedisTable = null
 
@@ -56,7 +56,7 @@ class LookupTableSpec
            |  port = ${container.getFirstMappedPort}
            |}""".stripMargin)
     )
-    redisClient = redisConfig.client
+    redisClients = redisConfig.clients
     config = ConsumerGroupCollector.CollectorConfig(
       0.second,
       redisConfig,
@@ -77,7 +77,11 @@ class LookupTableSpec
 
   override def beforeEach(): Unit = {
     // make sure the Point table is empty
-    redisClient.del(table.key)
+    redisClients.withClient {
+      redisClient => {
+        redisClient.del(table.key)
+      }
+    }
     testClock.setInstant(Instant.EPOCH)
   }
 
