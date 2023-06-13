@@ -242,6 +242,8 @@ prometheus:
     #   targetLabels:
     #   - prometheus
     #   - app.kubernetes.io/name
+    # endpointsAdditionalConfig:
+    #   honorLabels: true
 
 # Allow alert rules to be configured for Prometheus Alertmanager
 prometheusRule:
