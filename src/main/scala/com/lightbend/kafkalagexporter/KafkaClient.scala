@@ -262,11 +262,28 @@ class KafkaClient private[kafkalagexporter] (
       groups <- adminClient.listConsumerGroups()
       groupIds = getGroupIds(groups)
       groupDescriptions <- adminClient.describeConsumerGroups(groupIds)
+      groupIdTopicMap <- getGroupTopicPartitionsMap(groupIds)
+
+      // Filters out groups with no active members, or with a topic that has no active members assigned.
       noMemberGroups = groupDescriptions.asScala.filter { case (_, d) =>
-        d.members().isEmpty
+        d.members().isEmpty || hasTopicsWithoutActiveMembers(groupIdTopicMap, d)
       }.keys
       noMemberGroupsPartitionsInfo <- Future.sequence(
-        noMemberGroups.map(g => getGroupPartitionsInfo(g))
+        noMemberGroups.map(g => {
+          val desc = groupDescriptions.asScala.get(g)
+          val assignedTopics = desc
+            .map(d =>
+              d.members()
+                .asScala
+                .flatMap(
+                  _.assignment().topicPartitions().asScala.map(_.topic())
+                )
+                .toSet
+            )
+            .getOrElse(Set.empty)
+
+          getGroupPartitionsInfo(g, assignedTopics)
+        })
       )
     } yield {
       val gtps = groupDescriptions.asScala.flatMap { case (id, desc) =>
@@ -277,25 +294,63 @@ class KafkaClient private[kafkalagexporter] (
     }
   }
 
+  /** Retrieve the topic partitions map for consumer groups available in the
+    * cluster
+    */
+  def getGroupTopicPartitionsMap(
+      consumerGroupIds: List[String]
+  ): Future[Map[String, Set[String]]] = {
+    val futures =
+      consumerGroupIds.map(id => getTopicParitionByGroupId(id).map(id -> _))
+    Future.sequence(futures).map(_.toMap)
+  }
+
+  def getTopicParitionByGroupId(groupId: String): Future[Set[String]] = {
+    for {
+      offsetsMap <- adminClient.listConsumerGroupOffsets(groupId)
+      topicPartitions = offsetsMap.keySet.asScala.toSet
+    } yield topicPartitions.map(_.topic())
+  }
+
+  /** Check if a consumer group has topics without active members
+    */
+  def hasTopicsWithoutActiveMembers(
+      groupIdTopicMap: Map[String, Set[String]],
+      groupDescription: ConsumerGroupDescription
+  ): Boolean = {
+    val groupId = groupDescription.groupId()
+    val allTopics = groupIdTopicMap.getOrElse(groupId, Set.empty)
+    val assignedTopics = groupDescription
+      .members()
+      .asScala
+      .flatMap(_.assignment().topicPartitions().asScala.map(_.topic()))
+      .toSet
+
+    allTopics.exists(topic => !assignedTopics.contains(topic))
+  }
+
   /** Retrieve partitions by consumer group ID. This is used in case when
-    * members info is unavailable for the group.
+    * members info is unavailable for the group or for certain topics.
     */
   def getGroupPartitionsInfo(
-      groupId: String
+      groupId: String,
+      assignedTopics: Set[String]
   ): Future[List[Domain.GroupTopicPartition]] = {
     for {
       offsetsMap <- adminClient.listConsumerGroupOffsets(groupId)
       topicPartitions = offsetsMap.keySet.asScala.toList
-    } yield topicPartitions.map(ktp =>
-      Domain.GroupTopicPartition(
-        groupId,
-        "unknown",
-        "unknown",
-        "unknown",
-        ktp.topic(),
-        ktp.partition()
+    } yield topicPartitions
+      .filter(ktp => !assignedTopics.contains(ktp.topic()))
+      .map(ktp =>
+        Domain.GroupTopicPartition(
+          groupId,
+          "unknown",
+          "unknown",
+          "unknown",
+          ktp.topic(),
+          ktp.partition()
+        )
       )
-    )
   }
 
   private[kafkalagexporter] def getGroupIds(
