@@ -110,7 +110,7 @@ jobs:
 
           echo Install Strimzi and Kafka cluster..
           helm repo add strimzi https://strimzi.io/charts/
-          helm install strimzi strimzi/strimzi-kafka-operator
+          helm install strimzi oci://quay.io/strimzi-helm/strimzi-kafka-operator
           kubectl apply -f ./examples/k8s/strimzi-kafka-cluster.yaml
           kubectl wait kafka/strimzi-kafka-cluster --for=condition=Ready --timeout=300s
 
