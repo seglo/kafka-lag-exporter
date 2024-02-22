@@ -7,7 +7,7 @@ on:
 jobs:
   release:
     # runs on main repo only
-    if: github.repository == 'seglo/kafka-lag-exporter'
+    if: github.repository == 'ub-wroteIt/kafka-lag-exporter'
     name: Release
     runs-on: ubuntu-22.04
     strategy:
