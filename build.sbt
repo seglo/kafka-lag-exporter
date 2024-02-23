@@ -60,7 +60,7 @@ lazy val kafkaLagExporter =
       dockerRepository := Option(System.getenv("DOCKER_REPOSITORY"))
         .orElse(None),
       dockerUsername := Option(System.getenv("DOCKER_USERNAME"))
-        .orElse(Some("seglo")),
+        .orElse(Some("ubwroteit")),
       dockerUpdateLatest := true,
       dockerPermissionStrategy := DockerPermissionStrategy.None,
       dockerExposedPorts := Seq(8000),
@@ -255,7 +255,7 @@ lazy val buildChartsIndex = ReleaseStep(action = st => {
       )
     )
   exec(
-    s"./scripts/build_charts_index.sh https://github.com/seglo/kafka-lag-exporter/releases/download/v$releaseVersion/ https://seglo.github.io/kafka-lag-exporter/repo/index.yaml",
+    s"./scripts/build_charts_index.sh https://github.com/ub-wroteIt/kafka-lag-exporter/releases/download/v$releaseVersion/ https://ub-wroteIt.github.io/kafka-lag-exporter/repo/index.yaml",
     "Error while building Helm Charts index"
   )
   st
