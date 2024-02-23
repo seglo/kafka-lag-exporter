@@ -106,7 +106,7 @@ jobs:
         run: |-
           sbt docker:publishLocal
           echo Minikube image loading..
-          minikube image load seglo/kafka-lag-exporter:latest
+          minikube image load ubwroteit/kafka-lag-exporter:latest
 
           echo Install Strimzi and Kafka cluster..
           helm repo add strimzi https://strimzi.io/charts/

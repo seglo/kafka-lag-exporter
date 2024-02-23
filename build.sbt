@@ -147,13 +147,13 @@ lazy val commonSettings = Seq(
   organization := "com.lightbend.kafkalagexporter",
   organizationName := "Lightbend Inc. <http://www.lightbend.com> (2018-2022), Sean Glover <https://seanglover.com/> (2022+)",
   organizationHomepage := Some(url("https://seanglover.com/")),
-  homepage := Some(url("https://github.com/seglo/kafka-lag-exporter")),
+  homepage := Some(url("https://github.com/ub-wroteIt/kafka-lag-exporter")),
   maintainer := "sean@seanglover.com",
   licenses += ("Apache-2.0", new URL(
     "https://www.apache.org/licenses/LICENSE-2.0.txt"
   )),
   scmInfo := Some(
-    ScmInfo(homepage.value.get, "git@github.com:seglo/kafka-lag-exporter.git")
+    ScmInfo(homepage.value.get, "git@github.com:ub-wroteIt/kafka-lag-exporter.git")
   ),
   developers += Developer(
     "contributors",
